@@ -25,7 +25,7 @@ QtObject {
     }
 
     function bestWindow(event) {
-        if (!event) return null
+        if (!event || event.confidence === "Stale orbit") return null
         const window = candidate && candidate.id === event.id
             ? event.windows.find(item => item.start.time === candidate.start)
             : event.windows.find(item => Date.parse(item.end.time) > now)

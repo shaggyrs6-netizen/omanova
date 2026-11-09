@@ -7,6 +7,7 @@ Item {
     required property var sky
     property string selection: ""
     readonly property var selected: sky.events.find(event => event.id === selection) || sky.featured || sky.events[0] || null
+    readonly property bool staleOrbit: selected?.confidence === "Stale orbit"
     readonly property var window: sky.bestWindow(selected)
     Rectangle { anchors.fill: parent; color: "#070d1b" }
     readonly property color ink: "#eef5ff"
@@ -126,6 +127,7 @@ Item {
                             Layout.preferredWidth: 152
                             Layout.preferredHeight: 140
                             points: visible && root.selected ? root.selected.path : []
+                            highlightVisibility: !root.staleOrbit
                         }
                     }
                     Copy {
@@ -163,8 +165,10 @@ Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 220
                         points: root.selected ? root.selected.path : []
+                        highlightVisibility: !root.staleOrbit
                     }
-                    Copy { text: "Thick line shows potential viewing geometry. Thin line shows the rest of the pass." }
+                    Copy { text: root.staleOrbit ? "Stale orbital elements · Geometric path only."
+                        : "Thick line shows potential viewing geometry. Thin line shows the rest of the pass." }
                     Copy {
                         text: root.window ? "First look " + root.position(root.window.start)
                              + "  →  " + root.position(root.window.end) : "No usable viewing window for this selection."
@@ -202,7 +206,8 @@ Item {
                 ColumnLayout {
                     width: parent.width
                     Heading { text: root.window ? root.window.conditions.label : "Conditions" }
-                    Copy { text: root.window ? root.window.conditions.reason : "Select a pass with a potential viewing window." }
+                    Copy { text: root.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
+                        : root.window ? root.window.conditions.reason : "Select a pass with a potential viewing window." }
                     Copy { text: root.sky.data && root.sky.data.weather_fetched
                         ? "Forecast retrieved " + root.local(root.sky.data.weather_fetched) : "Forecast unavailable" }
                     Copy {

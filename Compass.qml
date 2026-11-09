@@ -3,8 +3,10 @@ import QtQuick
 Canvas {
     id: root
     property var points: []
+    property bool highlightVisibility: true
     Accessible.name: "North-up sky compass. Concentric rings show elevation, with zenith at the centre."
     onPointsChanged: requestPaint()
+    onHighlightVisibilityChanged: requestPaint()
     onWidthChanged: requestPaint()
     onHeightChanged: requestPaint()
     property color ink: "#eef5ff"
@@ -44,7 +46,7 @@ Canvas {
             const aRad = a.az * Math.PI / 180, bRad = b.az * Math.PI / 180
             const ar = radius * (1 - Math.max(0, a.el) / 90)
             const br = radius * (1 - Math.max(0, b.el) / 90)
-            const visible = a.visible && b.visible
+            const visible = root.highlightVisibility && a.visible && b.visible
             ctx.strokeStyle = visible ? accent : ink
             ctx.globalAlpha = visible ? 1 : 0.55
             ctx.lineWidth = visible ? 3 : 1

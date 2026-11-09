@@ -57,6 +57,7 @@ ShellRoot {
             readonly property string uiFont: "sans-serif"
             property string selectedEventId: ""
             readonly property var event: sky.events.find(row => row.id === selectedEventId) || sky.featured || null
+            readonly property bool staleOrbit: event?.confidence === "Stale orbit"
             readonly property var viewing: sky.bestWindow(event)
             readonly property var forecast: viewing ? viewing.conditions : null
             readonly property var hours: forecast ? forecast.hours : []
@@ -492,7 +493,8 @@ ShellRoot {
                             Copy { Layout.fillWidth: true; text: ui.event ? ui.clock(ui.scrubTime, true) : "—"; font.pixelSize: 36; color: ui.accent }
                             Copy { Layout.fillWidth: true; text: ui.predicted
                                     ? (Math.round(ui.predicted.az) % 360) + "° true · " + Math.round(ui.predicted.el) + "° elevation" : "No track available" }
-                            Copy { Layout.fillWidth: true; color: ui.muted; text: !ui.viewing ? "Viewing window unavailable" :
+                            Copy { Layout.fillWidth: true; color: ui.muted; text: ui.staleOrbit ? "Stale orbital elements · Geometric path only" :
+                                    !ui.viewing ? "Viewing window unavailable" :
                                     ui.scrubTime >= Date.parse(ui.viewing.start.time) && ui.scrubTime <= Date.parse(ui.viewing.end.time)
                                     ? "Inside potential viewing window" : "Outside potential viewing window" }
                             Repeater {
@@ -572,7 +574,8 @@ ShellRoot {
                             x: 15; y: 14
                             spacing: 6
                             Tag { Layout.fillWidth: true; text: "●  " + ui.verdict + (sky.fixture ? " · SAMPLE FORECAST" : " · VIEWING CONDITIONS"); color: ui.verdictColor }
-                            Copy { Layout.fillWidth: true; text: ui.forecast ? ui.forecast.reason : "No forecast for a viewing window";
+                            Copy { Layout.fillWidth: true; text: ui.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
+                                : ui.forecast ? ui.forecast.reason : "No forecast for a viewing window";
                                 font.pixelSize: 22; font.weight: Font.DemiBold }
                             Copy { Layout.fillWidth: true; color: ui.muted; text: ui.viewing
                                 ? ui.clock(ui.viewing.start.time) + "–" + ui.clock(ui.viewing.end.time) + " local"

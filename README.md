@@ -56,12 +56,22 @@ OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py watch
 For an offline first look, run `./preview-observatory` from the checkout.
 The fixture uses public example locations.
 
-### Upgrading from Omasky 0.1.0
+### Upgrading an existing installation
 
-Disable the old widget with `omarchy plugin disable io.github.shaggyrs6-netizen.omasky`
-before enabling the new widget. If you already have a runtime checkout, keep
-it in place, update its remote to the renamed repository, fetch the tags and
-check out `v0.1.1` from a clean worktree. Then rerun `./setup-runtime` there.
+1. Stop the foreground worker with Ctrl+C in its terminal, if it is running,
+   and close the Observatory.
+2. Keep the runtime checkout in place. Fetch the tags, check out the new
+   release tag from a clean worktree, and rerun `./setup-runtime` there.
+3. Update the installed widget with
+   `omarchy plugin update io.github.shaggyrs6-netizen.omanova`.
+4. If you use live updates, restart the worker manually with
+   `OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py watch` from the
+   runtime checkout. Then reopen the Observatory from the widget.
+
+If upgrading from Omasky 0.1.0, point the checkout's remote at the renamed
+repository before fetching. Disable the old widget with
+`omarchy plugin disable io.github.shaggyrs6-netizen.omasky`, then use the
+install command above to add the new widget instead of updating it.
 The data directory retains its original `omasky` name so existing locations,
 preferences and observing logs remain available.
 
