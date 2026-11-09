@@ -85,7 +85,7 @@ def prepare(output, fixture):
         place = location(settings_at(DEFAULT_STATE))
         rows = read(DEFAULT_STATE / "orbit.json", {}).get("data", [])
         if not place or not rows:
-            raise ValueError("Set an observing location and download orbital elements in Omasky first.")
+            raise ValueError("Set an observing location and download orbital elements in OMANOVA first.")
     with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
         stations = build(rows, place, now, eph, load.timescale(builtin=True))
     write(output, {"fixture": fixture, "generated": iso(now),

@@ -95,7 +95,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: page.embedded ? qsTr("OMASKY OBSERVATORY  /  SPACE WEATHER") : qsTr("OMASKY OBSERVATORY  /  PREVIEW"); color: "#70edeb"; font.letterSpacing: 1.5; font.pixelSize: 12 }
+        Copy { text: page.embedded ? qsTr("OMANOVA OBSERVATORY  /  SPACE WEATHER") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW"); color: "#70edeb"; font.letterSpacing: 1.5; font.pixelSize: 12 }
         Copy { text: qsTr("Aurora"); font.pixelSize: 34; font.bold: true }
         Copy {
             text: page.catalog?.fixture ? qsTr("SIMULATED STORM · Nashville · no real alert")

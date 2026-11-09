@@ -36,7 +36,7 @@ Ui.BarWidget {
         }
     }
     ShellIpc {
-        target: "io.github.shaggyrs6-netizen.omasky"
+        target: "io.github.shaggyrs6-netizen.omanova"
         function compact(): bool {
             root.openFallback()
             return root.opened
@@ -48,7 +48,7 @@ Ui.BarWidget {
         bar: root.bar
         labelVisible: false
         hasVisualContent: true
-        tooltipText: (skyState.featured ? ("Omasky · " + (skyState.featured.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : "Weather uncertain")) : "Omasky") + " · Click for Observatory · Middle-click for compact panel"
+        tooltipText: (skyState.featured ? ("OMANOVA · " + (skyState.featured.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : "Weather uncertain")) : "OMANOVA") + " · Click for Observatory · Middle-click for compact panel"
         onPressed: function(mouseButton) {
             if (mouseButton === Qt.LeftButton) root.open()
             else if (mouseButton === Qt.MiddleButton)

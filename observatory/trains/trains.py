@@ -177,7 +177,7 @@ def prepare(output, state, fixture):
         settings = settings_at(DEFAULT_STATE)
         place = location(settings)
         if not place:
-            raise ValueError("Set an observing location in Omasky first.")
+            raise ValueError("Set an observing location in OMANOVA first.")
         site = wgs84.latlon(place["lat"], place["lon"], elevation_m=place["elevation"])
         online = settings["online"]
     ts = load.timescale(builtin=True)

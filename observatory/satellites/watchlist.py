@@ -25,7 +25,7 @@ def prepare(output, state, fixture):
     place = ({"id": "nashville-fixture", "lat": 36.1627, "lon": -86.7816, "elevation": 0}
              if fixture else location(settings))
     if not place:
-        raise ValueError("Set an observing location in Omasky first.")
+        raise ValueError("Set an observing location in OMANOVA first.")
     now = utc("2026-11-09T13:00:00Z") if fixture else datetime.now(UTC)
     ts = load.timescale(builtin=True)
 

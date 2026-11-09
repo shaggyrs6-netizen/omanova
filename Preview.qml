@@ -8,7 +8,7 @@ import qs.Commons as Commons
 ShellRoot {
     FloatingWindow {
         id: preview
-        title: "Omasky · Isolated fixture preview"
+        title: "OMANOVA · Isolated fixture preview"
         implicitWidth: 610
         implicitHeight: 490
         color: Commons.Color.background

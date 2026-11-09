@@ -1,4 +1,4 @@
-"""Omasky local worker and settings entry point."""
+"""OMANOVA local worker and settings entry point."""
 import argparse
 from contextlib import closing, contextmanager
 from datetime import UTC, datetime, timedelta
@@ -38,7 +38,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 def get_json(url, *, max_bytes=524288):
     opener = build_opener(NoRedirect(), HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())))
-    with opener.open(Request(url, headers={"User-Agent": "Omasky/0.1 local prototype"}), timeout=10) as reply:
+    with opener.open(Request(url, headers={"User-Agent": "OMANOVA/0.1 local prototype"}), timeout=10) as reply:
         if reply.status != 200:
             raise ValueError("Unexpected HTTP status")
         content = reply.read(max_bytes + 1)

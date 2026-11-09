@@ -68,7 +68,7 @@ Item {
         spacing: 10
         RowLayout {
             Layout.fillWidth: true
-            Heading { text: qsTr("Omasky Observatory"); color: root.accent }
+            Heading { text: qsTr("OMANOVA Observatory"); color: root.accent }
             Copy {
                 horizontalAlignment: Text.AlignRight
                 elide: Text.ElideRight

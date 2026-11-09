@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "io.github.shaggyrs6-netizen.omasky",
-  "name": "Omasky",
-  "version": "0.1.0",
-  "author": "Omasky",
+  "id": "io.github.shaggyrs6-netizen.omanova",
+  "name": "OMANOVA",
+  "version": "0.1.1",
+  "author": "OMANOVA",
   "description": "Local astronomy Observatory, satellite passes and sky events",
   "kinds": [
     "bar-widget"
@@ -12,7 +12,7 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Omasky",
+    "displayName": "OMANOVA",
     "description": "Next station viewing opportunity and sky compass",
     "category": "Info",
     "allowMultiple": false,

@@ -6,7 +6,7 @@ state="${XDG_DATA_HOME:-$HOME/.local/share}/omasky"
 runtime="$state/runtime"
 if [[ -e "$runtime" || -L "$runtime" ]]; then
     if [[ ! -L "$runtime" || "$(realpath -- "$runtime")" != "$PWD" ]]; then
-        printf 'Existing Omasky runtime at %s. Keep it or back it up and unlink it yourself before switching.\n' "$runtime" >&2
+        printf 'Existing OMANOVA runtime at %s. Keep it or back it up and unlink it yourself before switching.\n' "$runtime" >&2
         exit 1
     fi
 fi

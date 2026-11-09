@@ -132,7 +132,7 @@ def prepare(output, state, fixture):
         now = datetime.now(UTC)
         place = location(settings_at(DEFAULT_STATE))
         if not place:
-            raise ValueError("Set an observing location in Omasky first.")
+            raise ValueError("Set an observing location in OMANOVA first.")
         oval_cache = cache_read(state, "oval", OVATION, oval_data, now, timedelta(minutes=5), 1400000)
         kp_cache = cache_read(state, "kp", KP, kp_blocks, now, timedelta(minutes=20), 65536)
         oval = oval_data(oval_cache["data"]) if "data" in oval_cache else None

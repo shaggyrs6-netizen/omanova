@@ -119,7 +119,7 @@ def prepare(output, fixture):
         site = location(settings_at(DEFAULT_STATE))
         now = datetime.now(UTC)
         if not site:
-            raise ValueError("Set an observing location in Omasky first.")
+            raise ValueError("Set an observing location in OMANOVA first.")
     catalog = json.loads(CATALOG.read_text())
     with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
         result = calculate(eph, load.timescale(builtin=True), site, now, catalog)

@@ -172,7 +172,7 @@ def prepare(output, fixture):
         place = location(settings_at(DEFAULT_STATE))
         now = datetime.now(UTC)
         if not place:
-            raise ValueError("Set an observing location in Omasky first.")
+            raise ValueError("Set an observing location in OMANOVA first.")
     with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
         data = calculate(eph, load.timescale(builtin=True), place, now)
     write(output, {**data, "fixture": fixture})

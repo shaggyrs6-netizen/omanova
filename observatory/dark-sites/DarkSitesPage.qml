@@ -60,7 +60,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: Quickshell.env("OMASKY_DARK_SITES_EMBEDDED") === "1" ? qsTr("OMASKY OBSERVATORY  /  FIELD GUIDE") : qsTr("OMASKY OBSERVATORY  /  PREVIEW"); color: "#70edeb"; font.pixelSize: 12; font.letterSpacing: 1.6 }
+        Copy { text: Quickshell.env("OMASKY_DARK_SITES_EMBEDDED") === "1" ? qsTr("OMANOVA OBSERVATORY  /  FIELD GUIDE") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW"); color: "#70edeb"; font.pixelSize: 12; font.letterSpacing: 1.6 }
         Copy { text: qsTr("Dark-sky sites"); font.pixelSize: 34; font.bold: true }
         Copy { text: qsTr("Near Mount Juliet, Tennessee"); color: "#a7b7ce" }
         Copy {

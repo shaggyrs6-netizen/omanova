@@ -121,7 +121,7 @@ ColumnLayout {
         Layout.margins: ui.margin
         Layout.bottomMargin: 0
         spacing: 5
-        Tag { text: ui.orbitData?.fixture ? "OMASKY  /  OFFLINE FIXTURE" : "OMASKY  /  CACHED ORBITAL ELEMENTS"; color: ui.accent }
+        Tag { text: ui.orbitData?.fixture ? "OMANOVA  /  OFFLINE FIXTURE" : "OMANOVA  /  CACHED ORBITAL ELEMENTS"; color: ui.accent }
         Copy { text: "Orbit"; font.pixelSize: 42; font.weight: Font.DemiBold }
         Copy { text: "Ground tracks and the view from your observing point"; color: ui.muted }
     }

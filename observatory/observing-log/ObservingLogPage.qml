@@ -176,7 +176,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: page.embedded ? qsTr("OMASKY OBSERVATORY  /  FIELD NOTES") : qsTr("OMASKY OBSERVATORY  /  PRIVATE PREVIEW"); color: "#70edeb"; font.letterSpacing: 1.5; font.pixelSize: 12 }
+        Copy { text: page.embedded ? qsTr("OMANOVA OBSERVATORY  /  FIELD NOTES") : qsTr("OMANOVA OBSERVATORY  /  PRIVATE PREVIEW"); color: "#70edeb"; font.letterSpacing: 1.5; font.pixelSize: 12 }
         Copy { text: qsTr("Observing log"); font.pixelSize: 34; font.bold: true }
         Copy {
             text: page.embedded ? qsTr("Entries stay on this computer. Times use your computer’s time zone.")

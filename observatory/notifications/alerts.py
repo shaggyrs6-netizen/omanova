@@ -53,7 +53,7 @@ def deliver(event, window, minutes, *, preview_place=None, send=subprocess.run):
     direction = first["direction"] if first["direction"] in DIRECTIONS else f"{first['az']:.0f}° true"
     title = f"{station} in {minutes} minute{'s' if minutes != 1 else ''}"
     body = f"Look {direction}, {first['el']:.0f}° above the horizon. Forecast favourable."
-    app = "Omasky"
+    app = "OMANOVA"
     if preview_place:
         title = "[Preview] " + title
         body += f" {preview_place} fixture."

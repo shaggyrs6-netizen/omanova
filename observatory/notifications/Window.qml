@@ -7,7 +7,7 @@ import Quickshell.Io
 ShellRoot {
     FloatingWindow {
         id: window
-        title: "Omasky · Notification preview"
+        title: "OMANOVA · Notification preview"
         implicitWidth: 640
         implicitHeight: 570
         minimumSize: Qt.size(360, 390)
@@ -75,7 +75,7 @@ ShellRoot {
                         Layout.fillWidth: true
                         Layout.margins: ui.margin
                         spacing: 8
-                        Copy { text: "OMASKY  /  OFFLINE FIXTURE"; color: ui.accent; font.pixelSize: 11; font.letterSpacing: 1.2 }
+                        Copy { text: "OMANOVA  /  OFFLINE FIXTURE"; color: ui.accent; font.pixelSize: 11; font.letterSpacing: 1.2 }
                         Copy { text: "Station alerts"; font.pixelSize: 36; font.weight: Font.DemiBold }
                         Copy { text: "Simulate a pass to try a real desktop notification. Sample alerts use a 15-minute lead and a favourable forecast."; color: ui.muted }
                     }

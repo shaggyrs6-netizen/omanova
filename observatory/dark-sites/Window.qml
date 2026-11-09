@@ -5,7 +5,7 @@ import Quickshell.Io
 
 ShellRoot {
     FloatingWindow {
-        title: qsTr("Omasky Observatory · Dark-sky sites preview")
+        title: qsTr("OMANOVA Observatory · Dark-sky sites preview")
         color: "#070d1b"
         implicitWidth: 860
         implicitHeight: 740

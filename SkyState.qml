@@ -79,7 +79,7 @@ QtObject {
         environment: ({ "OPENBLAS_NUM_THREADS": "1" })
         stderr: StdioCollector { id: diagnostic }
         onExited: function(code) {
-            root.message = code === 0 ? "Updated" : (diagnostic.text.trim().slice(0, 220) || "Omasky worker failed")
+            root.message = code === 0 ? "Updated" : (diagnostic.text.trim().slice(0, 220) || "OMANOVA worker failed")
             root.reload()
         }
         onRunningChanged: {

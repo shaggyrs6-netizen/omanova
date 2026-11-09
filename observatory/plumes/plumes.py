@@ -101,7 +101,7 @@ def prepare(output, schedule_path, fixture):
     else:
         place = location(settings_at(DEFAULT_STATE))
         if not place:
-            raise ValueError("Set an observing location in Omasky first.")
+            raise ValueError("Set an observing location in OMANOVA first.")
         tracks = read(TRACK_DIR / "verified-tracks.json", {})
     if not isinstance(tracks, dict):
         tracks = {}

@@ -13,7 +13,7 @@ ShellRoot {
     LazyLoader {
         active: shell.settingsTrial && shell.compactOpen
         FloatingWindow {
-            title: qsTr("Omasky · Compact panel preview")
+            title: qsTr("OMANOVA · Compact panel preview")
             color: "#070d1b"
             implicitWidth: 610
             implicitHeight: 490
@@ -35,7 +35,7 @@ ShellRoot {
 
     FloatingWindow {
         id: window
-        title: "Omasky Observatory · " + (shell.settingsTrial ? "Settings preview" : sky.fixture ? "Fixture preview" : "Live data test")
+        title: "OMANOVA Observatory · " + (shell.settingsTrial ? "Settings preview" : sky.fixture ? "Fixture preview" : "Live data test")
         color: "#070d1b"
         implicitWidth: 1050
         implicitHeight: 700
@@ -258,7 +258,7 @@ ShellRoot {
                     ColumnLayout {
                         Layout.fillWidth: true
                         spacing: 0
-                        Copy { text: "OMASKY"; font.letterSpacing: 3; font.weight: Font.DemiBold }
+                        Copy { text: "OMANOVA"; font.letterSpacing: 3; font.weight: Font.DemiBold }
                         Tag { text: "LOCAL OBSERVATORY" }
                     }
                     Item { Layout.fillWidth: true }

@@ -115,7 +115,7 @@ ColumnLayout {
         Layout.margins: ui.gutter
         Layout.bottomMargin: 0
         spacing: 4
-        Tag { text: "OMASKY  /  LUNAR ALMANAC"; color: ui.cyan }
+        Tag { text: "OMANOVA  /  LUNAR ALMANAC"; color: ui.cyan }
         Copy { text: "Moon"; font.pixelSize: 43; font.weight: Font.DemiBold }
         Copy { text: ui.lunar?.fixture ? "Offline Nashville fixture" : "Local observing point · Calculated offline"; color: ui.muted }
     }

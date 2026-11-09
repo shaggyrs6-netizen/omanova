@@ -1,7 +1,7 @@
 # Data sources and credits
 
-The MIT licence covers the original Omasky code and documentation. Provider
-data and dependencies retain their own terms. Omasky is an independent project.
+The MIT licence covers the original OMANOVA code and documentation. Provider
+data and dependencies retain their own terms. OMANOVA is an independent project.
 
 | Source | Use |
 | --- | --- |
@@ -13,12 +13,12 @@ data and dependencies retain their own terms. Omasky is an independent project.
 | [NOAA Space Weather Prediction Center](https://www.swpc.noaa.gov/) | OVATION aurora model and Kp outlook. |
 | [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/) | Public-domain 1:110m land data for the orbit map. |
 | [International Meteor Organization](https://www.imo.net/resources/calendar/) | Factual meteor-shower dates and radiant data. |
-| [COBS Comet Observation Database](https://cobs.si/help/data_policy/) | Selected magnitude estimates and observing dates, attributed by observation number. This extracted data in `observatory/comets/catalog.json` remains under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Values are presented with Omasky’s formatting and NASA/JPL positional data. |
+| [COBS Comet Observation Database](https://cobs.si/help/data_policy/) | Selected magnitude estimates and observing dates, attributed by observation number. This extracted data in `observatory/comets/catalog.json` remains under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Values are presented with OMANOVA’s formatting and NASA/JPL positional data. |
 | [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) and [OSRM](https://project-osrm.org/) | Dated routing estimates from a public town centre to the regional dark-sky sites. Park and sky-quality evidence is linked per site. |
 | [Royal Observatory Greenwich](https://www.rmg.co.uk/stories/space-astronomy/full-moon-calendar-2026) and [timeanddate](https://www.timeanddate.com/astronomy/moon/super-full-moon.html) | Common full-Moon names and the orbit-relative distance rule used for size classes. |
 
 Python dependencies are installed separately with uv. The plugin uses the
-Omarchy shell and Quickshell interfaces. The cover was generated for Omasky.
+Omarchy shell and Quickshell interfaces. The cover was generated for OMANOVA.
 
 CelesTrak adapters cache a given query for at least two hours and stop
 requesting it on an HTTP error. Investigate before resuming. For station

@@ -87,7 +87,7 @@ ColumnLayout {
         Layout.margins: 22
         spacing: 8
         Copy {
-            text: page.tool ? qsTr("OMASKY OBSERVATORY  /  EXPERIMENTAL") : qsTr("OMASKY OBSERVATORY  /  EXPERIMENTAL PREVIEW")
+            text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL") : qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL PREVIEW")
             color: "#70edeb"
             font.letterSpacing: 1.4
             font.pixelSize: 12

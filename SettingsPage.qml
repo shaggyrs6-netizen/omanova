@@ -76,7 +76,7 @@ ColumnLayout {
         Layout.topMargin: page.compact ? 4 : 20
         visible: !page.compact
         spacing: 7
-        Copy { text: qsTr("OMASKY OBSERVATORY  /  CONFIGURATION"); color: "#70edeb"; font.letterSpacing: 1.3 }
+        Copy { text: qsTr("OMANOVA OBSERVATORY  /  CONFIGURATION"); color: "#70edeb"; font.letterSpacing: 1.3 }
         Heading { text: qsTr("Settings"); font.pixelSize: 32 }
         Copy {
             visible: page.trial

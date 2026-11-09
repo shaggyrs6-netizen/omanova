@@ -44,7 +44,7 @@ elif [[ $fixture == 1 ]]; then
     OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/fixtures.py "$state"
     OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/events/launches.py "$launch_state" fixture
 else
-    test -r "$data/snapshot.json" || { printf '%s\n' "No live Omasky snapshot available." >&2; exit 1; }
+    test -r "$data/snapshot.json" || { printf '%s\n' "No live OMANOVA snapshot available." >&2; exit 1; }
 fi
 if [[ $fixture == 0 ]]; then
     # Allow the window to open promptly while the bounded feed refresh runs.

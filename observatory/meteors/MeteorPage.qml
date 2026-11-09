@@ -55,7 +55,7 @@ ColumnLayout {
         Layout.margins: 22
         spacing: 8
         Copy {
-            text: qsTr("OMASKY OBSERVATORY  /  NIGHT SKY")
+            text: qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY")
             color: "#70edeb"
             font.pixelSize: 12
             font.letterSpacing: 1.8

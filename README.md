@@ -1,8 +1,8 @@
-# Omasky
+# OMANOVA
 
-![Omasky Observatory for Omarchy. Satellite passes and alerts, Moon, planets and sky events, launches, aurora and weather, dark-sky sites and observing log.](preview.png)
+![OMANOVA Observatory for Omarchy. Satellite passes and alerts, Moon, planets and sky events, launches, aurora and weather, dark-sky sites and observing log.](preview.png)
 
-Omasky is a local astronomy Observatory and bar widget for Omarchy Quattro.
+OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
@@ -36,10 +36,10 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.0 https://github.com/shaggyrs6-netizen/omasky.git
-cd omasky
+git clone --branch v0.1.1 https://github.com/shaggyrs6-netizen/omanova.git
+cd omanova
 ./setup-runtime
-omarchy plugin add https://github.com/shaggyrs6-netizen/omasky.git --enable
+omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --enable
 ```
 
 If uv is missing on Arch, install it through your package manager
@@ -56,12 +56,21 @@ OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py watch
 For an offline first look, run `./preview-observatory` from the checkout.
 The fixture uses public example locations.
 
+### Upgrading from Omasky 0.1.0
+
+Disable the old widget with `omarchy plugin disable io.github.shaggyrs6-netizen.omasky`
+before enabling the new widget. If you already have a runtime checkout, keep
+it in place, update its remote to the renamed repository, fetch the tags and
+check out `v0.1.1` from a clean worktree. Then rerun `./setup-runtime` there.
+The data directory retains its original `omasky` name so existing locations,
+preferences and observing logs remain available.
+
 ## Remove
 
 Stop the foreground worker with Ctrl+C and close the Observatory, then run:
 
 ```sh
-omarchy plugin remove io.github.shaggyrs6-netizen.omasky
+omarchy plugin remove io.github.shaggyrs6-netizen.omanova
 ```
 
 The plugin command leaves your local log and profiles in
@@ -122,7 +131,7 @@ preview bar host. The widget and Observatory also ran in a live Omarchy session.
 For a clean manifest validation, run `./stage-plugin .preview/plugin-check`
 with a new destination. It copies only the manifest and runtime QML, then
 runs Omarchy’s validator. The Python runtime stays outside the plugin folder.
-The setup script links the runtime from the Omasky data directory.
+The setup script links the runtime from the OMANOVA data directory.
 
 ## Runtime
 
@@ -168,7 +177,7 @@ recent station manoeuvres can affect the result.
   The comparison uses the trajectory feed and does not duplicate NASA's
   published city-specific sighting filters.
 - [Daylight](https://github.com/nixfred/daylight.omarchy) is the interaction
-  reference. Omasky's QML and drawings are separate implementations.
+  reference. OMANOVA's QML and drawings are separate implementations.
 
 ## Observatory redesign preview
 
@@ -189,7 +198,7 @@ them, keep the existing foreground worker running. A stale badge appears
 when a live snapshot is more than three minutes old. Launch without
 `--live` to return to the fixture preview.
 
-The live Omasky widget opens or focuses the Observatory on left-click.
+The live OMANOVA widget opens or focuses the Observatory on left-click.
 Middle-click opens the compact panel for location and feed settings, and
 the same panel opens if the launcher exits with an error. From a terminal,
 `omarchy-shell local.omasky compact` also opens the compact panel.
