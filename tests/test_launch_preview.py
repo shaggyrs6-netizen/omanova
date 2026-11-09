@@ -5,7 +5,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 
 from observatory.events.launches import FEED, normalise, prepare
-from worker import read
+from worker import read, write
 
 
 class LaunchPreviewTest(unittest.TestCase):
@@ -40,10 +40,18 @@ class LaunchPreviewTest(unittest.TestCase):
                 "id": "421785e3-d1b4-4874-ae34-344a24fa2a03", "name": "Held launch",
                 "status": {"id": 5, "name": "Hold"},
             }]}, "fetched": "2026-11-09T00:00:00Z"}
-            from worker import write
             write(state / "launch-cache-detailed.json", cache)
             error = HTTPError(FEED, 429, "throttled", {"Retry-After": "3600"}, None)
-            with patch("observatory.events.launches.get_json", side_effect=error) as fetch:
+            with patch("observatory.events.launches.DEFAULT_STATE", state), patch(
+                "observatory.events.launches.get_json", side_effect=error
+            ) as fetch:
+                write(state / "settings.json", {"launches": "true"})
+                prepare(state, fixture=False)
+                fetch.assert_not_called()
+                paused = read(state / "launches.json", {})
+                self.assertFalse(paused["enabled"])
+                self.assertEqual(paused["launches"][0]["name"], "Held launch")
+                write(state / "settings.json", {"launches": True})
                 prepare(state, fixture=False)
                 prepare(state, fixture=False)
                 fetch.assert_called_once_with(FEED)

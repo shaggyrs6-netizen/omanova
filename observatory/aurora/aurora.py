@@ -105,12 +105,13 @@ def calculate(eph, ts, place, now, oval, forecast):
     return {"current": current, "nights": nights[:3]}
 
 
-def cache_read(state, key, url, validator, now, period, max_bytes):
+def cache_read(state, key, url, validator, now, period, max_bytes, *, enabled):
     with lock(state):
         path = state / f"{key}.json"
         cache = read(path, {})
         before = cache.copy()
-        update_source(cache, now, period, lambda: get_json(url, max_bytes=max_bytes), validator)
+        if enabled:
+            update_source(cache, now, period, lambda: get_json(url, max_bytes=max_bytes), validator)
         if cache != before:
             write(path, cache)
     return cache
@@ -119,6 +120,7 @@ def cache_read(state, key, url, validator, now, period, max_bytes):
 def prepare(output, state, fixture):
     if output.resolve().parent == DEFAULT_STATE.resolve() or state.resolve() == DEFAULT_STATE.resolve():
         raise ValueError("Aurora preview needs separate state")
+    enabled = False
     if fixture:
         place = {"lat": 36.1627, "lon": -86.7816, "elevation": 0}
         now = utc("2026-11-10T02:00:00Z")
@@ -130,18 +132,22 @@ def prepare(output, state, fixture):
         issues = []
     else:
         now = datetime.now(UTC)
-        place = location(settings_at(DEFAULT_STATE))
+        settings = settings_at(DEFAULT_STATE)
+        place = location(settings)
         if not place:
             raise ValueError("Set an observing location in OMANOVA first.")
-        oval_cache = cache_read(state, "oval", OVATION, oval_data, now, timedelta(minutes=5), 1400000)
-        kp_cache = cache_read(state, "kp", KP, kp_blocks, now, timedelta(minutes=20), 65536)
+        enabled = settings["aurora"]
+        oval_cache = cache_read(state, "oval", OVATION, oval_data, now, timedelta(minutes=5), 1400000,
+                               enabled=enabled)
+        kp_cache = cache_read(state, "kp", KP, kp_blocks, now, timedelta(minutes=20), 65536,
+                             enabled=enabled)
         oval = oval_data(oval_cache["data"]) if "data" in oval_cache else None
         kp_fresh = kp_cache.get("fetched") and now - utc(kp_cache["fetched"]) <= timedelta(hours=12)
         forecast = kp_blocks(kp_cache["data"]) if kp_fresh and "data" in kp_cache else []
         issues = [name for name, cache in (("OVATION", oval_cache), ("Kp", kp_cache)) if cache.get("error")]
     with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
         result = calculate(eph, load.timescale(builtin=True), place, now, oval, forecast)
-    write(output, {**result, "fixture": fixture, "computed": iso(now), "issues": issues})
+    write(output, {**result, "fixture": fixture, "enabled": enabled, "computed": iso(now), "issues": issues})
 
 
 if __name__ == "__main__":

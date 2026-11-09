@@ -48,7 +48,9 @@ Ui.BarWidget {
         bar: root.bar
         labelVisible: false
         hasVisualContent: true
-        tooltipText: (skyState.featured ? ("OMANOVA · " + (skyState.featured.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : "Weather uncertain")) : "OMANOVA") + " · Click for Observatory · Middle-click for compact panel"
+        tooltipText: (skyState.snapshotStale ? "OMANOVA · Data stale. Refresh or check the worker."
+            : skyState.featured ? ("OMANOVA · " + (skyState.featured.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : "Weather uncertain"))
+            : "OMANOVA") + " · Click for Observatory · Middle-click for compact panel"
         onPressed: function(mouseButton) {
             if (mouseButton === Qt.LeftButton) root.open()
             else if (mouseButton === Qt.MiddleButton)
@@ -59,7 +61,8 @@ Ui.BarWidget {
             id: label
             anchors.centerIn: parent
             textFormat: Text.PlainText
-            text: skyState.featured
+            opacity: skyState.snapshotStale ? 0.65 : 1
+            text: skyState.featured && !skyState.snapshotStale
                 ? (root.vertical ? (skyState.featured.name === "ISS" ? "ISS" : "CSS") + "\n" + root.countdown
                    : root.glyph + "  " + skyState.featured.name + " " + root.countdown)
                 : root.glyph

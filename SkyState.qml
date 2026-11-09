@@ -17,6 +17,13 @@ QtObject {
     readonly property var candidate: data ? data.candidates.find(item => Date.parse(item.end) > now) : null
     readonly property var featured: candidate ? events.find(event => event.id === candidate.id) : null
     readonly property bool useMiles: data?.settings?.distance_unit === "mi"
+    readonly property bool snapshotStale: !fixture && !!data &&
+        (!Number.isFinite(Date.parse(data.generated)) || now - Date.parse(data.generated) > 180000)
+    property string runtimeHelp: ""
+
+    function supports(command) {
+        return root.runtimeHelp.split(/[\s,{}]+/).includes(command)
+    }
 
     function formatDistance(km, digits) {
         if (!Number.isFinite(km)) return "—"
@@ -25,7 +32,7 @@ QtObject {
     }
 
     function bestWindow(event) {
-        if (!event || event.confidence === "Stale orbit") return null
+        if (!event || root.snapshotStale || event.confidence === "Stale orbit") return null
         const window = candidate && candidate.id === event.id
             ? event.windows.find(item => item.start.time === candidate.start)
             : event.windows.find(item => Date.parse(item.end.time) > now)
@@ -49,10 +56,22 @@ QtObject {
 
     function run(args) {
         if (worker.running) return
+        if (["distance-unit", "launches", "aurora"].includes(args[0]) && !root.supports(args[0])) {
+            root.message = "Update the OMANOVA runtime before changing this setting."
+            return
+        }
         message = "Updating…"
         worker.command = [runtime + "/.venv/bin/python", runtime + "/worker.py", "--state", directory]
             .concat(fixture ? ["--fixture"] : [], args)
         worker.running = true
+    }
+
+    property Process capabilityProbe: Process {
+        running: true
+        command: [root.runtime + "/.venv/bin/python", root.runtime + "/worker.py", "--help"]
+        environment: ({ "OPENBLAS_NUM_THREADS": "1" })
+        stdout: StdioCollector { id: helpOutput }
+        onExited: function(code) { root.runtimeHelp = code === 0 ? helpOutput.text : "" }
     }
 
     property FileView snapshotFile: FileView {

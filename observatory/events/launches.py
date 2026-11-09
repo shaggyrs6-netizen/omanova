@@ -9,7 +9,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from astronomy import iso, utc
-from worker import DEMO_NOW, get_json, lock, read, update_source, write
+from worker import DEFAULT_STATE, DEMO_NOW, get_json, lock, read, settings_at, update_source, write
 
 BASE = "https://ll.thespacedevs.com/2.3.0/launches/"
 FEED = BASE + "upcoming/?mode=detailed&limit=10&hide_recent_previous=true"
@@ -78,6 +78,7 @@ def normalise(payload):
 def prepare(state, fixture):
     os.umask(0o077)
     now = DEMO_NOW if fixture else datetime.now(UTC)
+    enabled = not fixture and settings_at(DEFAULT_STATE)["launches"]
     with lock(state):
         if fixture:
             rows = normalise(read(Path(__file__).with_name("launch-fixture.json"), {}))
@@ -86,7 +87,8 @@ def prepare(state, fixture):
             file = state / "launch-cache-detailed.json"
             cache = obj(read(file, {}))
             before = cache.copy()
-            update_source(cache, now, timedelta(hours=1), lambda: get_json(FEED), normalise)
+            if enabled:
+                update_source(cache, now, timedelta(hours=1), lambda: get_json(FEED), normalise)
             if cache != before:
                 write(file, cache)
             rows = normalise(cache["data"]) if "data" in cache else []
@@ -95,7 +97,7 @@ def prepare(state, fixture):
             row["precision"] in ("SEC", "MIN", "HR") and row["statusId"] == 1
             and (row["windowEnd"] or row["net"]) and utc(row["windowEnd"] or row["net"]) < now)]
         write(state / "launches.json", {
-            "fixture": fixture, "fetched": cache.get("fetched"), "error": cache.get("error", ""),
+            "fixture": fixture, "enabled": enabled, "fetched": cache.get("fetched"), "error": cache.get("error", ""),
             "launches": active,
         })
 

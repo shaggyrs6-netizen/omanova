@@ -29,7 +29,8 @@ FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 DEFAULT_STATE = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "omasky"
 DEMO_NOW = utc("2026-11-09T23:26Z")
 EMPTY_SETTINGS = {"profiles": [], "active": None, "temporary": None, "weather": False, "online": False,
-                  "alerts": False, "distance_unit": "km"}
+                  "alerts": False, "launches": False, "aurora": False, "distance_unit": "km"}
+OPT_INS = ("online", "weather", "alerts", "launches", "aurora")
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -83,7 +84,9 @@ def settings_at(state):
     data = read(state / "settings.json", {})
     if not isinstance(data, dict):
         data = {}
-    return {**EMPTY_SETTINGS, **{key: data[key] for key in EMPTY_SETTINGS if key in data}}
+    settings = {**EMPTY_SETTINGS, **{key: data[key] for key in EMPTY_SETTINGS if key in data}}
+    settings.update({key: settings[key] is True for key in OPT_INS})
+    return settings
 
 
 def location(settings):
@@ -118,12 +121,8 @@ def apply_settings(settings, command, values):
         if not any(p["id"] == values[0] for p in settings["profiles"]):
             raise ValueError("Unknown saved location")
         settings["active"], settings["temporary"] = values[0], None
-    elif command == "weather":
-        settings["weather"] = values[0] == "on"
-    elif command == "online":
-        settings["online"] = values[0] == "on"
-    elif command == "alerts":
-        settings["alerts"] = values[0] == "on"
+    elif command in OPT_INS:
+        settings[command] = values[0] == "on"
     elif command == "distance-unit":
         if values[0] not in ("km", "mi"):
             raise ValueError("Choose kilometres or miles")
@@ -262,7 +261,7 @@ def main():
         for field in ("name", "lat", "lon", "elevation"):
             sub.add_argument(field)
     commands.add_parser("use").add_argument("id")
-    for command in ("weather", "online", "alerts"):
+    for command in OPT_INS:
         commands.add_parser(command).add_argument("value", choices=("on", "off"))
     commands.add_parser("distance-unit").add_argument("value", choices=("km", "mi"))
     args = parser.parse_args()

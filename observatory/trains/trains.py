@@ -126,8 +126,8 @@ def recent_launches(data):
     return rows
 
 
-def live_rows(eph, ts, site, state, now, online):
-    recent = cached(state, "recent", RECENT, recent_launches, now, online)
+def live_rows(eph, ts, site, state, now, online, launch_downloads):
+    recent = cached(state, "recent", RECENT, recent_launches, now, launch_downloads)
     output = []
     for launch in (normalise(recent) if recent else []):
         batch = batch_for(launch)
@@ -193,7 +193,7 @@ def prepare(output, state, fixture):
                      "windows": train_windows(eph, ts, site, members, now)}]
             recent_available = True
         else:
-            rows, recent_available = live_rows(eph, ts, site, state, now, online)
+            rows, recent_available = live_rows(eph, ts, site, state, now, online, settings["launches"])
     write(output, {"fixture": fixture, "online": online, "recentAvailable": recent_available,
                    "computed": iso(now), "batches": rows})
 

@@ -113,10 +113,15 @@ ColumnLayout {
             }
             Action {
                 visible: !page.example && Quickshell.env("OMASKY_AURORA_MODE") === "live"
-                enabled: !refresh.running
+                enabled: !refresh.running && page.catalog?.enabled !== false
                 text: refresh.running ? qsTr("Refreshing…") : qsTr("Refresh forecast")
                 onClicked: refresh.running = true
             }
+        }
+        Copy {
+            visible: !page.catalog?.fixture && page.catalog?.enabled === false
+            text: qsTr("Aurora downloads paused · Showing any usable cached guidance. Enable in Settings.")
+            color: "#ffcc7b"
         }
         Copy {
             visible: !!page.loadError || !!page.catalog?.issues.length

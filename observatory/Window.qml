@@ -78,8 +78,7 @@ ShellRoot {
             readonly property real scrubTime: riseTime + (scrub < 0 ? firstLook : scrub) * 1000
             readonly property var predicted: screenIndex === 1 ? positionAt(scrubTime) : null
             readonly property string eventId: event ? event.id : ""
-            readonly property bool snapshotStale: !sky.fixture && sky.data &&
-                sky.now - Date.parse(sky.data.generated) > 180000
+            readonly property bool snapshotStale: sky.snapshotStale
             onEventIdChanged: scrub = -1
 
             function clock(time, seconds) {
@@ -493,7 +492,8 @@ ShellRoot {
                             Copy { Layout.fillWidth: true; text: ui.event ? ui.clock(ui.scrubTime, true) : "—"; font.pixelSize: 36; color: ui.accent }
                             Copy { Layout.fillWidth: true; text: ui.predicted
                                     ? (Math.round(ui.predicted.az) % 360) + "° true · " + Math.round(ui.predicted.el) + "° elevation" : "No track available" }
-                            Copy { Layout.fillWidth: true; color: ui.muted; text: ui.staleOrbit ? "Stale orbital elements · Geometric path only" :
+                            Copy { Layout.fillWidth: true; color: ui.muted; text: ui.snapshotStale ? "Data stale · Geometric path only" :
+                                    ui.staleOrbit ? "Stale orbital elements · Geometric path only" :
                                     !ui.viewing ? "Viewing window unavailable" :
                                     ui.scrubTime >= Date.parse(ui.viewing.start.time) && ui.scrubTime <= Date.parse(ui.viewing.end.time)
                                     ? "Inside potential viewing window" : "Outside potential viewing window" }
@@ -574,7 +574,8 @@ ShellRoot {
                             x: 15; y: 14
                             spacing: 6
                             Tag { Layout.fillWidth: true; text: "●  " + ui.verdict + (sky.fixture ? " · SAMPLE FORECAST" : " · VIEWING CONDITIONS"); color: ui.verdictColor }
-                            Copy { Layout.fillWidth: true; text: ui.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
+                            Copy { Layout.fillWidth: true; text: ui.snapshotStale ? "Data stale · Refresh or check the worker."
+                                : ui.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
                                 : ui.forecast ? ui.forecast.reason : "No forecast for a viewing window";
                                 font.pixelSize: 22; font.weight: Font.DemiBold }
                             Copy { Layout.fillWidth: true; color: ui.muted; text: ui.viewing

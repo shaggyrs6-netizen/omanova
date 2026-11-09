@@ -18,7 +18,7 @@ ColumnLayout {
     readonly property color amber: "#ffcc7b"
     readonly property color line: "#2a3e58"
     readonly property int gutter: width < 620 ? 16 : 30
-    readonly property bool stale: !sky.fixture && sky.data && sky.now - Date.parse(sky.data.generated) > 180000
+    readonly property bool stale: sky.snapshotStale
     readonly property bool launchStale: launchFeed && launchFeed.fetched &&
         sky.now - Date.parse(launchFeed.fetched) >= 7200000
     readonly property var stations: sky.events.map(event => {
@@ -26,12 +26,13 @@ ColumnLayout {
         const weather = window?.conditions
         const orbitStale = event.confidence === "Stale orbit"
         const local = window && !orbitStale && weather?.label !== "Poor"
-        const badge = orbitStale ? "STALE ORBIT" : !window ? "NO VIEWING WINDOW" :
+        const badge = orbitStale ? "STALE ORBIT" : page.stale ? "DATA STALE" : !window ? "NO VIEWING WINDOW" :
             weather?.label === "Poor" ? "POOR CONDITIONS" :
             weather?.label === "Favourable" ? "POTENTIALLY VISIBLE" :
             weather?.label === "Mixed" ? "POSSIBLE · MIXED WEATHER" : "POSSIBLE · WEATHER UNKNOWN"
         return { event, window, local, badge,
             reason: orbitStale ? "Orbital elements are too old for a viewing recommendation." :
+                page.stale ? "Refresh or check the foreground worker." :
                 !window ? event.reason : weather?.reason || event.reason,
             sortTime: Date.parse(window?.start.time || event.start) }
     }).sort((a, b) => a.sortTime - b.sortTime)
@@ -85,7 +86,8 @@ ColumnLayout {
     function launchCountdown(row) {
         const remaining = Date.parse(row.net) - sky.now
         return row.statusId === 1 && ["SEC", "MIN"].includes(row.precision) && remaining > 0 &&
-            remaining < 86400000 && !launchStale && !launchFeed?.error ? "T−" + sky.countdown(row.net) : ""
+            remaining < 86400000 && !launchStale && !launchFeed?.error &&
+            (launchFeed?.fixture || launchFeed?.enabled === true) ? "T−" + sky.countdown(row.net) : ""
     }
     function summary() {
         return JSON.stringify({ mode, count: rows.length, sample: launchFeed?.fixture,
@@ -158,6 +160,9 @@ ColumnLayout {
                 page.mode !== 2 && page.stale ? page.amber : page.muted
             text: page.mode === 2
                 ? (page.launchFeed?.fixture ? "Sample launches. Local visibility is unconfirmed."
+                    : page.launchFeed?.enabled === false ? (page.launchFeed.fetched
+                        ? "Launch downloads paused · Cached " + page.when(page.launchFeed.fetched, false) + " local"
+                        : "Launch downloads paused · Enable in Settings.")
                     : page.launchFeed?.error ? "Launch feed unavailable. " +
                         (page.launchFeed.fetched ? "Showing cached schedules." : "No cached schedule.")
                     : page.launchStale ? "Cached launch schedule. Confirm times with the provider."

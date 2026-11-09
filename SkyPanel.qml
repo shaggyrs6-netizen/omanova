@@ -8,6 +8,7 @@ Item {
     property string selection: ""
     readonly property var selected: sky.events.find(event => event.id === selection) || sky.featured || sky.events[0] || null
     readonly property bool staleOrbit: selected?.confidence === "Stale orbit"
+    readonly property bool geometryOnly: staleOrbit || sky.snapshotStale
     readonly property var window: sky.bestWindow(selected)
     Rectangle { anchors.fill: parent; color: "#070d1b" }
     readonly property color ink: "#eef5ff"
@@ -127,7 +128,7 @@ Item {
                             Layout.preferredWidth: 152
                             Layout.preferredHeight: 140
                             points: visible && root.selected ? root.selected.path : []
-                            highlightVisibility: !root.staleOrbit
+                            highlightVisibility: !root.geometryOnly
                         }
                     }
                     Copy {
@@ -148,7 +149,8 @@ Item {
                             + (root.window ? " · " + root.window.conditions.label + " weather" : "") : ""
                     }
                     Copy {
-                        text: root.sky.data ? root.sky.data.status + " · updated " + root.local(root.sky.data.generated) : ""
+                        text: root.sky.snapshotStale ? "Data stale · Refresh or check the worker."
+                            : root.sky.data ? root.sky.data.status + " · updated " + root.local(root.sky.data.generated) : ""
                     }
                     ThemedButton {
                         text: "CelesTrak orbital source"
@@ -165,9 +167,9 @@ Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 220
                         points: root.selected ? root.selected.path : []
-                        highlightVisibility: !root.staleOrbit
+                        highlightVisibility: !root.geometryOnly
                     }
-                    Copy { text: root.staleOrbit ? "Stale orbital elements · Geometric path only."
+                    Copy { text: root.geometryOnly ? "Stale data · Geometric path only."
                         : "Thick line shows potential viewing geometry. Thin line shows the rest of the pass." }
                     Copy {
                         text: root.window ? "First look " + root.position(root.window.start)
@@ -197,8 +199,8 @@ Item {
                         font.pixelSize: 14
                         elide: Text.ElideRight
                         text: modelData.name + "   " + root.local(modelData.start) + "   " + modelData.culmination.el + "°   "
-                             + (modelData.confidence === "Stale orbit" ? "Stale orbit" : modelData.windows.length
-                                ? modelData.windows[0].conditions.label : "Geometric only")
+                             + (modelData.confidence === "Stale orbit" ? "Stale orbit" : root.sky.snapshotStale
+                                ? "Data stale" : root.sky.bestWindow(modelData)?.conditions.label ?? "Geometric only")
                     }
                 }
             }
@@ -206,7 +208,8 @@ Item {
                 ColumnLayout {
                     width: parent.width
                     Heading { text: root.window ? root.window.conditions.label : "Conditions" }
-                    Copy { text: root.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
+                    Copy { text: root.sky.snapshotStale ? "Data stale · Refresh or check the worker."
+                        : root.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
                         : root.window ? root.window.conditions.reason : "Select a pass with a potential viewing window." }
                     Copy { text: root.sky.data && root.sky.data.weather_fetched
                         ? "Forecast retrieved " + root.local(root.sky.data.weather_fetched) : "Forecast unavailable" }

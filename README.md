@@ -92,9 +92,11 @@ move the checkout out of the way. Keep the data directory to retain your log.
 
 Location, logs and caches stay local. Only opted-in Open-Meteo requests
 send observer coordinates, rounded to two decimal places. Orbital requests,
-launch schedules and NOAA guidance send no observer coordinates. The live
-Observatory requests the launch schedule when opened and the Aurora view
-requests public NOAA guidance. External links open on demand. See
+launch schedules and NOAA guidance send no observer coordinates. Launch
+Library 2 and NOAA downloads each require their own opt-in under Settings.
+Launch downloads cover schedules and Starlink deployment lookups. Reopen
+the Observatory for launch changes or reopen the Aurora tab for aurora
+changes. Paused feeds may show cached data. External links open on demand. See
 [Data sources and licence notes](DATA-SOURCES.md).
 
 ### Maintenance
@@ -211,7 +213,7 @@ when a live snapshot is more than three minutes old. Launch without
 The live OMANOVA widget opens or focuses the Observatory on left-click.
 Middle-click opens the compact panel for location and feed settings, and
 the same panel opens if the launcher exits with an error. From a terminal,
-`omarchy-shell local.omasky compact` also opens the compact panel.
+`omarchy-shell io.github.shaggyrs6-netizen.omanova compact` also opens the compact panel.
 
 ## Events preview
 

@@ -164,14 +164,19 @@ ColumnLayout {
                 spacing: 8
                 Action {
                     text: qsTr("Kilometres")
-                    enabled: !page.busy && page.sky.useMiles
+                    enabled: !page.busy && page.sky.useMiles && page.sky.supports("distance-unit")
                     onClicked: page.sky.run(["distance-unit", "km"])
                 }
                 Action {
                     text: qsTr("Miles")
-                    enabled: !page.busy && !page.sky.useMiles
+                    enabled: !page.busy && !page.sky.useMiles && page.sky.supports("distance-unit")
                     onClicked: page.sky.run(["distance-unit", "mi"])
                 }
+            }
+            Copy {
+                visible: !page.sky.supports("distance-unit")
+                text: qsTr("Update the runtime checkout and rerun ./setup-runtime, then reopen OMANOVA.")
+                color: "#ffcc7b"
             }
         }
     }
@@ -190,7 +195,7 @@ ColumnLayout {
             }
             Copy { text: qsTr("CelesTrak receives no observing coordinates."); color: "#a7b7ce" }
             Action {
-                text: page.preferences.online ? qsTr("Pause downloads") : qsTr("Enable orbital downloads")
+                text: page.preferences.online ? qsTr("Pause orbital downloads") : qsTr("Enable orbital downloads")
                 enabled: !page.busy && (!page.sky.fixture || page.trial)
                 onClicked: page.sky.run(["online", page.preferences.online ? "off" : "on"])
             }
@@ -207,6 +212,24 @@ ColumnLayout {
                 text: page.preferences.weather ? qsTr("Turn weather off") : qsTr("Opt in to weather")
                 enabled: !page.busy && (!page.sky.fixture || page.trial)
                 onClicked: page.sky.run(["weather", page.preferences.weather ? "off" : "on"])
+            }
+            Copy {
+                text: qsTr("Launch schedules and NOAA aurora guidance are separate opt-ins. Neither sends observing coordinates. Reopen the Observatory for launch changes, or reopen the Aurora tab for aurora changes.")
+                color: "#a7b7ce"
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+                Action {
+                    text: page.preferences.launches === true ? qsTr("Pause launch downloads") : qsTr("Enable launch downloads")
+                    enabled: !page.busy && (!page.sky.fixture || page.trial) && page.sky.supports("launches")
+                    onClicked: page.sky.run(["launches", page.preferences.launches === true ? "off" : "on"])
+                }
+                Action {
+                    text: page.preferences.aurora === true ? qsTr("Pause aurora downloads") : qsTr("Enable aurora downloads")
+                    enabled: !page.busy && (!page.sky.fixture || page.trial) && page.sky.supports("aurora")
+                    onClicked: page.sky.run(["aurora", page.preferences.aurora === true ? "off" : "on"])
+                }
             }
             Action { text: qsTr("Refresh now"); onClicked: page.sky.run(["refresh"]) }
         }

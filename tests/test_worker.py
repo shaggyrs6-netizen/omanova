@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 
 from astronomy import iso, utc
 from conditions import FIELDS, classify, opportunities, weather_hours
-from worker import DEMO_NOW, apply_settings, build_snapshot, settings_at, update_source, write
+from worker import DEMO_NOW, OPT_INS, apply_settings, build_snapshot, settings_at, update_source, write
 
 
 def example_weather():
@@ -39,6 +39,13 @@ class WorkerTest(unittest.TestCase):
         self.assertEqual(snapshot["place"]["name"], "Nashville")
         self.assertEqual(snapshot["candidates"][0]["conditions"], "Uncertain")
         self.assertEqual(json.loads((self.state / "snapshot.json").read_text()), snapshot)
+
+    def test_opt_ins_require_json_true(self):
+        for value in ("true", "false", 1, None, False, True):
+            with self.subTest(value=value):
+                write(self.state / "settings.json", dict.fromkeys(OPT_INS, value))
+                settings = settings_at(self.state)
+                self.assertTrue(all(settings[key] is (value is True) for key in OPT_INS))
 
     def test_opted_in_weather_only_sends_rounded_coords(self):
         settings = settings_at(self.state)
