@@ -6,6 +6,7 @@ import Quickshell.Io
 
 ColumnLayout {
     id: ui
+    property var formatDistance: (km, digits) => km.toLocaleString(Qt.locale(), 'f', digits) + " km"
     spacing: 13
     property var orbitData: null
     property int stationIndex: 0
@@ -186,8 +187,8 @@ ColumnLayout {
         Layout.leftMargin: ui.margin; Layout.rightMargin: ui.margin
         Fact { Layout.fillWidth: true; label: "TRUE BEARING"; value: ui.sample ? ui.sample.az + "° " + ui.direction(ui.sample.az) : "—" }
         Fact { Layout.fillWidth: true; label: "ELEVATION"; value: ui.sample ? ui.sample.el + "°" : "—" }
-        Fact { Layout.fillWidth: true; label: "GROUND DISTANCE"; value: ui.sample ? ui.sample.ground + " km" : "—" }
-        Fact { Layout.fillWidth: true; label: "LINE-OF-SIGHT RANGE"; value: ui.sample ? ui.sample.slant + " km" : "—" }
+        Fact { Layout.fillWidth: true; label: "GROUND DISTANCE"; value: ui.sample ? ui.formatDistance(ui.sample.ground, 0) : "—" }
+        Fact { Layout.fillWidth: true; label: "LINE-OF-SIGHT RANGE"; value: ui.sample ? ui.formatDistance(ui.sample.slant, 0) : "—" }
     }
     Copy {
         Layout.leftMargin: ui.margin; Layout.rightMargin: ui.margin; Layout.bottomMargin: ui.margin

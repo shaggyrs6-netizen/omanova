@@ -16,6 +16,13 @@ QtObject {
     readonly property var events: data ? data.events.filter(event => Date.parse(event.end) > now) : []
     readonly property var candidate: data ? data.candidates.find(item => Date.parse(item.end) > now) : null
     readonly property var featured: candidate ? events.find(event => event.id === candidate.id) : null
+    readonly property bool useMiles: data?.settings?.distance_unit === "mi"
+
+    function formatDistance(km, digits) {
+        if (!Number.isFinite(km)) return "—"
+        const distance = root.useMiles ? km / 1.609344 : km
+        return distance.toLocaleString(Qt.locale(), 'f', digits) + (root.useMiles ? " mi" : " km")
+    }
 
     function bestWindow(event) {
         if (!event) return null

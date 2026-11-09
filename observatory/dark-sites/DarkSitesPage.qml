@@ -10,6 +10,7 @@ ColumnLayout {
     property var catalog: null
     property string loadError: ""
     property bool dropInOnly: false
+    property var formatDistance: null
     readonly property var visibleSites: (catalog?.sites ?? []).filter(site => !dropInOnly || site.dropIn)
 
     function duration(minutes) {
@@ -64,7 +65,7 @@ ColumnLayout {
         Copy { text: qsTr("Dark-sky sites"); font.pixelSize: 34; font.bold: true }
         Copy { text: qsTr("Near Mount Juliet, Tennessee"); color: "#a7b7ce" }
         Copy {
-            text: qsTr("Approximate road miles and drive times from central Mount Juliet. Routes use public map data without live traffic. Check the site’s access page before heading out.")
+            text: qsTr("Approximate road distances and drive times from central Mount Juliet. Routes use public map data without live traffic. Check the site’s access page before heading out.")
             color: "#a7b7ce"
         }
         Copy {
@@ -108,8 +109,11 @@ ColumnLayout {
                 spacing: 6
                 Copy { text: card.modelData.name; font.pixelSize: 22; font.bold: true }
                 Copy {
-                    text: qsTr("%1 · %2 mi by road · about %3")
-                        .arg(card.modelData.area).arg(card.modelData.roadMiles).arg(page.duration(card.modelData.driveMinutes))
+                    text: qsTr("%1 · %2 by road · about %3")
+                        .arg(card.modelData.area)
+                        .arg(page.formatDistance ? page.formatDistance(card.modelData.roadMiles * 1.609344, 0)
+                                                : qsTr("%1 mi").arg(card.modelData.roadMiles))
+                        .arg(page.duration(card.modelData.driveMinutes))
                     color: "#70edeb"
                 }
                 Copy { text: card.modelData.darkness; font.bold: true }

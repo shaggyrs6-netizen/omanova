@@ -28,7 +28,8 @@ STATIONS_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMA
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 DEFAULT_STATE = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "omasky"
 DEMO_NOW = utc("2026-11-09T23:26Z")
-EMPTY_SETTINGS = {"profiles": [], "active": None, "temporary": None, "weather": False, "online": False, "alerts": False}
+EMPTY_SETTINGS = {"profiles": [], "active": None, "temporary": None, "weather": False, "online": False,
+                  "alerts": False, "distance_unit": "km"}
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -123,6 +124,10 @@ def apply_settings(settings, command, values):
         settings["online"] = values[0] == "on"
     elif command == "alerts":
         settings["alerts"] = values[0] == "on"
+    elif command == "distance-unit":
+        if values[0] not in ("km", "mi"):
+            raise ValueError("Choose kilometres or miles")
+        settings["distance_unit"] = values[0]
 
 
 def forecast_key(place):
@@ -259,6 +264,7 @@ def main():
     commands.add_parser("use").add_argument("id")
     for command in ("weather", "online", "alerts"):
         commands.add_parser(command).add_argument("value", choices=("on", "off"))
+    commands.add_parser("distance-unit").add_argument("value", choices=("km", "mi"))
     args = parser.parse_args()
     if args.command == "demo" and not args.fixture:
         parser.error("demo requires --fixture and a separate preview state directory")
@@ -286,6 +292,13 @@ def main():
                         values = (args.id if args.command == "use" else args.value,)
                     apply_settings(settings, args.command, values)
                     write(args.state / "settings.json", settings)
+                    if args.command == "distance-unit":
+                        path = args.state / "snapshot.json"
+                        snapshot = read(path, {})
+                        if isinstance(snapshot, dict) and isinstance(snapshot.get("settings"), dict):
+                            snapshot["settings"]["distance_unit"] = settings["distance_unit"]
+                            write(path, snapshot)
+                        return 0
                 snapshot = build_snapshot(args.state, args.fixture)
                 if args.command == "watch" and not args.fixture:
                     check_station_alerts(args.state, snapshot, datetime.now(UTC))

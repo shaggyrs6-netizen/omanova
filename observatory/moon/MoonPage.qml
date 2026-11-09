@@ -8,6 +8,7 @@ ColumnLayout {
     id: ui
     spacing: 16
     property var lunar: null
+    property var formatDistance: (km, digits) => km.toLocaleString(Qt.locale(), 'f', digits) + " km"
     readonly property color ink: "#f2f7ff"
     readonly property color muted: "#a7b7ce"
     readonly property color cyan: "#70edeb"
@@ -183,7 +184,7 @@ ColumnLayout {
                     }
                     Copy {
                         visible: ui.named && !!ui.full?.size
-                        text: visible ? ui.full.size + " · " + ui.full.distanceKm.toLocaleString(Qt.locale(), 'f', 0) + " km" : ""
+                        text: visible ? ui.full.size + " · " + ui.formatDistance(ui.full.distanceKm, 0) : ""
                         color: ui.cyan
                     }
                 }

@@ -214,8 +214,8 @@ Item {
                         delegate: Copy {
                             required property var modelData
                             text: root.local(modelData.time) + " · cloud " + (modelData.cloud_cover ?? "—")
-                                + "% · visibility " + (modelData.visibility === null ? "—" : (modelData.visibility / 1000).toFixed(1))
-                                + " km · precipitation " + (modelData.precipitation ?? "—") + " mm"
+                                + "% · visibility " + root.sky.formatDistance((modelData.visibility ?? NaN) / 1000, 1)
+                                + " · precipitation " + (modelData.precipitation ?? "—") + " mm"
                                 + "\nCloud low/mid/high " + (modelData.cloud_cover_low ?? "—") + "/"
                                 + (modelData.cloud_cover_mid ?? "—") + "/" + (modelData.cloud_cover_high ?? "—") + "%"
                                 + " · wind " + (modelData.wind_speed_10m ?? "—") + " km/h"

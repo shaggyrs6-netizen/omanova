@@ -152,6 +152,31 @@ ColumnLayout {
     }
 
     Card {
+        implicitHeight: units.implicitHeight + 32
+        ColumnLayout {
+            id: units
+            anchors.fill: parent
+            anchors.margins: 16
+            Heading { text: qsTr("Distance units") }
+            Copy { text: page.sky.useMiles ? qsTr("Showing miles") : qsTr("Showing kilometres"); color: "#70edeb" }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 8
+                Action {
+                    text: qsTr("Kilometres")
+                    enabled: !page.busy && page.sky.useMiles
+                    onClicked: page.sky.run(["distance-unit", "km"])
+                }
+                Action {
+                    text: qsTr("Miles")
+                    enabled: !page.busy && !page.sky.useMiles
+                    onClicked: page.sky.run(["distance-unit", "mi"])
+                }
+            }
+        }
+    }
+
+    Card {
         implicitHeight: downloads.implicitHeight + 32
         ColumnLayout {
             id: downloads

@@ -339,7 +339,7 @@ ShellRoot {
 
             Component {
                 id: darkSitesView
-                DarkSitesPage {}
+                DarkSitesPage { formatDistance: sky.formatDistance }
             }
 
             Component {
@@ -387,12 +387,12 @@ ShellRoot {
 
             Component {
                 id: moonView
-                MoonPage {}
+                MoonPage { formatDistance: sky.formatDistance }
             }
 
             Component {
                 id: orbitView
-                OrbitPage {}
+                OrbitPage { formatDistance: sky.formatDistance }
             }
 
             Component {
@@ -602,7 +602,7 @@ ShellRoot {
                             Rule {}
                             Fact { Layout.fillWidth: true; caption: "Visibility · lowest"; value: {
                                 const metres = ui.aggregate("visibility", true)
-                                return ui.metric(metres === null ? null : metres / 1000, " km")
+                                return metres === null ? "Unavailable" : sky.formatDistance(metres / 1000, 1)
                             } }
                             Rule {}
                             Fact { Layout.fillWidth: true; caption: "Precipitation · highest"; value: ui.metric(ui.aggregate("precipitation", false), " mm") }
@@ -633,6 +633,7 @@ ShellRoot {
                 ui.changeScreen(16)
                 return JSON.stringify({ place: sky.data?.place?.name, online: sky.data?.settings?.online,
                     weather: sky.data?.settings?.weather, profileCount: sky.data?.settings?.profiles.length,
+                    distanceUnit: sky.useMiles ? "mi" : "km",
                     busy: sky.settingsWorker.running, message: sky.message })
             }
             function compactPreview(show: bool): void {
