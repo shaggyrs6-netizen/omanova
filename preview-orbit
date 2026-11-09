@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+case "${1:---live}" in
+    --live) mode=live ;;
+    --fixture) mode=fixture ;;
+    *) printf 'Usage: %s [--live|--fixture]\n' "$0" >&2; exit 2 ;;
+esac
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state="$PWD/.preview/orbit/$mode"
+mkdir -p "$state"/{config,cache}
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/orbit/tracks.py "$state/tracks.json" "$mode"
+export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omasky-orbit.XXXXXX)"
+export XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_ORBIT="$state/tracks.json" OMASKY_ORBIT_LAND="$PWD/observatory/orbit/land.geojson" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+exec qs --no-color -p "$PWD/observatory/orbit/Window.qml"

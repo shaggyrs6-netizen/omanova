@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Open or focus the standalone live window. The existing worker owns the data.
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+run="${XDG_RUNTIME_DIR:?}/omasky-observatory-launch"
+install -d -m 700 "$run"
+exec 9>"$run/launch.lock"
+flock -w 6 9
+
+focus_window() {
+    local pid result
+    pid=$(hyprctl clients -j | jq -r 'first(.[] | select(
+        .mapped and .class == "org.quickshell" and .title == "Omasky Observatory · Live data test"
+    ) | .pid) // empty')
+    [[ $pid =~ ^[0-9]+$ ]] || return 1
+    result=$(hyprctl eval "for _, w in ipairs(hl.get_windows()) do
+        if w.pid == $pid and w.title == 'Omasky Observatory · Live data test' then
+            hl.dispatch(hl.dsp.focus({ window = w }))
+            return
+        end
+    end")
+    [[ $result == ok ]]
+}
+
+if focus_window; then
+    exit 0
+fi
+
+test -x ./preview-observatory
+setsid -f ./preview-observatory --live 9>&- </dev/null >"$run/window.log" 2>&1
+for ((attempt=0; attempt<24; attempt++)); do
+    sleep .2
+    if focus_window; then
+        exit 0
+    fi
+done
+printf '%s\n' 'Omasky Observatory did not open.' >&2
+exit 1

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+case "${1:---live}" in
+    --live) exec ./preview-observatory --live ;;
+    --fixture) exec ./preview-observatory ;;
+    *) printf 'Usage: %s [--live|--fixture]\n' "$0" >&2; exit 2 ;;
+esac

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "$0")"
+project=$PWD
+preview="${OMASKY_PREVIEW_DIR:-$project/.preview}"
+shell_root=/usr/share/omarchy/shell
+display=${WAYLAND_DISPLAY:?Run the preview from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+mkdir -p "$preview"/{qml,config,cache}
+for module in Commons Ui; do
+    ln -sfn "$shell_root/$module" "$preview/qml/$module"
+done
+for file in *.qml; do
+    ln -sfn "$project/$file" "$preview/qml/$file"
+done
+OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py --state "$preview" --fixture demo
+# A short, separate runtime path also keeps IPC sockets within their length limit.
+runtime=$(mktemp -d /tmp/omasky-preview.XXXXXX)
+export XDG_RUNTIME_DIR="$runtime"
+export XDG_CONFIG_HOME="$preview/config" XDG_CACHE_HOME="$preview/cache"
+export OMASKY_STATE="$preview" OMASKY_RUNTIME="$project" OMASKY_FIXTURE=1 WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+qs --no-color -p "$preview/qml/Preview.qml" "$@"

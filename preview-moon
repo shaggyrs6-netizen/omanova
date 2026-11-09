@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+case "${1:---live}" in
+    --live) mode=live ;;
+    --fixture) mode=fixture ;;
+    *) printf 'Usage: %s [--live|--fixture]\n' "$0" >&2; exit 2 ;;
+esac
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state="$PWD/.preview/moon/$mode"
+mkdir -p "$state"/{config,cache}
+export OMASKY_NAMED_MOONS=1
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/moon/moon.py "$state/moon.json" "$mode"
+export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omasky-moon.XXXXXX)"
+export XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_MOON="$state/moon.json" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+exec qs --no-color -p "$PWD/observatory/moon/Window.qml"

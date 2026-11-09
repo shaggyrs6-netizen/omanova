@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+case "${1:---live}" in
+    --live) mode=live ;;
+    --fixture) mode=fixture ;;
+    *) printf 'Usage: %s [--live|--fixture]\n' "$0" >&2; exit 2 ;;
+esac
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state=$(mktemp -d "${XDG_RUNTIME_DIR:?}/omasky-aurora.XXXXXX")
+trap 'rm -r -- "$state"' EXIT
+mkdir "$state"/{config,cache,runtime}
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/aurora/aurora.py "$state/aurora.json" "$PWD/.preview/aurora/cache" "$mode"
+if [[ $mode == live ]]; then
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/aurora/aurora.py "$state/example.json" "$PWD/.preview/aurora/cache" fixture
+    export OMASKY_AURORA_EXAMPLE="$state/example.json"
+fi
+export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_AURORA="$state/aurora.json" WAYLAND_DISPLAY="$display"
+export OMASKY_AURORA_TOOL="$PWD" OMASKY_AURORA_MODE="$mode"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+qs --no-color -n -p "$PWD/observatory/aurora/Window.qml"

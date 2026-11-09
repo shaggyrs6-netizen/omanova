@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state=$(mktemp -d "${XDG_RUNTIME_DIR:?}/omasky-dark-sites.XXXXXX")
+trap 'rm -r -- "$state"' EXIT
+mkdir "$state"/{config,cache,runtime}
+export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_DARK_SITES="$PWD/observatory/dark-sites/sites.json" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+qs --no-color -n -p "$PWD/observatory/dark-sites/Window.qml"

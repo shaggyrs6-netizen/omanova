@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+case "${1:---live}" in
+    --live) mode=live ;;
+    --fixture) mode=fixture ;;
+    *) printf 'Usage: %s [--live|--fixture]\n' "$0" >&2; exit 2 ;;
+esac
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state=$(mktemp -d "${XDG_RUNTIME_DIR:?}/omasky-eclipses.XXXXXX")
+trap 'rm -r -- "$state"' EXIT
+mkdir "$state"/{config,cache,runtime}
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/eclipses/eclipses.py "$state/eclipses.json" "$mode"
+export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_ECLIPSES="$state/eclipses.json" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+qs --no-color -n -p "$PWD/observatory/eclipses/Window.qml"

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+data="$PWD/.preview/observing-log/data"
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/observing-log/observing_log.py "$data" init
+state=$(mktemp -d "${XDG_RUNTIME_DIR:?}/omasky-observing-log.XXXXXX")
+trap 'rm -r -- "$state"' EXIT
+mkdir "$state"/{config,cache,runtime}
+export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_LOG_STATE="$data" OMASKY_LOG_TOOL="$PWD" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+qs --no-color -n -p "$PWD/observatory/observing-log/Window.qml"

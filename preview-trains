@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+case "${1:---live}" in
+    --live) mode=live ;;
+    --fixture) mode=fixture ;;
+    *) printf 'Usage: %s [--live|--fixture]\n' "$0" >&2; exit 2 ;;
+esac
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state=$(mktemp -d "${XDG_RUNTIME_DIR:?}/omasky-trains.XXXXXX")
+trap 'rm -r -- "$state"' EXIT
+mkdir "$state"/{config,cache,runtime}
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/trains/trains.py "$state/trains.json" "$PWD/.preview/trains/cache" "$mode"
+if [[ $mode == live ]]; then
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/trains/trains.py "$state/example.json" "$PWD/.preview/trains/cache" fixture
+    export OMASKY_TRAINS_EXAMPLE="$state/example.json"
+fi
+export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_TRAINS="$state/trains.json" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+qs --no-color -n -p "$PWD/observatory/trains/Window.qml"

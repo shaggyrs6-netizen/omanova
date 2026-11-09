@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+case "${1:---live}" in
+    --live) mode=live ;;
+    --fixture) mode=fixture ;;
+    *) printf 'Usage: %s [--live|--fixture]\n' "$0" >&2; exit 2 ;;
+esac
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state=$(mktemp -d "${XDG_RUNTIME_DIR:?}/omasky-plumes.XXXXXX")
+trap 'rm -r -- "$state"' EXIT
+mkdir "$state"/{config,cache,runtime}
+schedule="$PWD/.preview/plumes/schedule/$mode"
+mkdir -p "$schedule"
+existing="$PWD/.preview/events/live/launch-cache-detailed.json"
+if [[ $mode == live && ! -e "$schedule/launch-cache-detailed.json" && -r $existing ]]; then
+    cp -n -- "$existing" "$schedule/launch-cache-detailed.json"
+fi
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/plumes/plumes.py "$state/plumes.json" "$schedule" "$mode"
+if [[ $mode == live ]]; then
+    sample="$PWD/.preview/plumes/schedule/fixture"
+    mkdir -p "$sample"
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/plumes/plumes.py "$state/example.json" "$sample" fixture
+    export OMASKY_PLUME_EXAMPLE="$state/example.json"
+fi
+export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_PLUMES="$state/plumes.json" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+qs --no-color -n -p "$PWD/observatory/plumes/Window.qml"

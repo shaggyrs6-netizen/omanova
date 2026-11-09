@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+mkdir -p .preview/notifications
+state=$(mktemp -d "$PWD/.preview/notifications/trial.XXXXXX")
+mkdir "$state"/{config,cache}
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/notifications/preview.py "$state" prepare
+export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omasky-alerts.XXXXXX)"
+export XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_ALERT_STATE="$state" OMASKY_ALERT_TOOL="$PWD" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+exec qs --no-color -p "$PWD/observatory/notifications/Window.qml"

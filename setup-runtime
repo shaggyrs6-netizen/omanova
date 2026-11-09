@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+umask 077
+state="${XDG_DATA_HOME:-$HOME/.local/share}/omasky"
+runtime="$state/runtime"
+if [[ -e "$runtime" || -L "$runtime" ]]; then
+    if [[ ! -L "$runtime" || "$(realpath -- "$runtime")" != "$PWD" ]]; then
+        printf 'Existing Omasky runtime at %s. Keep it or back it up and unlink it yourself before switching.\n' "$runtime" >&2
+        exit 1
+    fi
+fi
+command -v uv >/dev/null || { printf 'Install uv first.\n' >&2; exit 1; }
+mkdir -p assets "$state"
+kernel=assets/de440s.bsp
+digest=c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2
+if [[ ! -e "$kernel" ]]; then
+    download=$(mktemp assets/.de440s.XXXXXX)
+    trap 'rm -f -- "$download"' EXIT
+    curl --fail --silent --show-error --proto '=https' --max-time 180 \
+        --output "$download" https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de440s.bsp
+    printf '%s  %s\n' "$digest" "$download" | sha256sum -c -
+    mv -n -- "$download" "$kernel"
+fi
+printf '%s  %s\n' "$digest" "$kernel" | sha256sum -c -
+if [[ ! -x .venv/bin/python ]]; then
+    uv venv --python /usr/bin/python --no-python-downloads .venv
+fi
+uv pip install --python .venv/bin/python -r requirements.txt
+if [[ ! -L "$runtime" ]]; then
+    ln -sT -- "$PWD" "$runtime"
+fi
+if [[ ! -e "$state/snapshot.json" ]]; then
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py --state "$state" refresh
+fi
+printf 'Runtime ready. Run the worker manually with: %s\n' 'OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py watch'

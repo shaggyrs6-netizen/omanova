@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ $# != 1 ]]; then
+    printf 'Usage: %s NEW-STAGING-DIRECTORY\n' "$0" >&2
+    exit 2
+fi
+destination=$(realpath -m -- "$1")
+project=$(cd -- "$(dirname -- "$0")" && pwd)
+# Staging is local to the checkout. Live installation is a separate operation.
+case "$destination" in
+    "$project"/.preview/*) ;;
+    *) printf 'Use a new directory under %s/.preview/\n' "$project" >&2; exit 2 ;;
+esac
+mkdir -- "$destination"
+for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml; do
+    cp -- "$project/$file" "$destination/$file"
+done
+omarchy plugin validate "$destination"

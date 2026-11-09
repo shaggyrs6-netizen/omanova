@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "$0")"
+display=${WAYLAND_DISPLAY:?Run from your Wayland session}
+if [[ $display != /* ]]; then
+    display="${XDG_RUNTIME_DIR:?}/$display"
+fi
+test -S "$display"
+umask 077
+state="$PWD/.preview/observatory"
+settings_trial=0
+if [[ ${1:-} == --live ]]; then
+    shift
+    state="$state/live"
+    data="${XDG_DATA_HOME:-$HOME/.local/share}/omasky"
+    fixture=0
+    launch_mode=live
+elif [[ ${1:-} == --settings-preview ]]; then
+    shift
+    state="$PWD/.preview/settings"
+    data="$state"
+    fixture=1
+    settings_trial=1
+    launch_mode=settings
+else
+    data="$state"
+    fixture=1
+    launch_mode=fixture
+fi
+launch_state="$PWD/.preview/events/$launch_mode"
+plume_schedule="$launch_state"
+if [[ $fixture == 0 ]]; then
+    plume_schedule="$PWD/.preview/plumes/schedule/live"
+    mkdir -p "$plume_schedule"
+fi
+mkdir -p "$state"/{config,cache,qml} "$launch_state"
+for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml SkyState.qml SettingsPage.qml SkyPanel.qml Compass.qml; do
+    ln -sfn "$PWD/$file" "$state/qml/${file##*/}"
+done
+if [[ $settings_trial == 1 ]]; then
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py --state "$data" --fixture demo
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/events/launches.py "$launch_state" fixture
+elif [[ $fixture == 1 ]]; then
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/fixtures.py "$state"
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/events/launches.py "$launch_state" fixture
+else
+    test -r "$data/snapshot.json" || { printf '%s\n' "No live Omasky snapshot available." >&2; exit 1; }
+fi
+if [[ $fixture == 0 ]]; then
+    # Allow the window to open promptly while the bounded feed refresh runs.
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/events/launches.py "$launch_state" live         </dev/null >"$state/launch-feed.log" 2>&1 &
+fi
+export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omasky-observatory.XXXXXX)"
+export XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
+export OMASKY_SETTINGS_PREVIEW="$settings_trial"
+if [[ $settings_trial == 1 ]]; then export OMASKY_RUNTIME="$PWD"; fi
+export OMASKY_STATE="$data" OMASKY_FIXTURE="$fixture" OMASKY_EVENTS="$launch_state/launches.json" WAYLAND_DISPLAY="$display"
+export OMASKY_ORBIT="$state/orbit.json" OMASKY_ORBIT_TOOL="$PWD"
+export OMASKY_ORBIT_LAND="$PWD/observatory/orbit/land.geojson"
+export OMASKY_MOON="$state/moon.json" OMASKY_MOON_TOOL="$PWD"
+export OMASKY_NAMED_MOONS=1
+export OMASKY_METEORS="$XDG_RUNTIME_DIR/meteors.json" OMASKY_METEORS_TOOL="$PWD"
+export OMASKY_PLANETS="$XDG_RUNTIME_DIR/planets.json" OMASKY_PLANETS_TOOL="$PWD"
+export OMASKY_COMETS="$XDG_RUNTIME_DIR/comets.json" OMASKY_COMETS_TOOL="$PWD"
+export OMASKY_ECLIPSES="$XDG_RUNTIME_DIR/eclipses.json" OMASKY_ECLIPSES_TOOL="$PWD"
+export OMASKY_PLUMES="$XDG_RUNTIME_DIR/plumes.json" OMASKY_PLUMES_TOOL="$PWD" OMASKY_PLUMES_SCHEDULE="$plume_schedule"
+export OMASKY_SATELLITES="$XDG_RUNTIME_DIR/satellites.json" OMASKY_SATELLITES_TOOL="$PWD"
+export OMASKY_TRAINS="$XDG_RUNTIME_DIR/trains.json" OMASKY_TRAINS_TOOL="$PWD"
+export OMASKY_AURORA="$XDG_RUNTIME_DIR/aurora.json" OMASKY_AURORA_TOOL="$PWD" OMASKY_AURORA_EMBEDDED=1
+if [[ $fixture == 0 ]]; then export OMASKY_AURORA_MODE=live; else export OMASKY_AURORA_MODE=fixture; fi
+export OMASKY_DARK_SITES="$PWD/observatory/dark-sites/sites.json" OMASKY_DARK_SITES_EMBEDDED=1
+export OMASKY_LOG_STATE="$data/observing-log" OMASKY_LOG_TOOL="$PWD" OMASKY_LOG_EMBEDDED=1
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+exec qs --no-color -n -p "$state/qml/Window.qml" "$@"
