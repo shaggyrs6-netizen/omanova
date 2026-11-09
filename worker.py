@@ -249,6 +249,25 @@ def check_station_alerts(state, snapshot, now, notify=deliver):
                 write(ledger, history)
 
 
+def watch(state, fixture):
+    retry_delay = 15
+    while True:
+        try:
+            with lock(state):
+                snapshot = build_snapshot(state, fixture)
+                if not fixture:
+                    check_station_alerts(state, snapshot, datetime.now(UTC))
+            print(snapshot["status"], flush=True)
+        except (OSError, ValueError) as exc:
+            print(f"Refresh failed: {exc}. Retrying in {retry_delay} seconds.",
+                  file=sys.stderr, flush=True)
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, 300)
+        else:
+            retry_delay = 15
+            time.sleep(60)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
@@ -271,40 +290,38 @@ def main():
         parser.error("--fixture requires a separate --state directory")
     os.umask(0o077)
     try:
-        while True:
-            with lock(args.state):
-                settings = settings_at(args.state)
-                if args.command == "demo" and not location(settings):
-                    apply_settings(settings, "save", ("Nashville demo", "36.1627", "-86.7816", "0"))
-                    apply_settings(settings, "save", ("Sydney demo", "-33.87", "151.21", "0"))
-                    apply_settings(settings, "use", (settings["profiles"][0]["id"],))
-                    write(args.state / "settings.json", settings)
-                elif args.command == "resume-orbits":
-                    orbit_path = args.state / "orbit.json"
-                    orbit = read(orbit_path, {})
-                    orbit.pop("blocked", None)
-                    write(orbit_path, orbit)
-                elif args.command not in ("refresh", "watch", "demo"):
-                    if args.command in ("save", "temporary"):
-                        values = (args.name, args.lat, args.lon, args.elevation)
-                    else:
-                        values = (args.id if args.command == "use" else args.value,)
-                    apply_settings(settings, args.command, values)
-                    write(args.state / "settings.json", settings)
-                    if args.command == "distance-unit":
-                        path = args.state / "snapshot.json"
-                        snapshot = read(path, {})
-                        if isinstance(snapshot, dict) and isinstance(snapshot.get("settings"), dict):
-                            snapshot["settings"]["distance_unit"] = settings["distance_unit"]
-                            write(path, snapshot)
-                        return 0
-                snapshot = build_snapshot(args.state, args.fixture)
-                if args.command == "watch" and not args.fixture:
-                    check_station_alerts(args.state, snapshot, datetime.now(UTC))
-                print(snapshot["status"], flush=True)
-            if args.command != "watch":
-                return 0
-            time.sleep(60)
+        if args.command == "watch":
+            watch(args.state, args.fixture)
+            return 0
+        with lock(args.state):
+            settings = settings_at(args.state)
+            if args.command == "demo" and not location(settings):
+                apply_settings(settings, "save", ("Nashville demo", "36.1627", "-86.7816", "0"))
+                apply_settings(settings, "save", ("Sydney demo", "-33.87", "151.21", "0"))
+                apply_settings(settings, "use", (settings["profiles"][0]["id"],))
+                write(args.state / "settings.json", settings)
+            elif args.command == "resume-orbits":
+                orbit_path = args.state / "orbit.json"
+                orbit = read(orbit_path, {})
+                orbit.pop("blocked", None)
+                write(orbit_path, orbit)
+            elif args.command not in ("refresh", "demo"):
+                if args.command in ("save", "temporary"):
+                    values = (args.name, args.lat, args.lon, args.elevation)
+                else:
+                    values = (args.id if args.command == "use" else args.value,)
+                apply_settings(settings, args.command, values)
+                write(args.state / "settings.json", settings)
+                if args.command == "distance-unit":
+                    path = args.state / "snapshot.json"
+                    snapshot = read(path, {})
+                    if isinstance(snapshot, dict) and isinstance(snapshot.get("settings"), dict):
+                        snapshot["settings"]["distance_unit"] = settings["distance_unit"]
+                        write(path, snapshot)
+                    return 0
+            snapshot = build_snapshot(args.state, args.fixture)
+            print(snapshot["status"], flush=True)
+        return 0
     except (OSError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 1

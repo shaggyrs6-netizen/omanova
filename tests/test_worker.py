@@ -3,12 +3,12 @@ from datetime import timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 from urllib.error import HTTPError
 
 from astronomy import iso, utc
 from conditions import FIELDS, classify, opportunities, weather_hours
-from worker import DEMO_NOW, OPT_INS, apply_settings, build_snapshot, settings_at, update_source, write
+from worker import DEMO_NOW, OPT_INS, apply_settings, build_snapshot, settings_at, update_source, watch, write
 
 
 def example_weather():
@@ -46,6 +46,17 @@ class WorkerTest(unittest.TestCase):
                 write(self.state / "settings.json", dict.fromkeys(OPT_INS, value))
                 settings = settings_at(self.state)
                 self.assertTrue(all(settings[key] is (value is True) for key in OPT_INS))
+
+    def test_watch_recovers_after_transient_refresh_errors(self):
+        results = [OSError("temporary failure"), ValueError("invalid data"),
+                   {"status": "Predictions ready"}, OSError("temporary failure")]
+        with patch("worker.build_snapshot", side_effect=results) as refresh, patch(
+            "worker.time.sleep", side_effect=[None, None, None, KeyboardInterrupt]
+        ) as sleep, patch("builtins.print"):
+            with self.assertRaises(KeyboardInterrupt):
+                watch(self.state, fixture=True)
+        self.assertEqual(refresh.call_args_list, [call(self.state, True)] * 4)
+        self.assertEqual(sleep.call_args_list, [call(15), call(30), call(60), call(15)])
 
     def test_opted_in_weather_only_sends_rounded_coords(self):
         settings = settings_at(self.state)
