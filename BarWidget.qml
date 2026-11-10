@@ -14,6 +14,16 @@ Ui.BarWidget {
     readonly property string condition: viewing ? viewing.conditions.label : ""
     readonly property string glyph: condition === "Favourable" ? "●" : condition === "Mixed" ? "◐" : "◌"
     readonly property string countdown: viewing ? skyState.countdown(viewing.start.time) : ""
+    readonly property string idleStatus: !skyState.data ? qsTr("Waiting for data")
+        : skyState.snapshotStale ? qsTr("Data stale")
+        : !skyState.data.place ? qsTr("Set location")
+        : !skyState.data.settings.online && !skyState.fixture ? qsTr("Downloads paused")
+        : qsTr("No viewing window")
+    readonly property string compactStatus: !skyState.data ? qsTr("Wait")
+        : skyState.snapshotStale ? qsTr("Stale")
+        : !skyState.data.place ? qsTr("Setup")
+        : !skyState.data.settings.online && !skyState.fixture ? qsTr("Off")
+        : qsTr("Idle")
     implicitWidth: vertical ? barSize : label.implicitWidth + Style.space(14)
     implicitHeight: vertical && root.station && !skyState.snapshotStale ? Style.space(47) : barSize
 
@@ -51,8 +61,8 @@ Ui.BarWidget {
         labelVisible: false
         hasVisualContent: true
         tooltipText: (skyState.snapshotStale ? "OMANOVA · Data stale. Refresh or check the worker."
-            : root.station ? ("OMANOVA · " + (root.station.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : root.condition === "Poor" ? "Poor visibility" : "Weather uncertain"))
-            : "OMANOVA") + " · Click for Observatory · Middle-click for compact panel"
+            : root.viewing ? ("OMANOVA · " + (root.station.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : root.condition === "Poor" ? "Poor visibility" : "Weather uncertain"))
+            : "OMANOVA · " + root.idleStatus) + " · Click for Observatory · Middle-click for compact panel"
         onPressed: function(mouseButton) {
             if (mouseButton === Qt.LeftButton) root.open()
             else if (mouseButton === Qt.MiddleButton)
@@ -63,13 +73,12 @@ Ui.BarWidget {
             id: label
             anchors.centerIn: parent
             textFormat: Text.PlainText
-            opacity: skyState.snapshotStale ? 0.65 : 1
-            text: root.station && !skyState.snapshotStale
+            text: root.viewing
                 ? (root.vertical ? (root.station.name === "ISS" ? "ISS" : "CSS") + "\n" + root.countdown
                         + (root.poorPass ? "\nPoor" : "")
                    : root.glyph + "  " + root.station.name + " " + root.countdown
                         + (root.poorPass ? " · Poor visibility" : ""))
-                : root.glyph
+                : root.vertical ? root.compactStatus : root.glyph + "  " + root.idleStatus
             horizontalAlignment: Text.AlignHCenter
             color: root.bar ? root.bar.barForeground : Commons.Color.foreground
             font.family: Style.font.family
