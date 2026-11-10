@@ -291,7 +291,14 @@ def main():
     os.umask(0o077)
     try:
         if args.command == "watch":
-            watch(args.state, args.fixture)
+            args.state.mkdir(mode=0o700, parents=True, exist_ok=True)
+            with (args.state / "watch.lock").open("a") as running:
+                try:
+                    fcntl.flock(running, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    print("A worker is already watching this state directory.", file=sys.stderr)
+                    return 75
+                watch(args.state, args.fixture)
             return 0
         with lock(args.state):
             settings = settings_at(args.state)

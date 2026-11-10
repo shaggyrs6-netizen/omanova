@@ -36,7 +36,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.1 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.2 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./setup-runtime
 omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --enable
@@ -45,28 +45,50 @@ omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --enable
 If uv is missing on Arch, install it through your package manager
 (`sudo pacman -S uv`). Open the widget and set your location. Enable orbital
 downloads in Settings to get live passes. Weather is a separate opt-in.
-Keep this command running in a terminal to refresh data and deliver opted-in
-alerts. Press Ctrl+C to stop it. Setup does not register an autostart, timer
-or service.
+Run the worker to refresh data and deliver opted-in alerts. Autostart is off
+by default. To run in a terminal, use this command and press Ctrl+C to stop:
 
 ```sh
 OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py watch
 ```
+
+### Optional background worker
+
+To run without a terminal window, stop the foreground worker first. Install
+the bundled user unit from the runtime checkout. If the destination already
+exists, keep your existing unit and review it before making any changes.
+
+```sh
+unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+if [ ! -e "$unit_dir/omanova-worker.service" ] && [ ! -L "$unit_dir/omanova-worker.service" ]; then
+    install -Dm644 systemd/omanova-worker.service "$unit_dir/omanova-worker.service"
+fi
+systemctl --user daemon-reload
+systemctl --user start omanova-worker.service
+```
+
+- **Start automatically at login:** `systemctl --user enable --now omanova-worker.service`
+- **Stop and turn off login startup:** `systemctl --user disable --now omanova-worker.service`
+- **Read the log:** `journalctl --user -u omanova-worker.service`
+
+Starting the service alone runs it for the current user session. Use either
+the service or the foreground worker. Keep your normal data-home setting
+available to the systemd user manager if you use a custom `XDG_DATA_HOME`.
 
 For an offline first look, run `./preview-observatory` from the checkout.
 The fixture uses public example locations.
 
 ### Upgrading an existing installation
 
-1. Stop the foreground worker with Ctrl+C in its terminal, if it is running,
-   and close the Observatory.
+1. Stop the worker and close the Observatory. Use Ctrl+C for the foreground
+   worker or `systemctl --user stop omanova-worker.service` for the service.
 2. Keep the runtime checkout in place. Fetch the tags, check out the new
    release tag from a clean worktree, and rerun `./setup-runtime` there.
 3. Update the installed widget with
    `omarchy plugin update io.github.shaggyrs6-netizen.omanova`.
-4. If you use live updates, restart the worker manually with
-   `OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py watch` from the
-   runtime checkout. Then reopen the Observatory from the widget.
+4. Start the worker again in your preferred mode, then reopen the Observatory.
+   Starting or stopping the service during an upgrade leaves its login
+   startup setting in place.
 
 If upgrading from Omasky 0.1.0, point the checkout's remote at the renamed
 repository before fetching. Disable the old widget with
@@ -77,7 +99,8 @@ preferences and observing logs remain available.
 
 ## Remove
 
-Stop the foreground worker with Ctrl+C and close the Observatory, then run:
+Stop the foreground worker with Ctrl+C or disable and stop the background
+service as described above. Close the Observatory, then run:
 
 ```sh
 omarchy plugin remove io.github.shaggyrs6-netizen.omanova
@@ -157,7 +180,7 @@ in `assets/de440s.bsp`. The tested SHA-256 is
 `c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2`.
 
 The worker supports `refresh` for one pass and `watch` for an independent
-foreground refresh loop. No service has been registered. In live mode it
+foreground refresh loop or the optional user service. In live mode it
 uses `${XDG_DATA_HOME:-$HOME/.local/share}/omasky` by default. A worker lock
 serialises refreshes and edits. Settings and snapshots are written atomically
 and remain private to the local user. A temporary location lasts until
@@ -206,7 +229,7 @@ workspace state and leaves the live bar and worker in place.
 
 Run `./preview-observatory --live` to read the same local snapshot as the
 live bar in a separate window. The window only reads snapshots. To refresh
-them, keep the existing foreground worker running. A stale badge appears
+them, keep the worker running. A stale badge appears
 when a live snapshot is more than three minutes old. Launch without
 `--live` to return to the fixture preview.
 
@@ -214,6 +237,9 @@ The live OMANOVA widget opens or focuses the Observatory on left-click.
 Middle-click opens the compact panel for location and feed settings, and
 the same panel opens if the launcher exits with an error. From a terminal,
 `omarchy-shell io.github.shaggyrs6-netizen.omanova compact` also opens the compact panel.
+The bar shows a status between passes. If poor weather leaves no recommended
+pass, it can show the next ISS countdown with a **Poor visibility** label.
+Stale predictions remain available as geometry without a viewing recommendation.
 
 ## Events preview
 
@@ -261,7 +287,7 @@ stale or ended scenario to test suppression. Closing the window ends the
 trial. The live worker does not consume these settings or the preview ledger.
 
 Live station alerts are opt-in under **Conditions → Station alerts**.
-The foreground worker checks once per minute and can send one alert per
+The worker checks once per minute and can send one alert per
 favourable, fresh ISS or Tiangong pass in the 15 minutes before first
 look. Alerts stop with the worker. The per-pass ledger is stored locally
 alongside the live snapshot.

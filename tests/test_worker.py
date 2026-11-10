@@ -1,3 +1,4 @@
+import fcntl
 import json
 from datetime import timedelta
 from pathlib import Path
@@ -8,7 +9,7 @@ from urllib.error import HTTPError
 
 from astronomy import iso, utc
 from conditions import FIELDS, classify, opportunities, weather_hours
-from worker import DEMO_NOW, OPT_INS, apply_settings, build_snapshot, settings_at, update_source, watch, write
+from worker import DEMO_NOW, OPT_INS, apply_settings, build_snapshot, main, settings_at, update_source, watch, write
 
 
 def example_weather():
@@ -57,6 +58,15 @@ class WorkerTest(unittest.TestCase):
                 watch(self.state, fixture=True)
         self.assertEqual(refresh.call_args_list, [call(self.state, True)] * 4)
         self.assertEqual(sleep.call_args_list, [call(15), call(30), call(60), call(15)])
+
+    def test_second_worker_does_not_watch_the_same_state(self):
+        with (self.state / "watch.lock").open("a") as running:
+            fcntl.flock(running, fcntl.LOCK_EX)
+            with patch("sys.argv", ["worker.py", "--state", str(self.state), "--fixture", "watch"]), patch(
+                "worker.watch"
+            ) as watch_loop, patch("builtins.print"):
+                self.assertEqual(main(), 75)
+                watch_loop.assert_not_called()
 
     def test_opted_in_weather_only_sends_rounded_coords(self):
         settings = settings_at(self.state)

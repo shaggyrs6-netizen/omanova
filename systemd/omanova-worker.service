@@ -1,0 +1,13 @@
+[Unit]
+Description=OMANOVA observing data worker
+
+[Service]
+Type=exec
+Environment=OPENBLAS_NUM_THREADS=1
+ExecStart=/usr/bin/bash -c 'runtime="$${XDG_DATA_HOME:-$$HOME/.local/share}/omasky/runtime"; exec "$$runtime/.venv/bin/python" -u "$$runtime/worker.py" watch'
+Restart=always
+RestartSec=15
+RestartPreventExitStatus=75
+
+[Install]
+WantedBy=default.target
