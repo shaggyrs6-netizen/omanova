@@ -40,12 +40,33 @@ QtObject {
 
     function reload() { snapshot.reload() }
 
-    function run(args) {
+    property string runtimeHelp: ""
+    property string pendingInput: ""
+
+    function supports(command) {
+        return root.runtimeHelp.split(/[\s,{}]+/).includes(command)
+    }
+
+    function run(args, input) {
         if (worker.running) return
+        if (["save-stdin", "temporary-stdin"].includes(args[0]) &&
+                !root.supports(args[0])) {
+            root.message = "Update the OMANOVA runtime before changing this setting."
+            return
+        }
         message = "Updating…"
+        root.pendingInput = input === undefined ? "" : JSON.stringify(input) + "\n"
         worker.command = [runtime + "/.venv/bin/python", runtime + "/worker.py", "--state", directory]
             .concat(fixture ? ["--fixture"] : [], args)
         worker.running = true
+    }
+
+    property Process capabilityProbe: Process {
+        running: true
+        command: [root.runtime + "/.venv/bin/python", root.runtime + "/worker.py", "--help"]
+        environment: ({ "OPENBLAS_NUM_THREADS": "1" })
+        stdout: StdioCollector { id: helpOutput }
+        onExited: function(code) { root.runtimeHelp = code === 0 ? helpOutput.text : "" }
     }
 
     property FileView snapshotFile: FileView {
@@ -76,6 +97,13 @@ QtObject {
     }
     property Process settingsWorker: Process {
         id: worker
+        stdinEnabled: true
+        onStarted: {
+            if (root.pendingInput) {
+                write(root.pendingInput)
+                root.pendingInput = ""
+            }
+        }
         environment: ({ "OPENBLAS_NUM_THREADS": "1" })
         stderr: StdioCollector { id: diagnostic }
         onExited: function(code) {
@@ -86,6 +114,7 @@ QtObject {
             if (!running) Qt.callLater(() => {
                 if (!running && root.message === "Updating…")
                     root.message = "Worker could not start. Check the local Python environment."
+                if (!running) root.pendingInput = ""
             })
         }
     }

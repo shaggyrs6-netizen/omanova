@@ -36,7 +36,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.1 https://github.com/shaggyrs6-netizen/omanova.git
+git clone https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./setup-runtime
 omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --enable
@@ -61,9 +61,15 @@ The fixture uses public example locations.
 Disable the old widget with `omarchy plugin disable io.github.shaggyrs6-netizen.omasky`
 before enabling the new widget. If you already have a runtime checkout, keep
 it in place, update its remote to the renamed repository, fetch the tags and
-check out `v0.1.1` from a clean worktree. Then rerun `./setup-runtime` there.
+check out the default branch from a clean worktree. Then rerun `./setup-runtime` there.
 The data directory retains its original `omasky` name so existing locations,
 preferences and observing logs remain available.
+
+If you installed the tagged v0.1.1 runtime, stop its foreground worker,
+close the Observatory, fetch the latest default branch, and check it out in
+the same runtime directory. Rerun `./setup-runtime`, update the widget with
+`omarchy plugin update io.github.shaggyrs6-netizen.omanova`, then restart
+the worker and reopen the Observatory.
 
 ## Remove
 
@@ -80,7 +86,8 @@ move the checkout out of the way. Keep the data directory to retain your log.
 
 ## Data and privacy
 
-Location, logs and caches stay local. Only opted-in Open-Meteo requests
+Location, logs and caches stay local. The location form sends private fields
+to the worker over standard input. Only opted-in Open-Meteo requests
 send observer coordinates, rounded to two decimal places. Orbital requests,
 launch schedules and NOAA guidance send no observer coordinates. The live
 Observatory requests the launch schedule when opened and the Aurora view

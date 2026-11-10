@@ -28,6 +28,7 @@ STATIONS_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMA
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 DEFAULT_STATE = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "omasky"
 DEMO_NOW = utc("2026-11-09T23:26Z")
+LOCATION_COMMANDS = {"save-stdin": "save", "temporary-stdin": "temporary"}
 EMPTY_SETTINGS = {"profiles": [], "active": None, "temporary": None, "weather": False, "online": False, "alerts": False}
 
 
@@ -94,7 +95,10 @@ def apply_settings(settings, command, values):
     if command in ("save", "temporary"):
         name, lat, lon, elevation = values
         name = " ".join(name.split())
-        lat, lon, elevation = float(lat), float(lon), float(elevation or 0)
+        try:
+            lat, lon, elevation = float(lat), float(lon), float(elevation or 0)
+        except ValueError:
+            raise ValueError("Enter valid coordinates and elevation") from None
         if not name or len(name) > 48 or not all(map(isfinite, (lat, lon, elevation))):
             raise ValueError("Enter a name and finite coordinates")
         if not (-90 <= lat <= 90 and -180 <= lon <= 180 and -500 <= elevation <= 9000):
@@ -245,6 +249,19 @@ def check_station_alerts(state, snapshot, now, notify=deliver):
                 write(ledger, history)
 
 
+def read_location(stream):
+    line = stream.readline(2049)
+    if len(line) > 2048 or not line.endswith(b"\n"):
+        raise ValueError("Expected one location record on standard input")
+    try:
+        values = json.loads(line)
+    except (ValueError, UnicodeError):
+        raise ValueError("Invalid location record") from None
+    if not isinstance(values, list) or len(values) != 4 or not all(isinstance(value, str) for value in values):
+        raise ValueError("Expected a location name, latitude, longitude and elevation")
+    return values
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
@@ -252,10 +269,8 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     for command in ("refresh", "watch", "demo", "resume-orbits"):
         commands.add_parser(command)
-    for command in ("save", "temporary"):
-        sub = commands.add_parser(command)
-        for field in ("name", "lat", "lon", "elevation"):
-            sub.add_argument(field)
+    for command in LOCATION_COMMANDS:
+        commands.add_parser(command, help="Read location fields as one JSON line on standard input")
     commands.add_parser("use").add_argument("id")
     for command in ("weather", "online", "alerts"):
         commands.add_parser(command).add_argument("value", choices=("on", "off"))
@@ -266,6 +281,8 @@ def main():
         parser.error("--fixture requires a separate --state directory")
     os.umask(0o077)
     try:
+        if args.command in LOCATION_COMMANDS:
+            location_fields = read_location(sys.stdin.buffer)
         while True:
             with lock(args.state):
                 settings = settings_at(args.state)
@@ -280,11 +297,11 @@ def main():
                     orbit.pop("blocked", None)
                     write(orbit_path, orbit)
                 elif args.command not in ("refresh", "watch", "demo"):
-                    if args.command in ("save", "temporary"):
-                        values = (args.name, args.lat, args.lon, args.elevation)
+                    if args.command in LOCATION_COMMANDS:
+                        apply_settings(settings, LOCATION_COMMANDS[args.command], location_fields)
                     else:
                         values = (args.id if args.command == "use" else args.value,)
-                    apply_settings(settings, args.command, values)
+                        apply_settings(settings, args.command, values)
                     write(args.state / "settings.json", settings)
                 snapshot = build_snapshot(args.state, args.fixture)
                 if args.command == "watch" and not args.fixture:

@@ -65,7 +65,7 @@ ShellRoot {
                 else widget.close()
                 return widget.opened
             }
-            function temporary(): void { state.run(["temporary", "Fixture test", "-33.87", "151.21", "0"]) }
+            function temporary(): void { state.run(["temporary-stdin"], ["Fixture test", "-33.87", "151.21", "0"]) }
             function place(): string { return state.data && state.data.place ? state.data.place.name : "none" }
             function restore(): void { state.run(["use", state.data.settings.profiles[0].id]) }
             function capture(name: string): void {
