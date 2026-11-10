@@ -113,7 +113,8 @@ move the checkout out of the way. Keep the data directory to retain your log.
 
 ## Data and privacy
 
-Location, logs and caches stay local. Only opted-in Open-Meteo requests
+Location, logs and caches stay local. The location form sends private fields
+to the worker over standard input. Only opted-in Open-Meteo requests
 send observer coordinates, rounded to two decimal places. Orbital requests,
 launch schedules and NOAA guidance send no observer coordinates. Launch
 Library 2 and NOAA downloads each require their own opt-in under Settings.

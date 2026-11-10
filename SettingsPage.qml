@@ -141,12 +141,19 @@ ColumnLayout {
                 spacing: 8
                 Action {
                     text: qsTr("Save & use")
-                    onClicked: page.sky.run(["save", placeName.text, latitude.text, longitude.text, elevation.text])
+                    enabled: !page.busy && page.sky.supports("save-stdin")
+                    onClicked: page.sky.run(["save-stdin"], [placeName.text, latitude.text, longitude.text, elevation.text])
                 }
                 Action {
                     text: qsTr("Use temporarily")
-                    onClicked: page.sky.run(["temporary", placeName.text, latitude.text, longitude.text, elevation.text])
+                    enabled: !page.busy && page.sky.supports("temporary-stdin")
+                    onClicked: page.sky.run(["temporary-stdin"], [placeName.text, latitude.text, longitude.text, elevation.text])
                 }
+            }
+            Copy {
+                visible: !page.sky.supports("save-stdin") || !page.sky.supports("temporary-stdin")
+                text: qsTr("Update the runtime checkout and rerun ./setup-runtime to enter locations privately.")
+                color: "#ffcc7b"
             }
         }
     }

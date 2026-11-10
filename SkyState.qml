@@ -20,6 +20,7 @@ QtObject {
     readonly property bool snapshotStale: !fixture && !!data &&
         (!Number.isFinite(Date.parse(data.generated)) || now - Date.parse(data.generated) > 180000)
     property string runtimeHelp: ""
+    property string pendingInput: ""
 
     function supports(command) {
         return root.runtimeHelp.split(/[\s,{}]+/).includes(command)
@@ -64,13 +65,15 @@ QtObject {
 
     function reload() { snapshot.reload() }
 
-    function run(args) {
+    function run(args, input) {
         if (worker.running) return
-        if (["distance-unit", "launches", "aurora"].includes(args[0]) && !root.supports(args[0])) {
+        if (["distance-unit", "launches", "aurora", "save-stdin", "temporary-stdin"].includes(args[0]) &&
+                !root.supports(args[0])) {
             root.message = "Update the OMANOVA runtime before changing this setting."
             return
         }
         message = "Updating…"
+        root.pendingInput = input === undefined ? "" : JSON.stringify(input) + "\n"
         worker.command = [runtime + "/.venv/bin/python", runtime + "/worker.py", "--state", directory]
             .concat(fixture ? ["--fixture"] : [], args)
         worker.running = true
@@ -112,6 +115,13 @@ QtObject {
     }
     property Process settingsWorker: Process {
         id: worker
+        stdinEnabled: true
+        onStarted: {
+            if (root.pendingInput) {
+                write(root.pendingInput)
+                root.pendingInput = ""
+            }
+        }
         environment: ({ "OPENBLAS_NUM_THREADS": "1" })
         stderr: StdioCollector { id: diagnostic }
         onExited: function(code) {
@@ -122,6 +132,7 @@ QtObject {
             if (!running) Qt.callLater(() => {
                 if (!running && root.message === "Updating…")
                     root.message = "Worker could not start. Check the local Python environment."
+                if (!running) root.pendingInput = ""
             })
         }
     }

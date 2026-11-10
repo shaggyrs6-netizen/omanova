@@ -3,13 +3,15 @@ import json
 from datetime import timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import subprocess
+import sys
 import unittest
 from unittest.mock import call, patch
 from urllib.error import HTTPError
 
 from astronomy import iso, utc
 from conditions import FIELDS, classify, opportunities, weather_hours
-from worker import DEMO_NOW, OPT_INS, apply_settings, build_snapshot, main, settings_at, update_source, watch, write
+from worker import DEMO_NOW, OPT_INS, ROOT, apply_settings, build_snapshot, main, settings_at, update_source, watch, write
 
 
 def example_weather():
@@ -47,6 +49,26 @@ class WorkerTest(unittest.TestCase):
                 write(self.state / "settings.json", dict.fromkeys(OPT_INS, value))
                 settings = settings_at(self.state)
                 self.assertTrue(all(settings[key] is (value is True) for key in OPT_INS))
+
+    def test_location_commands_accept_private_fields_on_stdin(self):
+        command = [sys.executable, str(ROOT / "worker.py"), "--state", str(self.state), "--fixture"]
+        for operation, fields, key in (
+            ("save-stdin", ["Fixture saved", "36.16273456", "-86.78163456", ""], "profiles"),
+            ("temporary-stdin", ["Fixture temporary", "35.12345678", "-84.87654321", "30"], "temporary"),
+        ):
+            with self.subTest(operation=operation):
+                result = subprocess.run(command + [operation], input=json.dumps(fields) + "\n",
+                                        text=True, capture_output=True, timeout=15, check=True)
+                settings = settings_at(self.state)
+                place = settings[key][0] if key == "profiles" else settings[key]
+                self.assertEqual(place["name"], fields[0])
+                self.assertEqual((place["lat"], place["lon"]), (float(fields[1]), float(fields[2])))
+                self.assertNotIn(fields[1], result.stdout + result.stderr)
+        result = subprocess.run(command + ["temporary-stdin"],
+                                input='["Fixture temporary","invalid-private-input","-84",""]\n',
+                                text=True, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn("invalid-private-input", result.stdout + result.stderr)
 
     def test_watch_recovers_after_transient_refresh_errors(self):
         results = [OSError("temporary failure"), ValueError("invalid data"),
