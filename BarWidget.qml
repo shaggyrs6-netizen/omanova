@@ -8,12 +8,14 @@ Ui.BarWidget {
     id: root
     readonly property bool opened: popup.opened
     readonly property bool popoutSwitchClosing: popup.popoutSwitchClosing
-    readonly property var viewing: skyState.bestWindow(skyState.featured)
+    readonly property var poorPass: skyState.featured ? null : skyState.nextPoorIssPass()
+    readonly property var station: skyState.featured || poorPass?.event || null
+    readonly property var viewing: poorPass?.window || skyState.bestWindow(skyState.featured)
     readonly property string condition: viewing ? viewing.conditions.label : ""
     readonly property string glyph: condition === "Favourable" ? "●" : condition === "Mixed" ? "◐" : "◌"
-    readonly property string countdown: skyState.candidate ? skyState.countdown(skyState.candidate.start) : ""
+    readonly property string countdown: viewing ? skyState.countdown(viewing.start.time) : ""
     implicitWidth: vertical ? barSize : label.implicitWidth + Style.space(14)
-    implicitHeight: vertical && skyState.featured ? Style.space(47) : barSize
+    implicitHeight: vertical && root.station && !skyState.snapshotStale ? Style.space(47) : barSize
 
     function openFallback() { skyState.reload(); popup.open() }
     function open() {
@@ -49,7 +51,7 @@ Ui.BarWidget {
         labelVisible: false
         hasVisualContent: true
         tooltipText: (skyState.snapshotStale ? "OMANOVA · Data stale. Refresh or check the worker."
-            : skyState.featured ? ("OMANOVA · " + (skyState.featured.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : "Weather uncertain"))
+            : root.station ? ("OMANOVA · " + (root.station.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : root.condition === "Poor" ? "Poor visibility" : "Weather uncertain"))
             : "OMANOVA") + " · Click for Observatory · Middle-click for compact panel"
         onPressed: function(mouseButton) {
             if (mouseButton === Qt.LeftButton) root.open()
@@ -62,9 +64,11 @@ Ui.BarWidget {
             anchors.centerIn: parent
             textFormat: Text.PlainText
             opacity: skyState.snapshotStale ? 0.65 : 1
-            text: skyState.featured && !skyState.snapshotStale
-                ? (root.vertical ? (skyState.featured.name === "ISS" ? "ISS" : "CSS") + "\n" + root.countdown
-                   : root.glyph + "  " + skyState.featured.name + " " + root.countdown)
+            text: root.station && !skyState.snapshotStale
+                ? (root.vertical ? (root.station.name === "ISS" ? "ISS" : "CSS") + "\n" + root.countdown
+                        + (root.poorPass ? "\nPoor" : "")
+                   : root.glyph + "  " + root.station.name + " " + root.countdown
+                        + (root.poorPass ? " · Poor visibility" : ""))
                 : root.glyph
             horizontalAlignment: Text.AlignHCenter
             color: root.bar ? root.bar.barForeground : Commons.Color.foreground

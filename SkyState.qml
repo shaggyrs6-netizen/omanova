@@ -45,6 +45,16 @@ QtObject {
         return window
     }
 
+    function nextPoorIssPass() {
+        if (root.snapshotStale) return null
+        for (const event of root.events) {
+            if (event.source_id !== 25544) continue
+            const window = root.bestWindow(event)
+            if (window) return window.conditions.label === "Poor" ? { event, window } : null
+        }
+        return null
+    }
+
     function countdown(when) {
         const minutes = Math.max(0, Math.ceil((Date.parse(when) - now) / 60000))
         if (!minutes) return "now"
