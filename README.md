@@ -38,15 +38,19 @@ From a terminal, choose a permanent directory for the checkout:
 ```sh
 git clone --branch v0.1.2 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
-./setup-runtime
-omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --enable
+./install
 ```
 
-If uv is missing on Arch, install it through your package manager
-(`sudo pacman -S uv`). Open the widget and set your location. Enable orbital
-downloads in Settings to get live passes. Weather is a separate opt-in.
-Run the worker to refresh data and deliver opted-in alerts. Autostart is off
-by default. To run in a terminal, use this command and press Ctrl+C to stop:
+The installer asks before installing uv if needed. It prepares the runtime,
+adds the matching widget and starts the hidden worker for this session.
+To also enable login startup, use `./install --autostart`. New installs
+keep autostart off without that option. Open Settings to enter a location
+and opt into the feeds you want.
+
+For manual setup, run `./setup-runtime` and
+`omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --enable`.
+To run the worker in a terminal, stop the service first, then use this
+command and press Ctrl+C to stop:
 
 ```sh
 OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py watch
@@ -77,6 +81,17 @@ available to the systemd user manager if you use a custom `XDG_DATA_HOME`.
 
 For an offline first look, run `./preview-observatory` from the checkout.
 The fixture uses public example locations.
+
+### Guided setup
+
+From a permanent runtime checkout, `./install` prepares the Python
+environment and ephemeris, adds and enables the matching widget, installs
+the user service and starts the hidden worker. Existing login preferences
+are preserved unless you explicitly enable autostart.
+
+The installer checks that widget and runtime files match before enabling
+the widget. Stop an old foreground worker before using it. Existing runtime
+links or customised service units require review before switching them.
 
 ### Upgrading an existing installation
 

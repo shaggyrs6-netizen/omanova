@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+
+autostart=0
+case "${1:-}" in
+    "") ;;
+    --autostart) autostart=1 ;;
+    -h|--help)
+        printf 'Usage: %s [--autostart]\n' "$0"
+        printf 'Prepare the runtime, enable the widget and start the hidden worker.\n'
+        printf 'Login startup is enabled only with --autostart.\n'
+        exit 0
+        ;;
+    *) printf 'Unknown option. Use --help.\n' >&2; exit 2 ;;
+esac
+[[ $# -le 1 ]] || { printf 'Use at most one option.\n' >&2; exit 2; }
+
+for command in omarchy systemctl curl jq flock sha256sum cmp install git; do
+    command -v "$command" >/dev/null || { printf 'Required command missing: %s\n' "$command" >&2; exit 1; }
+done
+
+state="${XDG_DATA_HOME:-$HOME/.local/share}/omasky"
+config="${XDG_CONFIG_HOME:-$HOME/.config}"
+unit="$config/systemd/user/omanova-worker.service"
+id=$(jq -er '.id' manifest.json)
+plugin="$config/omarchy/plugins/$id"
+mkdir -p "$state"
+chmod 700 "$state"
+exec 9>"$state/install.lock"
+flock -n 9 || { printf 'An OMANOVA installation is already in progress.\n' >&2; exit 1; }
+
+# Refuse incompatible existing state before downloading or installing anything.
+if [[ -e "$state/runtime" || -L "$state/runtime" ]]; then
+    if [[ ! -L "$state/runtime" || "$(realpath -- "$state/runtime")" != "$PWD" ]]; then
+        printf 'Run the installer from your existing OMANOVA runtime checkout.\n' >&2
+        exit 1
+    fi
+fi
+if [[ -e "$unit" || -L "$unit" ]]; then
+    if [[ -L "$unit" ]] || ! cmp -s systemd/omanova-worker.service "$unit"; then
+        printf 'Existing service differs. Back it up and review the bundled unit before installing.\n' >&2
+        exit 1
+    fi
+fi
+manager_data=$(systemctl --user show-environment | sed -n 's/^XDG_DATA_HOME=//p')
+manager_data="${manager_data:-$HOME/.local/share}"
+if [[ "$state" != "$manager_data/omasky" ]]; then
+    printf 'The user service manager uses a different data directory. Import your XDG_DATA_HOME into it before retrying.\n' >&2
+    exit 1
+fi
+if ! command -v uv >/dev/null; then
+    printf 'OMANOVA needs the Arch uv package. Install it now? [y/N] '
+    read -r answer
+    [[ "$answer" == y || "$answer" == Y ]] || exit 1
+    sudo pacman -S --needed uv
+fi
+
+./setup-runtime
+
+# Omarchy owns plugin installation. Do not silently mix widget and runtime versions.
+if [[ ! -e "$plugin/manifest.json" ]]; then
+    omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --yes
+fi
+for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml; do
+    if ! cmp -s "$file" "$plugin/$file"; then
+        printf 'Installed widget differs from this runtime. Update the matching widget or runtime before retrying.\n' >&2
+        exit 1
+    fi
+done
+omarchy plugin enable "$id"
+
+if [[ ! -e "$unit" ]]; then
+    install -Dm644 systemd/omanova-worker.service "$unit"
+fi
+systemctl --user daemon-reload
+systemctl --user restart omanova-worker.service
+if (( autostart )); then
+    systemctl --user enable omanova-worker.service
+fi
+systemctl --user is-active --quiet omanova-worker.service
+printf 'OMANOVA is ready. Set your observing location and opt into feeds in Settings.\n'
+if (( autostart )); then
+    printf 'The hidden worker will start at login.\n'
+else
+    printf 'Login startup was left at its existing setting. Use --autostart to enable it.\n'
+fi
