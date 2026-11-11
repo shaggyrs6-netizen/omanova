@@ -89,21 +89,29 @@ environment and ephemeris, adds and enables the matching widget, installs
 the user service and starts the hidden worker. Existing login preferences
 are preserved unless you explicitly enable autostart.
 
-The installer checks that widget and runtime files match before enabling
-the widget. Stop an old foreground worker before using it. Existing runtime
+The installer installs the widget from the runtime checkout's Git commit
+(or the matching version tag for a release archive), and checks the widget
+files match before enabling it. It waits for the worker to write a fresh
+snapshot before reporting success. Stop an old foreground worker before
+using it. Existing runtime
 links or customised service units require review before switching them.
+Custom `XDG_CONFIG_HOME` locations are currently unsupported by Omarchy's
+plugin installer; leave it unset or set to `$HOME/.config`.
 
 ### Upgrading an existing installation
 
 1. Stop the worker and close the Observatory. Use Ctrl+C for the foreground
    worker or `systemctl --user stop omanova-worker.service` for the service.
 2. Keep the runtime checkout in place. Fetch the tags, check out the new
-   release tag from a clean worktree, and rerun `./setup-runtime` there.
-3. Update the installed widget with
-   `omarchy plugin update io.github.shaggyrs6-netizen.omanova`.
-4. Start the worker again in your preferred mode, then reopen the Observatory.
-   Starting or stopping the service during an upgrade leaves its login
-   startup setting in place.
+   release tag from a clean worktree, and run `./install` there. This upgrades
+   the matching widget and starts the hidden worker; existing login startup
+   preferences are preserved. Modified or diverged widget checkouts are
+   refused so local changes can be reviewed first.
+3. Run `omarchy restart shell` to clear cached bar code, then reopen the
+   Observatory. A plugin rescan alone may leave the old bar code running.
+4. If you prefer a foreground worker, stop the service and run the foreground
+   command above. Starting or stopping the service leaves its login startup
+   setting in place.
 
 If upgrading from Omasky 0.1.0, point the checkout's remote at the renamed
 repository before fetching. Disable the old widget with

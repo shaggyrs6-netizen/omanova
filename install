@@ -22,6 +22,10 @@ done
 
 state="${XDG_DATA_HOME:-$HOME/.local/share}/omasky"
 config="${XDG_CONFIG_HOME:-$HOME/.config}"
+if [[ "$config" != "$HOME/.config" ]]; then
+    printf 'Omarchy plugins currently require XDG_CONFIG_HOME to be unset or $HOME/.config. No installation was performed.\n' >&2
+    exit 1
+fi
 unit="$config/systemd/user/omanova-worker.service"
 id=$(jq -er '.id' manifest.json)
 plugin="$config/omarchy/plugins/$id"
@@ -49,6 +53,37 @@ if [[ "$state" != "$manager_data/omasky" ]]; then
     printf 'The user service manager uses a different data directory. Import your XDG_DATA_HOME into it before retrying.\n' >&2
     exit 1
 fi
+repository=https://github.com/shaggyrs6-netizen/omanova.git
+stage=$(mktemp -d)
+trap 'rm -rf -- "$stage"' EXIT
+# Install the widget from this checkout, never from a moving remote HEAD.
+# Release archives without Git metadata use their version tag and the same
+# byte-for-byte check before any widget is installed or updated.
+if [[ -e .git ]]; then
+    git clone --quiet --no-hardlinks --no-checkout "$PWD" "$stage/widget"
+    revision=$(git rev-parse HEAD)
+else
+    revision="v$(jq -er .version manifest.json)"
+    git clone --quiet --no-checkout --branch "$revision" "$repository" "$stage/widget"
+fi
+git -C "$stage/widget" checkout --quiet --detach "$revision"
+for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml; do
+    cmp -s "$file" "$stage/widget/$file" || {
+        printf 'Widget source differs from its Git revision. Commit the widget changes or use a matching release.\n' >&2
+        exit 1
+    }
+done
+if [[ -e "$plugin" ]]; then
+    [[ -d "$plugin/.git" ]] && [[ -z $(git -C "$plugin" status --porcelain) ]] || {
+        printf 'Existing widget is not a clean Git checkout. Preserve your changes before upgrading.\n' >&2
+        exit 1
+    }
+    git -C "$plugin" fetch --quiet "$stage/widget" HEAD
+    git -C "$plugin" merge-base --is-ancestor HEAD FETCH_HEAD || {
+        printf 'Widget history diverges from this release. Review it before switching.\n' >&2
+        exit 1
+    }
+fi
 if ! command -v uv >/dev/null; then
     printf 'OMANOVA needs the Arch uv package. Install it now? [y/N] '
     read -r answer
@@ -56,11 +91,23 @@ if ! command -v uv >/dev/null; then
     sudo pacman -S --needed uv
 fi
 
+# A running managed worker must be stopped before changing its environment.
+# Foreground workers are left alone and cause a clear, early refusal.
+if systemctl --user is-active --quiet omanova-worker.service; then
+    systemctl --user stop omanova-worker.service
+fi
+flock -n "$state/watch.lock" true || {
+    printf 'A foreground worker is running. Stop it before installing, then retry.\n' >&2
+    exit 1
+}
 ./setup-runtime
 
 # Omarchy owns plugin installation. Do not silently mix widget and runtime versions.
 if [[ ! -e "$plugin/manifest.json" ]]; then
-    omarchy plugin add https://github.com/shaggyrs6-netizen/omanova.git --yes
+    omarchy plugin add "$stage/widget" --yes
+    git -C "$plugin" remote set-url origin "$repository"
+else
+    git -C "$plugin" merge --ff-only FETCH_HEAD
 fi
 for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml; do
     if ! cmp -s "$file" "$plugin/$file"; then
@@ -74,12 +121,29 @@ if [[ ! -e "$unit" ]]; then
     install -Dm644 systemd/omanova-worker.service "$unit"
 fi
 systemctl --user daemon-reload
+before=$(jq -r '.generated // ""' "$state/snapshot.json" 2>/dev/null || true)
 systemctl --user restart omanova-worker.service
+ready=0
+for ((attempt=0; attempt<60; attempt++)); do
+    if systemctl --user is-active --quiet omanova-worker.service &&
+       jq -e --arg before "$before" '(.generated | type == "string") and (.generated > $before)' "$state/snapshot.json" >/dev/null 2>&1; then
+        ready=1
+        break
+    fi
+    result=$(systemctl --user show -p ExecMainStatus --value omanova-worker.service)
+    [[ "$result" != 75 ]] || break
+    sleep 1
+done
+if (( ! ready )); then
+    printf 'Worker did not produce a fresh snapshot. Check: journalctl --user -u omanova-worker.service\n' >&2
+    printf 'Stop any foreground worker before retrying. Login startup was not changed.\n' >&2
+    exit 1
+fi
 if (( autostart )); then
     systemctl --user enable omanova-worker.service
 fi
-systemctl --user is-active --quiet omanova-worker.service
 printf 'OMANOVA is ready. Set your observing location and opt into feeds in Settings.\n'
+printf 'After an upgrade, run omarchy restart shell to reload the bar, then reopen OMANOVA.\n'
 if (( autostart )); then
     printf 'The hidden worker will start at login.\n'
 else
