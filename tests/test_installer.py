@@ -63,6 +63,15 @@ elif action=='show': print('0')
 set -eu
 if [[ $2 == add ]]; then
  git clone -q "$3" "$HOME/.config/omarchy/plugins/io.github.shaggyrs6-netizen.omanova"
+elif [[ $2 == list ]]; then
+ count=$(cat "$QA/discovery-count" 2>/dev/null || echo 0)
+ count=$((count + 1))
+ echo "$count" >"$QA/discovery-count"
+ if [[ -f "$QA/discovery-never" ]] || { [[ -f "$QA/discovery-delay" ]] && ((count < 3)); }; then
+  echo '[]'
+ else
+  echo '[{"id":"io.github.shaggyrs6-netizen.omanova"}]'
+ fi
 fi
 ''')
         self.script(self.bin / 'uv', '#!/bin/bash\nexit 0\n')
@@ -106,6 +115,20 @@ printf '%s\\n' "$*" >"$QA/sudo-called"
         result = self.run_install('--autostart')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.root / 'enabled').exists())
+
+    def test_delayed_shell_discovery(self):
+        (self.root / 'discovery-delay').touch()
+        result = self.run_install()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.root / 'discovery-count').read_text().strip(), '3')
+
+    def test_missing_shell_discovery_is_bounded(self):
+        (self.root / 'discovery-never').touch()
+        result = self.run_install('--autostart')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('has not discovered', result.stderr)
+        self.assertFalse((self.root / 'enabled').exists())
+        self.assertFalse((self.root / 'running').exists())
 
     def test_worker_failure_does_not_enable_or_claim_success(self):
         (self.root / 'fail-worker').touch()
