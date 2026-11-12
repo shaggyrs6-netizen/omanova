@@ -1,8 +1,9 @@
-# OMANOVA 0.1.2 — held local candidate
+# OMANOVA 0.1.2 — release validation and maintenance
 
-12 November 2026. Terrain preview accepted for live local installation. No publication authorised. Lee has asked for the terrain
-horizon to be the last feature update for now, followed by testing,
-documentation and a release decision. Do not add further feature scope.
+12 November 2026. The accepted terrain integration completes this feature pass.
+GitHub source and release publication are authorised; marketplace submission
+or update is not. This document records validation limits and maintenance
+follow-up. The complete user-facing change list is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Included in this source
 
@@ -29,15 +30,14 @@ documentation and a release decision. Do not add further feature scope.
 
 ## Completed acceptance checks
 
-- Sleep/resume: passed, confirmed by Lee on 12 November 2026. Removed from
+- Sleep/resume: passed, confirmed by the maintainer on 12 November 2026. Removed from
   the outstanding list. This records his hands-on check; no additional
   instrumented suspend/resume test was run in this documentation update.
 
-## Remaining gates
+## Validation and maintenance follow-up
 
-1. Local trial of the accepted terrain integration; preserve existing manual
-   horizons and saved data. Terrain downloads remain explicit. No further
-   feature additions are planned for this release.
+1. The terrain preview was accepted and installed for local use. Preserve
+   manual horizons and saved data during upgrades; terrain downloads remain explicit.
 2. Everyday trial and any resulting fixes.
 3. Clear visual confirmation of a synthetic desktop notification. Delivery
    and deduplication were tested; the earlier visual answer was tentative.
@@ -49,8 +49,9 @@ documentation and a release decision. Do not add further feature scope.
    Comet positions currently end at 2026-12-12T00:00Z; do not ship expired
    coverage as fresh. Final thumbnail/release description must reflect the
    accepted scope and distinguish estimates from confirmed visibility.
-6. Lee explicitly authorises GitHub upload/release and marketplace update.
-   Do not push/tag/upload merely because a local package passes tests.
+6. GitHub publication is authorised for 0.1.2. Do not submit, comment on or
+   update the marketplace as part of this release. Any later marketplace
+   action needs a separate instruction.
 
 ## Local packaging
 
@@ -61,9 +62,8 @@ new directory under `.preview/release-candidates/`, containing the source
 archive, SHA256 checksum, exact source commit and included-file inventory.
 It does not install, start services, access a remote or publish anything.
 
-The archive includes the automatic installer. Until a matching release tag
-exists publicly, test setup from a local Git checkout: the archive installer
-normally obtains the matching version tag and compares widget bytes. Do not
-run that remote-tag path for this held candidate. Tests stub external system
+The archive includes the automatic installer. The archive installer obtains its
+matching version tag and compares widget bytes. Before publishing a new tag,
+test from a local Git checkout rather than relying on an unpublished remote tag. Tests stub external system
 services and exercise real local Git/file operations. A local archive is not
 proof of a published version or full clean-machine acceptance.
