@@ -24,6 +24,8 @@ from observatory.moon.moon import intervals
 from observatory.meteors.meteors import CATALOG as METEORS
 from observatory.trips.horizon import altitude as horizon_altitude,validate as validate_horizon,place_key
 
+from observatory.trips.terrain import observing_height,load_profile,estimate,combined_altitude
+
 UTC=timezone.utc
 PLANETS=('Mercury','Venus','Mars','Jupiter','Saturn')
 
@@ -42,7 +44,9 @@ def validate_place(raw):
     if not name or len(name)>64 or not all(map(isfinite,(lat,lon,elevation))):raise ValueError('Enter a short place name and finite coordinates')
     if not -90<=lat<=90 or not -180<=lon<=180 or not -500<=elevation<=9000:raise ValueError('Coordinates or elevation are outside supported ranges')
     tz=raw.get('timezone');zone(tz)
-    return {'name':name,'lat':lat,'lon':lon,'elevation':elevation,'timezone':tz,'horizon':validate_horizon(raw.get('horizon',[]))}
+    if type(raw.get('useTerrain',False)) is not bool:raise ValueError('Choose whether to use the terrain estimate')
+    return {'name':name,'lat':lat,'lon':lon,'elevation':elevation,'timezone':tz,'horizon':validate_horizon(raw.get('horizon',[])),
+            'observingHeight':observing_height(raw.get('observingHeight',1.7)),'useTerrain':raw.get('useTerrain',False)}
 
 
 def validate_config(raw):
@@ -100,7 +104,7 @@ def weather_for(place,start,end,state,enabled,now,fetch=get_json):
 
 def geometry(eph,ts,place,day,config,hours,fetched,now):
     start,end=night_bounds(day,place['timezone'])
-    site=wgs84.latlon(place['lat'],place['lon'],elevation_m=place['elevation'])
+    site=wgs84.latlon(place['lat'],place['lon'],elevation_m=place['elevation']+place.get('observingHeight',1.7))
     observer=eph['earth']+site
     def sun_alt(t):return observer.at(t).observe(eph['sun']).apparent().altaz()[0].degrees
     def dark(t):return sun_alt(t)<=-18
@@ -121,9 +125,9 @@ def geometry(eph,ts,place,day,config,hours,fetched,now):
         def possible(t):return (sun_alt(t)<=-6)&(position(t)[0].degrees>=minimum)
         def clear(t):
             alt,az,_=position(t)
-            return possible(t)&(alt.degrees>horizon_altitude(az.degrees,place['horizon']))
+            return possible(t)&(alt.degrees>combined_altitude(az.degrees,place['horizon'],place.get('_terrain')))
         possible.step_days=clear.step_days=1/1440
-        base=list(intervals(ts,start,end,possible));usable=list(intervals(ts,start,end,clear)) if place['horizon'] else base
+        base=list(intervals(ts,start,end,possible));usable=list(intervals(ts,start,end,clear)) if place['horizon'] or place.get('_terrain') else base
         windows=[]
         for a,b in usable:
             if (b-a).total_seconds()<60:continue
@@ -153,11 +157,11 @@ def station_windows(eph,ts,place,start,end,config,orbit):
     catalogue={row['NORAD_CAT_ID']:STATIONS[row['NORAD_CAT_ID']] for row in fresh}
     covered_end=min(end,min(utc(row['EPOCH'])+timedelta(hours=72) for row in fresh))
     if covered_end<=start:return [],'Newer orbital elements are needed for these dates.'
-    prediction_place={**place,'id':'trip-'+hashlib.sha256(place_key(place).encode()).hexdigest()[:12]}
+    prediction_place={**place,'elevation':place['elevation']+place.get('observingHeight',1.7),'id':'trip-'+hashlib.sha256(place_key(place).encode()).hexdigest()[:12]}
     try:passes=predict(fresh,ts,eph,prediction_place,start,days=(covered_end-start).total_seconds()/86400,catalog=catalogue)
     except (ValueError,TypeError,KeyError):return [],'Cached station data are invalid; the Moon/planet comparison is still available.'
     models={row['NORAD_CAT_ID']:EarthSatellite.from_omm(ts,row) for row in fresh}
-    site=wgs84.latlon(place['lat'],place['lon'],elevation_m=place['elevation'])
+    site=wgs84.latlon(place['lat'],place['lon'],elevation_m=place['elevation']+place.get('observingHeight',1.7))
     result=[]
     for item in passes:
         for window in item['windows']:
@@ -167,9 +171,9 @@ def station_windows(eph,ts,place,start,end,config,orbit):
             def position(t):return (sat-site).at(t).altaz()
             def clear(t):
                 alt,az,_=position(t)
-                return alt.degrees>horizon_altitude(az.degrees,place['horizon'])
+                return alt.degrees>combined_altitude(az.degrees,place['horizon'],place.get('_terrain'))
             clear.step_days=1/86400
-            segments=list(intervals(ts,first,last,clear)) if place['horizon'] else [(first,last)]
+            segments=list(intervals(ts,first,last,clear)) if place['horizon'] or place.get('_terrain') else [(first,last)]
             for a,b in segments:
                 if (b-a).total_seconds()<2:continue
                 points=[a+(b-a)*i/60 for i in range(61)]
@@ -187,11 +191,15 @@ def compare(config,state,now=None,orbit=None,schedule=None):
     ts=load.timescale(builtin=True)
     result={'generated':iso(now),'home':{},'destination':{},'dates':[d.isoformat() for d in days],
         'basis':'Each column uses its own local evening on the selected date (local noon to the following noon), not the same UTC interval.',
-        'limits':'Manual horizon estimates exclude trees/buildings only. They do not model light pollution, terrain distance, cloud transparency or actual sighting probability.'}
+        'limits':'Manual obstructions and any enabled terrain estimate clip viewing windows. Terrain is sampled within 50 km only; narrow/distant ridges can be missed. These estimates do not model light pollution, cloud transparency or sighting probability.'}
     orbit=orbit if orbit is not None else read(DEFAULT_STATE/'orbit.json',{})
     with closing(load_file(str(ROOT/'assets/de440s.bsp'))) as eph:
         for key in ('home','destination'):
-            place=config[key];start=night_bounds(days[0],place['timezone'])[0];end=night_bounds(days[-1],place['timezone'])[1]
+            place=config[key]
+            if place['useTerrain']:
+                place['_terrain']=load_profile(place,state)
+                if not place['_terrain']:raise ValueError('Terrain estimate missing for this location/height. Estimate it again or switch terrain off; manual obstructions remain.')
+            start=night_bounds(days[0],place['timezone'])[0];end=night_bounds(days[-1],place['timezone'])[1]
             hours,fetched,weather_note=weather_for(place,start,end,state,config['weather'],now)
             nights=[geometry(eph,ts,place,d,config,hours,fetched,now) for d in days]
             stations,station_note=station_windows(eph,ts,place,start,end,config,orbit)
@@ -245,15 +253,26 @@ def initialise(state,fixture):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('command',choices=('init','compare','lookup'));p.add_argument('--state',type=Path,required=True);p.add_argument('--fixture',action='store_true');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('command',choices=('init','compare','lookup','terrain','terrain-status'));p.add_argument('--state',type=Path,required=True);p.add_argument('--fixture',action='store_true');p.add_argument('--copy-trip',type=Path);args=p.parse_args()
     state=args.state.resolve()
     if state==DEFAULT_STATE.resolve() or DEFAULT_STATE.resolve() in state.parents:raise ValueError('Use a separate preview directory')
     os.umask(0o077);state.mkdir(mode=0o700,parents=True,exist_ok=True);state.chmod(0o700)
-    if args.command=='init':initialise(state,args.fixture);return
+    if args.command=='init':
+        if args.copy_trip and not (state/'trip.json').exists() and args.copy_trip.is_file():
+            config=validate_config(read(args.copy_trip,{}));config['weather']=False
+            # A preview copy never silently enables terrain from another state directory.
+            for key in ('home','destination'):config[key]['useTerrain']=False
+            write(state/'trip.json',config)
+        initialise(state,args.fixture);return
     raw=sys.stdin.buffer.readline(65537)
     if len(raw)>65536 or not raw.endswith(b'\n'):raise ValueError('Expected one bounded request on stdin')
     try:payload=json.loads(raw)
     except (ValueError,UnicodeError):raise ValueError('Could not read the preview request') from None
+    if args.command in ('terrain','terrain-status'):
+        place=validate_place(payload['place'])
+        if args.command=='terrain-status':profile=load_profile(place,state)
+        else:profile=estimate(place,state,allowed=payload.get('download',False))
+        print(json.dumps(profile));return
     if args.command=='lookup':
         from place_lookup import search
         rows=search(payload)

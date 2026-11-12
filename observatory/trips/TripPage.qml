@@ -20,6 +20,29 @@ Item {
     property int resultRevision:-1
     property int editingSector:-1
     property bool cooling:false
+    readonly property bool terrainPreview:Quickshell.env("OMANOVA_TERRAIN_PREVIEW")==="1"
+    property var terrainProfile:null
+    property string terrainPending:""
+    property string terrainRequestKey:""
+    property string terrainAction:"terrain-status"
+    function terrainKey() {return root.editing+":"+key(root.current)+":"+Number(root.current.observingHeight??1.7)}
+    function readTerrain(action) {
+        if(terrainJob.running||!root.draft)return
+        terrainAction=action;terrainRequestKey=terrainKey()
+        terrainPending=JSON.stringify({place:root.current,download:action==="terrain"&&downloadTerrain.checked})+"\n"
+        terrainJob.stdinEnabled=true;terrainJob.running=true
+        if(action==="terrain")root.message="Estimating terrain… regional tiles can take a few minutes on first use. Manual obstructions are kept."
+    }
+    function useTerrain(enabled) {
+        let d=copy(draft);d[editing].useTerrain=enabled;draft=d;revision++
+    }
+    function changeHeight() {
+        const value=Number(observerHeight.text)
+        if(!observerHeight.text.trim()||!Number.isFinite(value)||value<0||value>100){root.message="Enter a height from 0 to 100 metres above ground.";return}
+        let d=copy(draft);d[editing].observingHeight=value;d[editing].useTerrain=false;draft=d
+        revision++;terrainProfile=null;readTerrain("terrain-status")
+        root.message="Observing height changed. Recheck your measured trees/buildings at this height; their angles were kept."
+    }
     readonly property string statePath:Quickshell.env("OMANOVA_TRIP_STATE")
     readonly property string runtime:Quickshell.env("OMANOVA_TRIP_RUNTIME")
     readonly property var current: draft ? draft[editing] : ({ name:"",lat:0,lon:0,elevation:0,timezone:"UTC",horizon:[] })
@@ -29,8 +52,9 @@ Item {
     function setSite(which,site) {
         let d=copy(draft), store=d.horizonStore||({})
         const previous=d[which];store[key(previous)]=previous.horizon
+        if(key(previous)===key(site)){site.observingHeight=previous.observingHeight??1.7;site.useTerrain=previous.useTerrain===true}
         site.horizon=store[key(site)]||[]
-        d[which]=site;d.horizonStore=store;draft=d;revision++;editingSector=-1;fillManual()
+        d[which]=site;d.horizonStore=store;draft=d;revision++;editingSector=-1;terrainProfile=null;fillManual();readTerrain("terrain-status")
     }
     function setMask(sectors) {
         let d=copy(draft),site=copy(current);site.horizon=sectors;d[editing]=site
@@ -41,9 +65,9 @@ Item {
     }
     function fillManual() {
         placeName.text=current.name;latitude.text=String(current.lat);longitude.text=String(current.lon)
-        elevation.text=String(current.elevation);tz.text=current.timezone
+        elevation.text=String(current.elevation);tz.text=current.timezone;observerHeight.text=String(current.observingHeight??1.7)
     }
-    function switchPlace(which) {editing=which;editingSector=-1;obstructionName.clear();fillManual()}
+    function switchPlace(which) {editing=which;editingSector=-1;obstructionName.clear();terrainProfile=null;fillManual();readTerrain("terrain-status")}
     function shiftDate(field,days) {
         const d=new Date(field.text+"T12:00:00Z")
         if(!Number.isFinite(d.getTime()) || d.toISOString().slice(0,10)!==field.text) {message="Enter a valid YYYY-MM-DD date first.";return}
@@ -58,7 +82,7 @@ Item {
     FileView {
         id:configFile;path:root.statePath+"/trip.json";printErrors:false
         onLoaded: {
-            try {root.draft=JSON.parse(text());firstDate.text=root.draft.start;lastDate.text=root.draft.end;weather.checked=false;root.fillManual()}
+            try {root.draft=JSON.parse(text());firstDate.text=root.draft.start;lastDate.text=root.draft.end;weather.checked=false;root.fillManual();root.readTerrain("terrain-status")}
             catch(e) {root.message="Could not read the trip settings."}
         }
     }
@@ -88,6 +112,24 @@ Item {
             else root.message="Lookup unavailable. Manual coordinates and time zone are still available."
         }
     }
+    Process {
+        id:terrainJob
+        command:[root.runtime+"/.venv/bin/python",root.runtime+"/observatory/trips/trips.py",root.terrainAction,"--state",root.statePath]
+        environment:({"OPENBLAS_NUM_THREADS":"1"});stdinEnabled:true
+        onStarted:{write(root.terrainPending);root.terrainPending="";stdinEnabled=false}
+        stdout:StdioCollector {id:terrainOutput}
+        stderr:StdioCollector {id:terrainError}
+        onExited:function(code) {
+            downloadTerrain.checked=false
+            if(root.terrainRequestKey!==root.terrainKey())return
+            if(code===0) {
+                try {
+                    root.terrainProfile=JSON.parse(terrainOutput.text)
+                    if(root.terrainAction==="terrain"&&root.terrainProfile){root.useTerrain(true);root.message="Terrain estimate ready. Manual trees/buildings were kept. Save & compare to apply it to viewing windows."}
+                } catch(e) {root.message="Could not read the terrain estimate. Manual obstructions were kept."}
+            } else root.message=terrainError.text.trim()||"Terrain unavailable. Manual obstructions were kept."
+        }
+    }
     Timer {interval:5000;running:root.cooling;onTriggered:root.cooling=false}
         Rectangle {
             id:ui;anchors.fill:parent;color:"#070d1b"
@@ -98,15 +140,15 @@ Item {
                 anchors.fill:parent;spacing:0
                 ColumnLayout {
                     Layout.fillWidth:true;Layout.margins:20;spacing:6
-                    Copy {text:"O M A N O V A   /   TRIP PLANNER";color:"#70edeb";font.pixelSize:12}
+                    Copy {text:root.terrainPreview?"O M A N O V A   /   TERRAIN PREVIEW":"O M A N O V A   /   TRIP PLANNER";color:"#70edeb";font.pixelSize:12}
                     Heading {text:qsTr("Trip Planner & My Horizon")}
-                    Copy {text:qsTr("Plan a trip without changing your active observing location or alerts. Trip and horizon settings are saved locally.");color:"#a7b7ce"}
+                    Copy {text:root.terrainPreview?qsTr("Separate terrain preview · live locations, horizons, alerts and bar are unchanged. Save & compare keeps this preview locally."):qsTr("Plan a trip without changing your active observing location or alerts. Trip and horizon settings are saved locally.");color:"#a7b7ce"}
                     Flow {
                         Layout.fillWidth:true;spacing:8
                         TripButton {text:qsTr("1 · Destination & dates");onClicked:root.tab=0}
                         TripButton {text:qsTr("2 · My horizon");onClicked:root.tab=1}
                         TripButton {text:qsTr("3 · Compare");enabled:!!root.result;onClicked:root.tab=2}
-                        TripButton {text:calculate.running?qsTr("Calculating…"):qsTr("Save & compare nights");enabled:!!root.draft&&!calculate.running;onClicked:root.compare()}
+                        TripButton {text:calculate.running?qsTr("Calculating…"):qsTr("Save & compare nights");enabled:!!root.draft&&!calculate.running&&!terrainJob.running;onClicked:root.compare()}
                     }
                     Copy {text:root.message;visible:text.length>0;color:"#ffcc7b"}
                 }
@@ -192,7 +234,31 @@ Item {
                             Heading {text:qsTr("My horizon · %1").arg(root.current.name)}
                             Flow {Layout.fillWidth:true;spacing:8;TripButton {text:qsTr("Home horizon");onClicked:root.switchPlace("home")} TripButton {text:qsTr("Destination horizon");onClicked:root.switchPlace("destination")}}
                             Copy {text:qsTr("True north = 0°/360°, east = 90°. A range such as 330° → 30° crosses north. Heights are your estimates above the horizon, not a terrain survey.");color:"#a7b7ce"}
-                            HorizonChart {Layout.fillWidth:true;Layout.preferredHeight:200;sectors:root.current.horizon}
+                            Heading {text:qsTr("Estimated terrain")}
+                            Copy {text:qsTr("Keep manual trees/buildings below. The terrain layer estimates hills and ridges; the higher layer blocks the view.");color:"#a7b7ce"}
+                            RowLayout {
+                                Layout.fillWidth:true
+                                Copy {text:qsTr("Observing height above ground (metres)")}
+                                TripField {id:observerHeight;Layout.preferredWidth:90;maximumLength:8;Accessible.name:qsTr("Observing height above ground in metres")}
+                                TripButton {text:qsTr("Apply height");enabled:!terrainJob.running&&!calculate.running;onClicked:root.changeHeight()}
+                            }
+                            Copy {text:qsTr("Use your eye/telescope height, including a balcony if applicable. Changing it does not automatically adjust your measured tree/building angles.");color:"#a7b7ce"}
+                            Toggle {id:downloadTerrain;text:qsTr("Allow one-time terrain download for this estimate");enabled:!terrainJob.running}
+                            Copy {text:qsTr("Requests coarse 1° regional tiles from AWS, never your entered name or exact coordinates. Cached tiles are reused offline. Up to 16 tiles, 32 MB each; no background refresh. Calculation covers 50 km, from 70°S to 70°N.");color:"#a7b7ce"}
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                TripButton {text:terrainJob.running?qsTr("Working…"):qsTr("Estimate terrain");enabled:!!root.draft&&!terrainJob.running&&!calculate.running;onClicked:root.readTerrain("terrain")}
+                                Toggle {text:qsTr("Use estimated terrain in comparison");checked:root.current.useTerrain===true;enabled:!!root.terrainProfile&&!terrainJob.running&&!calculate.running;onClicked:root.useTerrain(checked)}
+                            }
+                            Copy {text:root.terrainProfile ? "Estimated terrain · computed "+root.terrainProfile.created.slice(0,10)+" · height "+root.terrainProfile.observingHeight+" m · grid ground "+root.terrainProfile.groundElevation+" m" : "No terrain estimate loaded for this location and height. Manual obstructions still work.";color:"#ffcc7b"}
+                            Copy {visible:!!root.terrainProfile;text:root.terrainProfile?.limits||"";color:"#a7b7ce"}
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                TripButton {text:qsTr("Terrain source & coverage");onClicked:Qt.openUrlExternally("https://registry.opendata.aws/terrain-tiles/")}
+                                TripButton {text:qsTr("Terrain data credits");onClicked:Qt.openUrlExternally("https://github.com/tilezen/joerd/blob/master/docs/attribution.md")}
+                            }
+                            Copy {text:qsTr("Cyan: manual trees/buildings · amber: terrain estimate. Use terrain toggle controls whether the amber layer affects comparisons.");color:"#a7b7ce"}
+                            HorizonChart { terrain:root.terrainProfile?.samples||[];Layout.fillWidth:true;Layout.preferredHeight:200;sectors:root.current.horizon}
                             Copy {text:qsTr("The shaded area is blocked. Overlaps use the higher edge. A hidden Moon can still brighten the sky, so the mask does not change astronomical darkness. These masks apply to trip comparisons; active-location alerts are unchanged.");color:"#a7b7ce"}
                             Repeater {
                                 model:root.current.horizon
@@ -217,7 +283,7 @@ Item {
                                 TripButton {text:root.editingSector>=0?qsTr("Update obstruction"):qsTr("Add obstruction");enabled:obstructionName.text.trim().length>0&&fromBearing.value!==toBearing.value&&(root.editingSector>=0||root.current.horizon.length<32);onClicked:{let rows=root.copy(root.current.horizon);let s={name:obstructionName.text.trim(),from:fromBearing.value,to:toBearing.value,height:obstructionHeight.value};if(root.editingSector>=0)rows[root.editingSector]=s;else rows.push(s);root.setMask(rows);root.editingSector=-1;obstructionName.clear()}}
                                 TripButton {text:qsTr("Cancel edit");visible:root.editingSector>=0;onClicked:{root.editingSector=-1;obstructionName.clear()}}
                             }
-                            Copy {text:qsTr("Save & compare nights to see which viewing windows survive. Horizon profiles are kept per observing point locally for trip planning.");color:"#a7b7ce"}
+                            Copy {text:qsTr("Save & compare nights to see which viewing windows survive. Horizon profiles are kept locally per observing point.");color:"#a7b7ce"}
                         }
                         ColumnLayout {
                             visible:root.tab===2&&!!root.result;Layout.fillWidth:true;Layout.margins:20;spacing:14
@@ -274,6 +340,14 @@ Item {
             function tab(index:int):void {root.tab=index}
             function compare():void {root.compare()}
             function summary():string {return JSON.stringify({ready:!!root.draft,busy:calculate.running,hasResult:!!root.result,homeZone:root.draft?.home?.timezone,destinationZone:root.draft?.destination?.timezone,dates:root.result?.dates,tab:root.tab,stale:root.staleResult})}
+            function terrainSample():void {
+                if(Quickshell.env("OMANOVA_TRIP_FIXTURE")==="1"){root.switchPlace("home");root.tab=1}
+            }
+            function fixtureEnableTerrain():void {
+                if(Quickshell.env("OMANOVA_TRIP_FIXTURE")==="1"&&root.terrainProfile)root.useTerrain(true)
+            }
+            function scrollPreview(y:real):void {if(Quickshell.env("OMANOVA_TRIP_FIXTURE")==="1")scroll.contentItem.contentY=y}
+            function terrainSummary():string {return JSON.stringify({busy:terrainJob.running,loaded:!!root.terrainProfile,enabled:root.current.useTerrain,height:root.current.observingHeight,samples:root.terrainProfile?.samples?.length})}
             function sampleHorizon():void {
                 if(Quickshell.env("OMANOVA_TRIP_FIXTURE")==="1") {root.switchPlace("destination");root.setMask([{name:"Sample east trees",from:45,to:135,height:30},{name:"Sample south roof",from:150,to:230,height:22}]);root.tab=1}
             }

@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+"""Create a local-only, tracked-source candidate. Never upload or install."""
+import gzip
+import hashlib
+import io
+import json
+from pathlib import Path
+import subprocess
+import tarfile
+
+root=Path(__file__).resolve().parent
+
+def git(*args):return subprocess.check_output(['git','-C',str(root),*args])
+
+if git('status','--porcelain','--untracked-files=no').strip():
+    raise SystemExit('Commit tracked changes before packaging; unrelated untracked files are excluded.')
+commit=git('rev-parse','HEAD').decode().strip()
+manifest=json.loads(git('show','HEAD:manifest.json'))
+version=manifest['version']
+if not all(c in '0123456789.' for c in version):raise SystemExit('Unexpected version')
+raw=git('archive','--format=tar',f'--prefix=omanova-{version}/','HEAD')
+with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
+    names=[m.name for m in archive.getmembers() if m.isfile()]
+    required=['install','setup-runtime','systemd/omanova-worker.service','observatory/trips/terrain.py',
+              'observatory/trips/TripPage.qml','preview-terrain','RELEASE-READINESS.md','assets/terrain-attribution.txt']
+    if any(f'omanova-{version}/{f}' not in names for f in required):raise SystemExit('Missing required candidate file')
+    if any('/.preview/' in n or '/.venv/' in n or n.endswith('.bsp') for n in names):raise SystemExit('Private/cache/runtime artifact in archive')
+out=root/'.preview/release-candidates'/f'v{version}-terrain-{commit[:8]}'
+out.mkdir(parents=True,exist_ok=False,mode=0o700)
+name=f'omanova-{version}-candidate.tar.gz'
+blob=gzip.compress(raw,mtime=0)
+(out/name).write_bytes(blob)
+(out/'SHA256SUMS').write_text(hashlib.sha256(blob).hexdigest()+'  '+name+'\n')
+(out/'SOURCE-COMMIT.txt').write_text(commit+'\n')
+(out/'INVENTORY.json').write_text(json.dumps(names,indent=2)+'\n')
+(out/'HOLD.txt').write_text('LOCAL ACCEPTANCE CANDIDATE ONLY. Terrain preview acceptance and final release gates remain. No upload authorised.\n')
+print(out)

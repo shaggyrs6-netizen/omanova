@@ -6,6 +6,10 @@ OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
+> **Local 0.1.2 candidate — public release on hold.** Terrain changes are awaiting
+> preview acceptance. See [release readiness](RELEASE-READINESS.md) before packaging
+> or installing this development candidate. No public v0.1.2 tag is implied.
+
 ## Features and options
 
 | Area | What it offers |
@@ -22,6 +26,7 @@ compact fallback. Set your observing location manually under **Settings**.
 | Watchlist and Starlink Trains | Potential sunlit passes for bright satellites and recently tracked Starlink groups. Missing train data leaves visibility unconfirmed. |
 | Aurora | NOAA-based model sightlines and a separate global Kp outlook. Missing or stale data is uncertain. |
 | Dark-Sky Sites | Regional sample catalogue for Middle Tennessee and nearby states, with driving estimates, access and darkness evidence. |
+| Trip Planner & My Horizon | Destination/date comparison with Home, both time zones, manual obstruction profiles and observing height. Opt-in terrain estimates are in a separate acceptance preview. |
 | Observing Log | Local entries with what you saw, place, time and notes. |
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
@@ -581,3 +586,41 @@ Trip settings, horizons and results stay locally in `.preview/trip-user/`
 (fixture mode uses `.preview/trip-fixture/`). **Save & compare** persists
 edits; forecast consent resets when reopening. The preview does not alter
 live locations, the observing log, bar integration, worker or autostart.
+
+## Terrain horizon acceptance preview
+
+Run `./preview-terrain` (or `--fixture` for public sample locations). It opens
+an isolated window and copies the existing trip settings read-only on first
+use, including manual tree/building sectors. Live locations, the observing
+log, bar, worker and autostart are not changed. State stays in the ignored
+`.preview/terrain-user/` directory; fixture state is separate.
+
+Under **My horizon**, choose Home or destination, enter observing height
+above ground in metres and press **Apply height**. The default is 1.7 m;
+include any balcony/platform height. Existing manual obstruction angles are
+kept and should be checked from the new height. Enable the one-time terrain
+download and press **Estimate terrain**. If the tiles/profile are cached,
+estimation works offline without download consent. An amber skyline shows
+the estimate; manual sectors remain cyan. **Use estimated terrain in
+comparison** controls the extra layer, and **Save & compare nights** stores
+the choice. The larger of the manual and terrain angles blocks each bearing.
+
+The provider receives coarse 1° tile identifiers, not names or exact
+coordinates. Calculation is local, with at most 16 bounded tile downloads
+and a 180-second overall attempt limit. Downloads and forecasts are separate
+opt-ins; neither is scheduled by this preview. Cache/profile keys include
+location and observing height. Changing height invalidates the selected
+estimate without deleting manual sectors or the old cached estimate.
+
+This first version samples from 100 m to 50 km every 100 m at 0.5° bearing
+steps, using nominal 1 arc-second Skadi grids. It accounts for spherical
+Earth curvature, with no atmospheric-refraction correction. Narrow ridges,
+nearby ground features and mountains beyond 50 km can be missed. Data age
+and source accuracy vary; sample spacing is not an accuracy guarantee.
+Coverage is bounded to 70°S–70°N. Missing/invalid tiles never become a flat
+skyline: the operation reports unavailable and keeps manual obstructions.
+Enabled terrain with a missing profile blocks comparison until recalculated
+or disabled. Trees, roofs and actual visibility still need local judgement.
+
+Data source/attribution: [Terrain Tiles](https://registry.opendata.aws/terrain-tiles/),
+[provider notices](assets/terrain-attribution.txt) and [data sources](DATA-SOURCES.md).

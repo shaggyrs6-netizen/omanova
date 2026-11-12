@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+fixture=0
+case "${1:-}" in
+ "") ;;
+ --fixture) fixture=1 ;;
+ *) printf 'Usage: %s [--fixture]\n' "$0" >&2; exit 2 ;;
+esac
+[[ $# -le 1 ]] || exit 2
+umask 077
+if ((fixture)); then state="$PWD/.preview/terrain-fixture"; else state="$PWD/.preview/terrain-user"; fi
+args=(--copy-trip "${XDG_DATA_HOME:-$HOME/.local/share}/omanova-trips/trip.json"); if ((fixture)); then args=(--fixture); fi
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/trips/trips.py init --state "$state" "${args[@]}"
+display=${WAYLAND_DISPLAY:?Run from a Wayland session}
+[[ $display == /* ]] || display="${XDG_RUNTIME_DIR:?}/$display"
+export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omanova-trip.XXXXXX)"
+export WAYLAND_DISPLAY="$display" QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+export OMANOVA_TRIP_STATE="$state" OMANOVA_TRIP_RUNTIME="$PWD" OMANOVA_TRIP_FIXTURE="$fixture"
+export OPENBLAS_NUM_THREADS=1 OMANOVA_TERRAIN_PREVIEW=1
+exec qs -n --no-color -p "$PWD/observatory/trips/TerrainWindow.qml"

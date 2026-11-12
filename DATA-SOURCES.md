@@ -34,3 +34,16 @@ maintainer staging command, not an automatic user download. It validates
 timestamps, coverage, response bounds and coordinates before writing a new
 file. Existing frozen comet fixtures are preserved separately for regression
 checks. Meteor activity dates and selected 2027 peaks use IMO calendar Table 5.
+
+## Terrain horizon estimates
+
+The opt-in terrain preview uses [Mapzen / Tilezen Terrain Tiles on AWS](https://registry.opendata.aws/terrain-tiles/),
+Skadi one-degree HGT tiles. [Format](https://github.com/tilezen/joerd/blob/master/docs/formats.md),
+[source coverage](https://github.com/tilezen/joerd/blob/master/docs/data-sources.md) and
+[provider attribution/licences](https://github.com/tilezen/joerd/blob/master/docs/attribution.md).
+Each estimate retains its calculation time and tile identifiers; calculation/download
+time is not the survey date. Regional source accuracy and vintage vary. Nominal
+1 arc-second sampling does not imply one-metre positional or vertical accuracy.
+Derived skyline profiles remain local. Provider data is not covered by OMANOVA's MIT licence.
+The complete provider attribution notice is included in `assets/terrain-attribution.txt`
+and the interface links to the provider's licence page.
