@@ -34,7 +34,7 @@ if [[ $fixture == 0 ]]; then
     mkdir -p "$plume_schedule"
 fi
 mkdir -p "$state"/{config,cache,qml} "$launch_state"
-for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml SkyState.qml SettingsPage.qml ObservingPreferences.qml OpportunityCard.qml UnifiedEventsPage.qml SkyPanel.qml Compass.qml; do
+for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml observatory/trips/{TripPage,TripButton,TripField,TripChoice,TripSpin,TripNightCard,HorizonChart}.qml SkyState.qml SettingsPage.qml ObservingPreferences.qml OpportunityCard.qml UnifiedEventsPage.qml SkyPanel.qml Compass.qml; do
     ln -sfn "$PWD/$file" "$state/qml/${file##*/}"
 done
 if [[ $settings_trial == 1 ]]; then
@@ -72,5 +72,15 @@ export OMASKY_AURORA="$XDG_RUNTIME_DIR/aurora.json" OMASKY_AURORA_TOOL="$PWD" OM
 if [[ $fixture == 0 ]]; then export OMASKY_AURORA_MODE=live; else export OMASKY_AURORA_MODE=fixture; fi
 export OMASKY_DARK_SITES="$PWD/observatory/dark-sites/sites.json" OMASKY_DARK_SITES_EMBEDDED=1
 export OMASKY_LOG_STATE="$data/observing-log" OMASKY_LOG_TOOL="$PWD" OMASKY_LOG_EMBEDDED=1
+# Persistent trip data is separate from active observing settings and the log.
+if [[ $fixture == 0 ]]; then
+    trip_state="${XDG_DATA_HOME:-$HOME/.local/share}/omanova-trips"
+    trip_args=()
+else
+    trip_state="$state/trips"
+    trip_args=(--fixture)
+fi
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/trips/trips.py init --state "$trip_state" "${trip_args[@]}"
+export OMANOVA_TRIP_STATE="$trip_state" OMANOVA_TRIP_RUNTIME="$PWD" OMANOVA_TRIP_FIXTURE="$fixture"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
 exec qs --no-color -n -p "$state/qml/Window.qml" "$@"

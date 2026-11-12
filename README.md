@@ -539,7 +539,18 @@ The preview keeps entries in a private, persistent file under
 `.preview/observing-log/data/`. It makes no network requests and does not
 read the live observing location or write to the live Observatory.
 
-## Trip Planner & My Horizon preview
+## Trip Planner & My Horizon
+
+The live Observatory includes a **Trip Planner** tab with destination/date
+selection, **My horizon**, and Home/destination comparison. Trip settings
+are stored privately under `$XDG_DATA_HOME/omanova-trips/` (normally
+`~/.local/share/omanova-trips/`), separately from saved observing locations
+and the observing log. Editing Home here changes the trip copy only.
+Horizon masks currently affect trip comparisons, not worker alerts.
+Forecast consent resets when the Observatory reopens.
+
+The standalone preview remains available for isolated testing:
+
 
 Run `./preview-trip-planner` for a separate window, or add `--fixture` for
 public sample locations. Choose a destination and 1–14 observing nights,
