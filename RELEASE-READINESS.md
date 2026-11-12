@@ -27,13 +27,18 @@ documentation and a release decision. Do not add further feature scope.
 - Upgrade instructions include restarting the worker through `./install`
   and reloading the shell/reopening the Observatory afterwards.
 
+## Completed acceptance checks
+
+- Sleep/resume: passed, confirmed by Lee on 12 November 2026. Removed from
+  the outstanding list. This records his hands-on check; no additional
+  instrumented suspend/resume test was run in this documentation update.
+
 ## Remaining gates
 
 1. Local trial of the accepted terrain integration; preserve existing manual
    horizons and saved data. Terrain downloads remain explicit. No further
    feature additions are planned for this release.
-2. Everyday trial and any resulting fixes. Actual sleep/resume remains
-   explicitly deferred; take a fresh baseline when Lee elects to test it.
+2. Everyday trial and any resulting fixes.
 3. Clear visual confirmation of a synthetic desktop notification. Delivery
    and deduplication were tested; the earlier visual answer was tentative.
 4. Rebuild the final archive from the accepted committed source, rerun
