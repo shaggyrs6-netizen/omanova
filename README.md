@@ -6,8 +6,7 @@ OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Local 0.1.2 candidate — public release on hold.** Terrain changes are awaiting
-> preview acceptance. See [release readiness](RELEASE-READINESS.md) before packaging
+> **Local 0.1.2 candidate — public release on hold.** Terrain preview accepted; the integrated build is in local testing. See [release readiness](RELEASE-READINESS.md) before packaging
 > or installing this development candidate. No public v0.1.2 tag is implied.
 
 ## Features and options
@@ -26,7 +25,7 @@ compact fallback. Set your observing location manually under **Settings**.
 | Watchlist and Starlink Trains | Potential sunlit passes for bright satellites and recently tracked Starlink groups. Missing train data leaves visibility unconfirmed. |
 | Aurora | NOAA-based model sightlines and a separate global Kp outlook. Missing or stale data is uncertain. |
 | Dark-Sky Sites | Regional sample catalogue for Middle Tennessee and nearby states, with driving estimates, access and darkness evidence. |
-| Trip Planner & My Horizon | Destination/date comparison with Home, both time zones, manual obstruction profiles and observing height. Opt-in terrain estimates are in a separate acceptance preview. |
+| Trip Planner & My Horizon | Destination/date comparison with Home, both time zones, manual obstruction profiles and observing height. Opt-in terrain estimates combine with manual obstructions; a separate preview remains available. |
 | Observing Log | Local entries with what you saw, place, time and notes. |
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
@@ -587,9 +586,12 @@ Trip settings, horizons and results stay locally in `.preview/trip-user/`
 edits; forecast consent resets when reopening. The preview does not alter
 live locations, the observing log, bar integration, worker or autostart.
 
-## Terrain horizon acceptance preview
+## Terrain horizon estimates
 
-Run `./preview-terrain` (or `--fixture` for public sample locations). It opens
+Terrain and observing height are available under **Trip Planner → My horizon**
+in the Observatory. Downloads remain explicit and manual obstructions are preserved.
+
+For isolated testing, run `./preview-terrain` (or `--fixture` for public sample locations). It opens
 an isolated window and copies the existing trip settings read-only on first
 use, including manual tree/building sectors. Live locations, the observing
 log, bar, worker and autostart are not changed. State stays in the ignored

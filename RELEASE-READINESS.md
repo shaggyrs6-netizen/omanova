@@ -1,6 +1,6 @@
 # OMANOVA 0.1.2 — held local candidate
 
-12 November 2026. No publication authorised. Lee has asked for the terrain
+12 November 2026. Terrain preview accepted for live local installation. No publication authorised. Lee has asked for the terrain
 horizon to be the last feature update for now, followed by testing,
 documentation and a release decision. Do not add further feature scope.
 
@@ -17,7 +17,8 @@ documentation and a release decision. Do not add further feature scope.
   bar text and poor-weather labelling, compact fallback and location privacy
   fixes (private settings input on stdin rather than process arguments).
 - Trip Planner, Home/destination dates, both time zones and manual horizons.
-- Terrain/observing-height acceptance preview, preserving manual sectors.
+- Integrated terrain estimates and observing height, preserving manual sectors;
+  the isolated preview remains available.
 - Automatic setup: `install`, `setup-runtime`, pinned requirements and
   checksum-verified NASA ephemeris, matched widget revision, discovery timing
   retry from the iMac test, worker readiness checks and hidden user service.
@@ -28,9 +29,9 @@ documentation and a release decision. Do not add further feature scope.
 
 ## Remaining gates
 
-1. Lee accepts terrain preview; only then integrate/deploy the accepted
-   terrain revision to the live installation. Current live app includes
-   Trip Planner but not this terrain update.
+1. Local trial of the accepted terrain integration; preserve existing manual
+   horizons and saved data. Terrain downloads remain explicit. No further
+   feature additions are planned for this release.
 2. Everyday trial and any resulting fixes. Actual sleep/resume remains
    explicitly deferred; take a fresh baseline when Lee elects to test it.
 3. Clear visual confirmation of a synthetic desktop notification. Delivery
