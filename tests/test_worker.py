@@ -75,7 +75,7 @@ class WorkerTest(unittest.TestCase):
                    {"status": "Predictions ready"}, OSError("temporary failure")]
         with patch("worker.build_snapshot", side_effect=results) as refresh, patch(
             "worker.time.sleep", side_effect=[None, None, None, KeyboardInterrupt]
-        ) as sleep, patch("builtins.print"):
+        ) as sleep, patch("builtins.print"), patch("worker.schedule_planner"):
             with self.assertRaises(KeyboardInterrupt):
                 watch(self.state, fixture=True)
         self.assertEqual(refresh.call_args_list, [call(self.state, True)] * 4)

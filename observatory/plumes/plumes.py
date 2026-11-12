@@ -91,7 +91,7 @@ def evaluate(eph, ts, site, row, track, now, schedule_fresh, fixture):
                        if windows else "The supplied samples do not establish a usable local window.")}
 
 
-def prepare(output, schedule_path, fixture):
+def prepare(output, schedule_path, fixture, observer_state=None):
     if output.resolve().parent == DEFAULT_STATE.resolve():
         raise ValueError("Plume preview needs separate state")
     now = DEMO_NOW if fixture else datetime.now(UTC)
@@ -99,7 +99,7 @@ def prepare(output, schedule_path, fixture):
         place = {"lat": 36.1627, "lon": -86.7816, "elevation": 0}
         tracks = read(TRACK_DIR / "fixture-track.json", {})
     else:
-        place = location(settings_at(DEFAULT_STATE))
+        place = location(settings_at(observer_state or DEFAULT_STATE))
         if not place:
             raise ValueError("Set an observing location in OMANOVA first.")
         tracks = read(TRACK_DIR / "verified-tracks.json", {})

@@ -165,7 +165,7 @@ def live_rows(eph, ts, site, state, now, online, launch_downloads):
     return output, recent is not None
 
 
-def prepare(output, state, fixture):
+def prepare(output, state, fixture, observer_state=None):
     if output.resolve().parent == DEFAULT_STATE.resolve() or state.resolve() == DEFAULT_STATE.resolve():
         raise ValueError("Train preview needs separate state")
     if fixture:
@@ -174,7 +174,7 @@ def prepare(output, state, fixture):
         online = False
     else:
         now = datetime.now(UTC)
-        settings = settings_at(DEFAULT_STATE)
+        settings = settings_at(observer_state or DEFAULT_STATE)
         place = location(settings)
         if not place:
             raise ValueError("Set an observing location in OMANOVA first.")

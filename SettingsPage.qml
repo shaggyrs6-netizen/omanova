@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 
 ColumnLayout {
     id: page
@@ -11,6 +12,25 @@ ColumnLayout {
     readonly property var preferences: sky.data?.settings ?? ({ profiles: [], online: false, weather: false })
     readonly property bool busy: sky.settingsWorker.running
     readonly property int gutter: compact ? 0 : 22
+    property var lookupRows: []
+    property string lookupMessage: ""
+    property string lookupInput: ""
+    property bool lookupCooling: false
+    Timer { interval: 5000; running: page.lookupCooling; onTriggered: page.lookupCooling = false }
+    Process {
+        id: lookup
+        stdinEnabled: true
+        command: [page.sky.runtime + "/.venv/bin/python", page.sky.runtime + "/place_lookup.py"]
+        environment: ({ "OPENBLAS_NUM_THREADS": "1" })
+        onStarted: { write(page.lookupInput); page.lookupInput = ""; stdinEnabled = false }
+        stdout: StdioCollector { id: lookupOutput }
+        onExited: function(code) {
+            if (code === 0) {
+                try { page.lookupRows = JSON.parse(lookupOutput.text); page.lookupMessage = page.lookupRows.length ? "Select a result to fill the fields, then save or use temporarily." : "No places found." }
+                catch (e) { page.lookupMessage = "Lookup unavailable." }
+            } else page.lookupMessage = "Lookup unavailable. Use manual coordinates or try again later."
+        }
+    }
     signal openCompact()
     spacing: 12
 
@@ -128,6 +148,23 @@ ColumnLayout {
                     onClicked: page.sky.run(["use", page.preferences.profiles[saved.currentIndex].id])
                 }
             }
+            Copy { text: qsTr("Optional city or postcode lookup sends only the text you enter to Open-Meteo/GeoNames when you press Search. It does not read your current coordinates. Place data: GeoNames."); color: "#a7b7ce" }
+            RowLayout {
+                Field { id: lookupQuery; placeholderText: qsTr("City or postcode, optionally country"); maximumLength: 120 }
+                Action {
+                    text: qsTr("Search online"); enabled: !lookup.running && !page.lookupCooling && !page.sky.fixture && lookupQuery.text.trim().length >= 2
+                    onClicked: { page.lookupInput = JSON.stringify(lookupQuery.text.trim()) + "\n"; page.lookupRows = []; page.lookupMessage = "Searching…"; page.lookupCooling = true; lookup.stdinEnabled = true; lookup.running = true }
+                }
+            }
+            Copy { text: page.lookupMessage; visible: text.length > 0 }
+            Repeater {
+                model: page.lookupRows
+                Action {
+                    required property var modelData
+                    text: modelData.label
+                    onClicked: { placeName.text = modelData.name; latitude.text = String(modelData.lat); longitude.text = String(modelData.lon); elevation.text = String(modelData.elevation); page.lookupRows = [] }
+                }
+            }
             Field { id: placeName; maximumLength: 48; placeholderText: qsTr("Place name") }
             GridLayout {
                 Layout.fillWidth: true
@@ -240,6 +277,10 @@ ColumnLayout {
             }
             Action { text: qsTr("Refresh now"); onClicked: page.sky.run(["refresh"]) }
         }
+    }
+    Card {
+        implicitHeight: observing.implicitHeight + 32
+        ObservingPreferences { id: observing; anchors.fill: parent; anchors.margins: 16; sky: page.sky }
     }
     Copy {
         Layout.leftMargin: page.gutter

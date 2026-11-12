@@ -11,7 +11,7 @@ from observatory.comets.comets import CATALOG, ROOT, calculate
 class CometPreviewTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.catalog = json.loads(CATALOG.read_text())
+        cls.catalog = json.loads((ROOT / "tests/fixtures/comets-20261109.json").read_text())
         cls.nashville = {"lat": 36.1627, "lon": -86.7816, "elevation": 0}
 
     def calculate_at(self, date):

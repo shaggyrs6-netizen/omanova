@@ -92,6 +92,7 @@ ColumnLayout {
                 spacing: 9
 
                 Copy { text: card.modelData.name; font.pixelSize: 23; font.bold: true }
+                Copy { text: qsTr("Activity · %1 to %2%3").arg(card.modelData.activeStart || "—").arg(card.modelData.activeEnd || "—").arg(card.modelData.activeNow ? qsTr(" · Active now") : ""); color: "#70edeb" }
                 Copy {
                     text: card.modelData.dateOnly
                         ? qsTr("Published peak date · %1 UTC").arg(card.modelData.peak)
@@ -100,7 +101,7 @@ ColumnLayout {
                 }
                 Copy {
                     visible: !card.modelData.windows.length
-                    text: qsTr("No local dark viewing window found near this peak.")
+                    text: card.modelData.peakPassed ? qsTr("Activity continues, but this peak has passed. Precise viewing windows are shown near the published peak.") : qsTr("No local dark viewing window found near this peak.")
                 }
                 Repeater {
                     model: card.modelData.windows

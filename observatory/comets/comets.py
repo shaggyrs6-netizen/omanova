@@ -120,7 +120,7 @@ def prepare(output, fixture):
         now = datetime.now(UTC)
         if not site:
             raise ValueError("Set an observing location in OMANOVA first.")
-    catalog = json.loads(CATALOG.read_text())
+    catalog = json.loads((ROOT / "tests/fixtures/comets-20261109.json" if fixture else CATALOG).read_text())
     with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
         result = calculate(eph, load.timescale(builtin=True), site, now, catalog)
     write(output, {**result, "fixture": fixture})

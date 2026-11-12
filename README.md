@@ -23,7 +23,36 @@ compact fallback. Set your observing location manually under **Settings**.
 | Aurora | NOAA-based model sightlines and a separate global Kp outlook. Missing or stale data is uncertain. |
 | Dark-Sky Sites | Regional sample catalogue for Middle Tennessee and nearby states, with driving estimates, access and darkness evidence. |
 | Observing Log | Local entries with what you saw, place, time and notes. |
-| Settings and alerts | Saved and temporary locations, orbital and weather download controls, manual refresh and optional station alerts with a 15-minute lead. |
+| Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
+
+## Unified observing plan
+
+Overview and the bar select a next opportunity from local station/satellite,
+Moon, meteor, planet/conjunction, comet, eclipse, plume, train and aurora
+windows. Events offers a combined timeline with type/range filters; the
+original station/launch detail view remains available. Globally interesting
+launches without local geometry stay unconfirmed and cannot become a viewing
+recommendation. Geometric-only and stale entries remain inspectable.
+
+Ranking exposes its timing, elevation, weather, event-rarity and brief-window
+weights, so an all-evening target does not automatically crowd out a short pass.
+User interests and minimum elevation filter recommendations. Weather is
+assessed for the entire event window using the same forecast rules as station
+passes; poor conditions remain visible but do not receive a recommendation.
+Missing forecasts stay uncertain. Experimental plume/train/aurora guidance
+keeps its caveats. Suggested look times accompany their bearings.
+
+The hidden worker starts a separate bounded planner process so station
+refreshes remain responsive. Local geometry normally refreshes every thirty
+minutes (five minutes with aurora enabled); event weather and freshness are
+reassessed every minute. Source adapters retain their own rate limits and
+opt-ins. Planning data is local, and a changed location invalidates old results.
+The individual astronomy tabs retain their detailed geometry displays.
+
+Optional city/postcode search sends the entered query to Open-Meteo only
+when **Search online** is pressed. It never reads or sends the existing
+observer coordinates. Results fill the form; saving remains explicit. Place
+data are based on GeoNames. No automatic geolocation is performed.
 
 ## Install
 
@@ -148,7 +177,7 @@ changes. Paused feeds may show cached data. External links open on demand. See
 
 ### Maintenance
 
-The dated comet catalogue expires on 17 November 2026 at 00:00 UTC. Dark-sky
+The dated comet catalogue expires on 12 December 2026 at 00:00 UTC. Dark-sky
 access and travel estimates need occasional review. Launch schedules may use
 cached data if a refresh fails. Weather and astronomy are estimates and
 local terrain or obstructions can change what you see.
@@ -310,11 +339,16 @@ labelled Preview. Repeat it to test deduplication, or select a poor, missing,
 stale or ended scenario to test suppression. Closing the window ends the
 trial. The live worker does not consume these settings or the preview ledger.
 
-Live station alerts are opt-in under **Conditions → Station alerts**.
-The worker checks once per minute and can send one alert per
-favourable, fresh ISS or Tiangong pass in the 15 minutes before first
-look. Alerts stop with the worker. The per-pass ledger is stored locally
-alongside the live snapshot.
+Live alerts are opt-in under **Conditions → Observing alerts**. Settings
+selects event types, a 1–120 minute lead (default 15), weather threshold,
+minimum elevation and optional quiet hours in system local time. Defaults
+retain station-only alerts with favourable weather; broader alerts require
+explicit selection. Unconfirmed visibility never triggers an alert. The
+worker reassesses once per minute, suppresses stale or already-started
+windows, and deduplicates overlapping windows for the same object/location.
+Alert times describe the viewing-window start; suggested bearing/elevation
+include their own look time. Local history is in `observing-alerts.json`.
+Existing station alert history is respected during upgrades.
 
 ## Moon preview
 
@@ -342,10 +376,11 @@ Run `./preview-meteors --live` from Wayland for the saved observing point, or
 `./preview-meteors --fixture` for the fixed Nashville example. The separate
 window calculates offline and does not require the foreground worker.
 
-The bundled selection covers six peaks from November 2026 to April 2027,
+The bundled selection covers twenty peaks from November 2026 through December 2027,
 using the [2026 IMO calendar](https://www.imo.net/files/meteor-shower/cal2026.pdf)
 and [2027 IMO calendar](https://www.imo.net/files/data/calendar/cal2027.pdf).
-It shows published peaks separately from local dark viewing windows within
+It shows the published activity dates, active-now status and peaks separately
+from local dark viewing windows within
 roughly a day either side. Windows require a Sun altitude of −18° or lower
 and a radiant altitude of 20° or higher. Radiant coordinates are fixed at
 their peak values for this short span. The Moon rows show illumination at the
@@ -372,7 +407,9 @@ Run `./preview-comets --live` for the saved observing point or
 `./preview-comets --fixture` for the frozen Nashville example. This
 standalone preview contains four selected targets. Its
 [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) geocentric position snapshot
-runs from 9 November 00:00 UTC through 17 November 00:00 UTC, 2026.
+runs from 9 November 00:00 UTC through 12 December 00:00 UTC, 2026.
+Positions and qualified dated brightness reports were refreshed on 12 November.
+Fixture mode retains its separately frozen November catalogue.
 It uses two-hour observer tables (quantities 1 and 2) and interpolates
 coordinates locally. Observing windows require astronomical darkness and
 at least 20° elevation. Finder coordinates are J2000.
@@ -431,8 +468,11 @@ visibility unconfirmed. No real trajectories are bundled.
 ## Bright satellite watchlist preview
 
 Run `./preview-satellites --live` for the saved observing point or
-`--fixture` for the frozen Nashville example. The seven-object watchlist
-uses CelesTrak's visual catalogue and a separate preview cache. It honours
+`--fixture` for the frozen Nashville example. Settings starts with seven
+objects and lets you save up to twenty named NORAD IDs. The current orbit
+validator supports low-Earth orbits; higher or highly eccentric orbits are
+reported unavailable. Known bright objects use CelesTrak's visual catalogue;
+custom objects use bounded per-ID queries and keep brightness unconfirmed. It honours
 the existing orbital-download setting and sends no observing coordinates.
 
 Filter by satellite or see all upcoming windows. A window needs sunlight

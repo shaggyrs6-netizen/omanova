@@ -33,13 +33,15 @@ def weather_hours(payload):
 def classify(window, hours, fetched, now, enabled):
     if not enabled:
         return {"label": "Uncertain", "reason": "Weather is off", "hours": []}
-    if not fetched or now - utc(fetched) >= timedelta(hours=6):
+    if not fetched or not timedelta(0) <= now - utc(fetched) < timedelta(hours=6):
         return {"label": "Uncertain", "reason": "Forecast missing or expired", "hours": []}
     start = utc(window["start"]["time"])
     end = utc(window["end"]["time"])
     hour = start.replace(minute=0, second=0, microsecond=0)
     expected = [hour, hour + timedelta(hours=1)]
-    if end > expected[-1]:
+    if end - start > timedelta(days=3):
+        return {"label": "Uncertain", "reason": "Viewing window exceeds forecast assessment limit", "hours": []}
+    while end > expected[-1]:
         expected.append(expected[-1] + timedelta(hours=1))
     rows = [{"time": time.isoformat(), **hours[time]} for time in expected if time in hours]
     result = {"fetched": fetched, "hours": rows}

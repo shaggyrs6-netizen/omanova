@@ -3,6 +3,7 @@ from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 import sys
+import json
 
 import numpy as np
 from skyfield import almanac
@@ -21,14 +22,9 @@ IMO = {
 }
 # Peak radiant coordinates in degrees. Date-only entries use noon UTC solely
 # to centre the search; the interface never presents that as a peak time.
-SHOWERS = (
-    ("Northern Taurids", "2026-11-12", 58, 22),
-    ("Leonids", "2026-11-17T23:45:00Z", 152, 22),
-    ("Geminids", "2026-12-14T14:00:00Z", 112, 33),
-    ("Ursids", "2026-12-22", 217, 76),
-    ("Quadrantids", "2027-01-04T03:25:00Z", 230, 49),
-    ("April Lyrids", "2027-04-23T01:40:00Z", 271, 34),
-)
+CATALOG = json.loads(Path(__file__).with_name("showers.json").read_text())
+SHOWERS = CATALOG["showers"]
+
 SUN_LIMIT = -18
 RADIANT_LIMIT = 20
 MIN_WINDOW = timedelta(minutes=15)
@@ -53,12 +49,16 @@ def calculate(eph, ts, place, now):
 
     dark.step_days = moon_down.step_days = 1 / 48
     results = []
-    for name, published, ra, dec in SHOWERS:
+    for shower in SHOWERS:
+        name, published, ra, dec = (shower[key] for key in ("name", "peak", "ra", "dec"))
+        if now >= utc(shower["activeEnd"] + "T00:00:00Z") + timedelta(days=1):
+            continue
         date_only = len(published) == 10
         peak = utc(published + "T12:00:00Z" if date_only else published)
         start, end = max(now, peak - timedelta(hours=24)), peak + timedelta(hours=24)
-        if end - start < MIN_WINDOW:
-            continue
+        # Keep still-active showers listed after the peak; precise viewing
+        # directions use the published peak radiant only near the peak.
+        past_peak = end - start < MIN_WINDOW
         radiant = Star(ra_hours=ra / 15, dec_degrees=dec)
 
         def position(t):
@@ -68,10 +68,10 @@ def calculate(eph, ts, place, now):
             return position(t)[0].degrees >= RADIANT_LIMIT
 
         high.step_days = 1 / 48
-        darkness = list(intervals(ts, start, end, dark))
-        moonless = list(intervals(ts, start, end, moon_down))
+        darkness = [] if past_peak else list(intervals(ts, start, end, dark))
+        moonless = [] if past_peak else list(intervals(ts, start, end, moon_down))
         windows = []
-        for first, last in overlap(intervals(ts, start, end, high), darkness):
+        for first, last in overlap([] if past_peak else intervals(ts, start, end, high), darkness):
             span = (last - first).total_seconds()
             samples = [first + timedelta(seconds=float(offset))
                        for offset in np.linspace(0, span, int(np.ceil(span / 300)) + 1)]
@@ -90,7 +90,10 @@ def calculate(eph, ts, place, now):
                              for a, b in overlap([(first, last)], moonless)],
             })
         results.append({"name": name, "peak": published, "dateOnly": date_only,
-                        "source": IMO[peak.year], "windows": windows})
+                        "source": IMO[peak.year], "windows": windows,
+                        "activeStart": shower["activeStart"], "activeEnd": shower["activeEnd"],
+                        "activeNow": utc(shower["activeStart"] + "T00:00:00Z") <= now < utc(shower["activeEnd"] + "T00:00:00Z") + timedelta(days=1),
+                        "peakPassed": past_peak})
     return results
 
 
@@ -108,7 +111,7 @@ def prepare(output, mode):
             raise ValueError("Set an observing location in OMANOVA first.")
     with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
         showers = calculate(eph, load.timescale(builtin=True), place, now)
-    write(output, {"showers": showers, "fixture": fixture})
+    write(output, {"showers": showers, "fixture": fixture, "until": CATALOG["until"], "expired": now >= utc(CATALOG["until"])})
 
 
 if __name__ == "__main__":

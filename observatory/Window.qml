@@ -397,11 +397,11 @@ ShellRoot {
 
             Component {
                 id: eventsView
-                EventsPage {
+                UnifiedEventsPage {
                     sky: ui.skyModel
-                    onInspect: function(eventId) {
-                        ui.selectedEventId = eventId
-                        ui.changeScreen(1)
+                    onInspect: function(selected) {
+                        if (selected.station_id) ui.selectedEventId = selected.station_id
+                        ui.changeScreen(selected.kind === "launch" ? 10 : selected.page)
                     }
                 }
             }
@@ -411,7 +411,18 @@ ShellRoot {
                 ColumnLayout {
                     spacing: 19
                     readonly property bool narrow: width < 650
+                    OpportunityCard {
+                        visible: !!sky.nextOpportunity
+                        Layout.margins: ui.gutter
+                        event: sky.nextOpportunity || ({kind:"", name:"", start:"", end:"", look:{}, conditions:{}, score_parts:{}})
+                        sky: ui.skyModel; hero: true
+                        onInspect: function(selected) {
+                            if (selected.station_id) ui.selectedEventId = selected.station_id
+                            ui.changeScreen(selected.page)
+                        }
+                    }
                     GridLayout {
+                        visible: !sky.nextOpportunity
                         columns: parent.narrow ? 1 : 2
                         Layout.fillWidth: true
                         Layout.margins: ui.gutter
@@ -460,11 +471,12 @@ ShellRoot {
                     }
                     Rule { Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter }
                     GridLayout {
+                        visible: !sky.nextOpportunity || sky.nextOpportunity.kind === "station"
                         columns: width < 480 ? 1 : 3
                         Layout.fillWidth: true
                         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter; Layout.bottomMargin: ui.gutter
                         rowSpacing: 12; columnSpacing: 15
-                        Readout { Layout.fillWidth: true; caption: "VIEWING PEAK"; value: ui.peakText() }
+                        Readout { Layout.fillWidth: true; caption: "STATION VIEWING PEAK"; value: ui.peakText() }
                         Readout { Layout.fillWidth: true; caption: "FORECAST"; value: ui.forecast ? ui.forecast.label : "Unavailable"; tint: ui.verdictColor }
                         Readout { Layout.fillWidth: true; caption: "ORBIT DATA"; value: ui.event
                                 ? ui.event.confidence + " · " + Math.round(ui.event.epoch_hours) + "h from epoch" : "Unavailable" }
@@ -543,15 +555,15 @@ ShellRoot {
                         Layout.fillWidth: true
                         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
                         spacing: 5
-                        Tag { text: "STATION ALERTS" }
+                        Tag { text: "OBSERVING ALERTS" }
                         Copy {
                             Layout.fillWidth: true
                             color: ui.muted
-                            text: "One desktop alert per favourable ISS or Tiangong pass, up to 15 minutes before first look. The foreground worker must be running."
+                            text: "Opt-in alerts use your event types, lead time, quiet hours and weather threshold in Settings. The worker must be running; uncertain local visibility never triggers an alert."
                         }
                         Action {
                             enabled: !!sky.data
-                            text: sky.data?.settings?.alerts === true ? "Turn station alerts off" : "Enable station alerts"
+                            text: sky.data?.settings?.alerts === true ? "Turn observing alerts off" : "Enable observing alerts"
                             onClicked: sky.run(["alerts", sky.data?.settings?.alerts === true ? "off" : "on"])
                         }
                         Copy {
@@ -715,17 +727,18 @@ ShellRoot {
                 ui.changeScreen(3)
                 const page = ui.screenItem
                 if (!page || mode < 0 || mode > 2) return ""
+                page.stationDetail = true
                 page.mode = mode
                 return page.summary()
             }
             function scrub(seconds: int): void { ui.scrub = Math.max(0, Math.min(ui.passSeconds, seconds)) }
             function summary(): string {
-                return JSON.stringify({ screen: ui.screenIndex, event: ui.event?.name, verdict: ui.verdict,
+                return JSON.stringify({ planned: sky.plannedEvents.length, next: sky.nextOpportunity?.name, plannerStale: sky.plannerStale, screen: ui.screenIndex, event: ui.event?.name, verdict: ui.verdict,
                     alerts: sky.data?.settings?.alerts === true, fixture: sky.fixture, generated: sky.data?.generated, stale: ui.snapshotStale,
                     width: ui.width, height: ui.height, contentHeight: ui.contentHeight, time: ui.clock(ui.scrubTime, true), position: ui.predicted })
             }
             function capture(name: string): void {
-                if (sky.fixture && ["overview", "sky", "conditions"].includes(name))
+                if (sky.fixture && ["overview", "sky", "conditions", "events", "settings"].includes(name))
                     ui.grabToImage(result => result.saveToFile(sky.directory + "/" + name + ".png"))
             }
             function close(): void { Qt.quit() }

@@ -8,6 +8,30 @@ QtObject {
     readonly property string dataHome: Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")
     readonly property string directory: overridePath || (dataHome + "/omasky")
     readonly property string runtime: Quickshell.env("OMASKY_RUNTIME") || (directory + "/runtime")
+    property var planning: null
+    readonly property bool plannerStale: !planning || snapshotStale || planning.location_id !== data?.place?.id ||
+        (!fixture && (!Number.isFinite(Date.parse(planning.generated)) || now - Date.parse(planning.generated) > 180000 || now < Date.parse(planning.generated)))
+    function assessPlanned(row) {
+        let result = Object.assign({}, row)
+        if (plannerStale || (row.valid_until && now > Date.parse(row.valid_until))) {
+            result.visibility = "stale"; result.assessment = "Data stale"; result.recommended = false
+        }
+        if (row.conditions.fetched && now - Date.parse(row.conditions.fetched) >= 21600000) {
+            result.conditions = { label: "Uncertain", reason: "Forecast expired", hours: [] }
+            result.assessment = result.visibility === "possible" ? "Potential viewing · weather uncertain" : result.assessment
+            result.recommended = false
+        }
+        return result
+    }
+    readonly property var plannedEvents: (planning?.events || []).filter(row => Date.parse(row.end) > now).map(row => assessPlanned(row))
+    readonly property var nextOpportunity: plannerStale ? null : plannedEvents.filter(row => row.recommended &&
+        (data?.settings?.observing?.interests || []).includes(row.kind)).sort((a,b) => b.score-a.score || Date.parse(a.start)-Date.parse(b.start))[0] || null
+    property FileView plannerFile: FileView {
+        path: root.directory + "/planner.json"
+        watchChanges: true; printErrors: false
+        onFileChanged: reload()
+        onLoaded: { try { const value = JSON.parse(text()); if (Array.isArray(value.events)) root.planning = value } catch(e) {} }
+    }
     property var data: null
     property string message: ""
     property double wallTime: Date.now()
@@ -60,6 +84,7 @@ QtObject {
         const minutes = Math.max(0, Math.ceil((Date.parse(when) - now) / 60000))
         if (!minutes) return "now"
         if (minutes < 60) return minutes + "m"
+        if (minutes >= 2880) return Math.floor(minutes / 1440) + "d"
         return Math.floor(minutes / 60) + "h " + (minutes % 60) + "m"
     }
 
@@ -111,7 +136,13 @@ QtObject {
         onTriggered: {
             root.wallTime = Date.now()
             if (!root.data) root.reload()
+            if (!root.planning) plannerFile.reload()
         }
+    }
+    property Process planningRefresh: Process {
+        command: [root.runtime + "/.venv/bin/python", root.runtime + "/planner.py", "--state", root.directory].concat(root.fixture ? ["--fixture"] : [])
+        environment: ({ "OPENBLAS_NUM_THREADS": "1" })
+        onExited: plannerFile.reload()
     }
     property Process settingsWorker: Process {
         id: worker
@@ -127,6 +158,7 @@ QtObject {
         onExited: function(code) {
             root.message = code === 0 ? "Updated" : (diagnostic.text.trim().slice(0, 220) || "OMANOVA worker failed")
             root.reload()
+            if (code === 0 && root.supports("preferences-stdin") && !planningRefresh.running) planningRefresh.running = true
         }
         onRunningChanged: {
             if (!running) Qt.callLater(() => {

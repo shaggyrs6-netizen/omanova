@@ -34,14 +34,16 @@ if [[ $fixture == 0 ]]; then
     mkdir -p "$plume_schedule"
 fi
 mkdir -p "$state"/{config,cache,qml} "$launch_state"
-for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml SkyState.qml SettingsPage.qml SkyPanel.qml Compass.qml; do
+for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml SkyState.qml SettingsPage.qml ObservingPreferences.qml OpportunityCard.qml UnifiedEventsPage.qml SkyPanel.qml Compass.qml; do
     ln -sfn "$PWD/$file" "$state/qml/${file##*/}"
 done
 if [[ $settings_trial == 1 ]]; then
     OPENBLAS_NUM_THREADS=1 .venv/bin/python worker.py --state "$data" --fixture demo
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python planner.py --state "$data" --fixture
     OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/events/launches.py "$launch_state" fixture
 elif [[ $fixture == 1 ]]; then
     OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/fixtures.py "$state"
+    OPENBLAS_NUM_THREADS=1 .venv/bin/python planner.py --state "$state" --fixture
     OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/events/launches.py "$launch_state" fixture
 else
     test -r "$data/snapshot.json" || { printf '%s\n' "No live OMANOVA snapshot available." >&2; exit 1; }

@@ -1,0 +1,166 @@
+{
+  "until": "2027-12-27T00:00:00Z",
+  "reviewed": "2026-11-12",
+  "showers": [
+    {
+      "name": "Northern Taurids",
+      "peak": "2026-11-12",
+      "activeStart": "2026-10-20",
+      "activeEnd": "2026-12-10",
+      "ra": 58,
+      "dec": 22
+    },
+    {
+      "name": "Leonids",
+      "peak": "2026-11-17T23:45:00Z",
+      "activeStart": "2026-11-06",
+      "activeEnd": "2026-11-30",
+      "ra": 152,
+      "dec": 22
+    },
+    {
+      "name": "Geminids",
+      "peak": "2026-12-14T14:00:00Z",
+      "activeStart": "2026-12-04",
+      "activeEnd": "2026-12-20",
+      "ra": 112,
+      "dec": 33
+    },
+    {
+      "name": "Ursids",
+      "peak": "2026-12-22",
+      "activeStart": "2026-12-17",
+      "activeEnd": "2026-12-26",
+      "ra": 217,
+      "dec": 76
+    },
+    {
+      "name": "Quadrantids",
+      "peak": "2027-01-04T03:25:00Z",
+      "activeStart": "2026-12-28",
+      "activeEnd": "2027-01-12",
+      "ra": 230,
+      "dec": 49
+    },
+    {
+      "name": "Alpha Centaurids",
+      "peak": "2027-02-08",
+      "activeStart": "2027-01-31",
+      "activeEnd": "2027-02-20",
+      "ra": 211,
+      "dec": -58
+    },
+    {
+      "name": "April Lyrids",
+      "peak": "2027-04-23T01:40:00Z",
+      "activeStart": "2027-04-14",
+      "activeEnd": "2027-04-30",
+      "ra": 271,
+      "dec": 34
+    },
+    {
+      "name": "Eta Aquariids",
+      "peak": "2027-05-06",
+      "activeStart": "2027-04-19",
+      "activeEnd": "2027-05-28",
+      "ra": 338,
+      "dec": -1
+    },
+    {
+      "name": "June Bootids",
+      "peak": "2027-06-22",
+      "activeStart": "2027-06-22",
+      "activeEnd": "2027-07-02",
+      "ra": 221,
+      "dec": 48
+    },
+    {
+      "name": "Alpha Capricornids",
+      "peak": "2027-07-31",
+      "activeStart": "2027-07-03",
+      "activeEnd": "2027-08-15",
+      "ra": 307,
+      "dec": -10
+    },
+    {
+      "name": "Southern Delta Aquariids",
+      "peak": "2027-07-31",
+      "activeStart": "2027-07-12",
+      "activeEnd": "2027-08-23",
+      "ra": 340,
+      "dec": -16
+    },
+    {
+      "name": "Perseids",
+      "peak": "2027-08-13",
+      "activeStart": "2027-07-17",
+      "activeEnd": "2027-08-24",
+      "ra": 48,
+      "dec": 58
+    },
+    {
+      "name": "Aurigids",
+      "peak": "2027-09-01",
+      "activeStart": "2027-08-28",
+      "activeEnd": "2027-09-05",
+      "ra": 91,
+      "dec": 39
+    },
+    {
+      "name": "Draconids",
+      "peak": "2027-10-09",
+      "activeStart": "2027-10-06",
+      "activeEnd": "2027-10-10",
+      "ra": 263,
+      "dec": 56
+    },
+    {
+      "name": "Orionids",
+      "peak": "2027-10-22",
+      "activeStart": "2027-10-02",
+      "activeEnd": "2027-11-07",
+      "ra": 95,
+      "dec": 16
+    },
+    {
+      "name": "Southern Taurids",
+      "peak": "2027-11-06",
+      "activeStart": "2027-09-20",
+      "activeEnd": "2027-11-20",
+      "ra": 52,
+      "dec": 15
+    },
+    {
+      "name": "Northern Taurids",
+      "peak": "2027-11-13",
+      "activeStart": "2027-10-20",
+      "activeEnd": "2027-12-10",
+      "ra": 58,
+      "dec": 22
+    },
+    {
+      "name": "Leonids",
+      "peak": "2027-11-18",
+      "activeStart": "2027-11-06",
+      "activeEnd": "2027-11-30",
+      "ra": 152,
+      "dec": 22
+    },
+    {
+      "name": "Geminids",
+      "peak": "2027-12-14",
+      "activeStart": "2027-12-04",
+      "activeEnd": "2027-12-20",
+      "ra": 112,
+      "dec": 33
+    },
+    {
+      "name": "Ursids",
+      "peak": "2027-12-23",
+      "activeStart": "2027-12-17",
+      "activeEnd": "2027-12-26",
+      "ra": 217,
+      "dec": 76
+    }
+  ]
+}

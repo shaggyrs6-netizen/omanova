@@ -11,6 +11,7 @@ import ssl
 import sys
 import tempfile
 import time
+import subprocess
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
@@ -20,6 +21,7 @@ import certifi
 from skyfield.api import load, load_file
 
 from astronomy import iso, predict, station_rows, utc
+from observing_preferences import preferences, validate as validate_preferences
 from conditions import FIELDS, classify, opportunities, weather_hours
 from observatory.notifications.alerts import decision, deliver, sent_record
 
@@ -29,7 +31,7 @@ FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 DEFAULT_STATE = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "omasky"
 DEMO_NOW = utc("2026-11-09T23:26Z")
 EMPTY_SETTINGS = {"profiles": [], "active": None, "temporary": None, "weather": False, "online": False,
-                  "alerts": False, "launches": False, "aurora": False, "distance_unit": "km"}
+                  "alerts": False, "launches": False, "aurora": False, "distance_unit": "km", "observing": {}}
 OPT_INS = ("online", "weather", "alerts", "launches", "aurora")
 LOCATION_COMMANDS = {"save-stdin": "save", "temporary-stdin": "temporary"}
 
@@ -87,6 +89,7 @@ def settings_at(state):
         data = {}
     settings = {**EMPTY_SETTINGS, **{key: data[key] for key in EMPTY_SETTINGS if key in data}}
     settings.update({key: settings[key] is True for key in OPT_INS})
+    settings["observing"] = preferences(settings)
     return settings
 
 
@@ -235,6 +238,55 @@ def build_snapshot(state, fixture=False):
     return snapshot
 
 
+def schedule_planner(state, fixture):
+    global planner_process, planner_started
+    if planner_process is not None and planner_process.poll() is None:
+        if time.monotonic() - planner_started > 180:
+            planner_process.terminate()
+        return
+    command = [sys.executable, str(ROOT / "planner.py"), "--state", str(state)]
+    if fixture: command.append("--fixture")
+    planner_started = time.monotonic()
+    planner_process = subprocess.Popen(command, stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL, env={**os.environ, "OPENBLAS_NUM_THREADS": "1"})
+
+
+planner_process = None
+planner_started = 0
+
+
+def check_observing_alerts(state, snapshot, now):
+    if snapshot["demo"] or snapshot["settings"].get("alerts") is not True:
+        return
+    plan = read(state / "planner.json", {})
+    if (not plan.get("generated") or not snapshot.get("place")
+            or plan.get("location_id") != snapshot["place"]["id"]
+            or not timedelta(0) <= now - utc(plan["generated"]) < timedelta(minutes=3)):
+        return
+    from planner import assess
+    from observatory.notifications.planner_alerts import eligible, record, deliver as deliver_planned
+    rows, _ = assess(plan.get("events", []), snapshot, read(state / "weather.json", {}), now,
+                     plan.get("geometry_generated", plan["generated"]))
+    ledger = state / "observing-alerts.json"
+    history = read(ledger, [])
+    if not isinstance(history, list): return
+    # Respect alerts already sent by an older station-only worker.
+    legacy = read(state / "station-alerts.json", [])
+    if isinstance(legacy, list):
+        for sent in legacy:
+            if isinstance(sent, dict) and all(key in sent for key in ("station", "location", "rise", "set")):
+                history.append({"kind":"station", "object_id":str(sent["station"]),
+                    "location":sent["location"], "start":sent["rise"], "end":sent["set"]})
+    location_id = snapshot["place"]["id"]
+    for row in rows:
+        if eligible(row, snapshot["settings"], now, history, location_id):
+            minutes = ceil((utc(row["start"]) - now).total_seconds() / 60)
+            if deliver_planned(row, minutes):
+                history.append(record(row, location_id))
+                history = [r for r in history if isinstance(r, dict) and r.get("end") and utc(r["end"]) > now - timedelta(days=7)][-1000:]
+                write(ledger, history)
+
+
 def check_station_alerts(state, snapshot, now, notify=deliver):
     if snapshot["demo"] or snapshot["settings"].get("alerts") is not True:
         return
@@ -260,7 +312,8 @@ def watch(state, fixture):
             with lock(state):
                 snapshot = build_snapshot(state, fixture)
                 if not fixture:
-                    check_station_alerts(state, snapshot, datetime.now(UTC))
+                    check_observing_alerts(state, snapshot, datetime.now(UTC))
+            schedule_planner(state, fixture)
             print(snapshot["status"], flush=True)
         except (OSError, ValueError) as exc:
             print(f"Refresh failed: {exc}. Retrying in {retry_delay} seconds.",
@@ -297,6 +350,7 @@ def main():
     commands.add_parser("use").add_argument("id")
     for command in OPT_INS:
         commands.add_parser(command).add_argument("value", choices=("on", "off"))
+    commands.add_parser("preferences-stdin", help="Read observing preferences as JSON on standard input")
     commands.add_parser("distance-unit").add_argument("value", choices=("km", "mi"))
     args = parser.parse_args()
     if args.command == "demo" and not args.fixture:
@@ -315,10 +369,26 @@ def main():
                     return 75
                 watch(args.state, args.fixture)
             return 0
+        if args.command == "preferences-stdin":
+            raw = sys.stdin.buffer.readline(8193)
+            if len(raw)>8192 or not raw.endswith(b"\n"):
+                raise ValueError("Expected one bounded preferences record")
+            try:
+                changes = validate_preferences(json.loads(raw))
+            except (TypeError, UnicodeError, json.JSONDecodeError):
+                raise ValueError("Invalid observing preferences") from None
         if args.command in LOCATION_COMMANDS:
             location_fields = read_location(sys.stdin.buffer)
         with lock(args.state):
             settings = settings_at(args.state)
+            if args.command == "preferences-stdin":
+                settings["observing"] = {**preferences(settings), **changes}
+                write(args.state / "settings.json", settings)
+                snapshot = read(args.state / "snapshot.json", {})
+                if isinstance(snapshot, dict) and isinstance(snapshot.get("settings"), dict):
+                    snapshot["settings"]["observing"] = settings["observing"]
+                    write(args.state / "snapshot.json", snapshot)
+                return 0
             if args.command == "demo" and not location(settings):
                 apply_settings(settings, "save", ("Nashville demo", "36.1627", "-86.7816", "0"))
                 apply_settings(settings, "save", ("Sydney demo", "-33.87", "151.21", "0"))

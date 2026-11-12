@@ -67,7 +67,7 @@ else
     git clone --quiet --no-checkout --branch "$revision" "$repository" "$stage/widget"
 fi
 git -C "$stage/widget" checkout --quiet --detach "$revision"
-for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml; do
+for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml ObservingPreferences.qml; do
     cmp -s "$file" "$stage/widget/$file" || {
         printf 'Widget source differs from its Git revision. Commit the widget changes or use a matching release.\n' >&2
         exit 1
@@ -109,7 +109,7 @@ if [[ ! -e "$plugin/manifest.json" ]]; then
 else
     git -C "$plugin" merge --ff-only FETCH_HEAD
 fi
-for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml; do
+for file in manifest.json BarWidget.qml SkyState.qml SkyPanel.qml Compass.qml SettingsPage.qml ObservingPreferences.qml; do
     if ! cmp -s "$file" "$plugin/$file"; then
         printf 'Installed widget differs from this runtime. Update the matching widget or runtime before retrying.\n' >&2
         exit 1

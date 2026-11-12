@@ -75,10 +75,10 @@ def normalise(payload):
     return list(result.values())
 
 
-def prepare(state, fixture):
+def prepare(state, fixture, observer_state=None):
     os.umask(0o077)
     now = DEMO_NOW if fixture else datetime.now(UTC)
-    enabled = not fixture and settings_at(DEFAULT_STATE)["launches"]
+    enabled = not fixture and settings_at(observer_state or DEFAULT_STATE)["launches"]
     with lock(state):
         if fixture:
             rows = normalise(read(Path(__file__).with_name("launch-fixture.json"), {}))

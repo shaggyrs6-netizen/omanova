@@ -55,6 +55,12 @@ Canvas {
             ctx.lineTo(x + br * Math.sin(bRad), y - br * Math.cos(bRad))
             ctx.stroke()
         }
+        if (points.length === 1) {
+            const p = points[0], angle = p.az * Math.PI / 180
+            const distance = radius * (1 - Math.max(0, Math.min(90, p.el)) / 90)
+            ctx.globalAlpha = 1; ctx.fillStyle = accent
+            ctx.beginPath(); ctx.arc(x + distance*Math.sin(angle), y - distance*Math.cos(angle), 5, 0, Math.PI*2); ctx.fill()
+        }
         ctx.globalAlpha = 1
     }
 }

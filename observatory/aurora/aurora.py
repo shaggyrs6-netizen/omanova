@@ -117,7 +117,7 @@ def cache_read(state, key, url, validator, now, period, max_bytes, *, enabled):
     return cache
 
 
-def prepare(output, state, fixture):
+def prepare(output, state, fixture, observer_state=None):
     if output.resolve().parent == DEFAULT_STATE.resolve() or state.resolve() == DEFAULT_STATE.resolve():
         raise ValueError("Aurora preview needs separate state")
     enabled = False
@@ -132,7 +132,7 @@ def prepare(output, state, fixture):
         issues = []
     else:
         now = datetime.now(UTC)
-        settings = settings_at(DEFAULT_STATE)
+        settings = settings_at(observer_state or DEFAULT_STATE)
         place = location(settings)
         if not place:
             raise ValueError("Set an observing location in OMANOVA first.")

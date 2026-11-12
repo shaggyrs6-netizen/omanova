@@ -33,7 +33,7 @@ class InstallerTests(unittest.TestCase):
         self.env.pop('BASH_ENV', None)
         self.env.pop('GIT_CONFIG_COUNT', None)
         for f in ['install', 'manifest.json', 'BarWidget.qml', 'SkyState.qml',
-                  'SkyPanel.qml', 'Compass.qml', 'SettingsPage.qml']:
+                  'SkyPanel.qml', 'Compass.qml', 'SettingsPage.qml', 'ObservingPreferences.qml']:
             shutil.copy2(SOURCE / f, self.project / f)
         shutil.copytree(SOURCE / 'systemd', self.project / 'systemd')
         self.script(self.project / 'setup-runtime', '''#!/bin/bash

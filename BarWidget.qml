@@ -8,9 +8,12 @@ Ui.BarWidget {
     id: root
     readonly property bool opened: popup.opened
     readonly property bool popoutSwitchClosing: popup.popoutSwitchClosing
-    readonly property var poorPass: skyState.featured ? null : skyState.nextPoorIssPass()
-    readonly property var station: skyState.featured || poorPass?.event || null
-    readonly property var viewing: poorPass?.window || skyState.bestWindow(skyState.featured)
+    readonly property var opportunity: skyState.nextOpportunity
+    readonly property var poorPass: !root.stationWanted || root.opportunity || skyState.featured ? null : skyState.nextPoorIssPass()
+    readonly property var stationCandidate: skyState.featured || poorPass?.event || null
+    readonly property bool stationWanted: !skyState.data?.settings?.observing || skyState.data.settings.observing.interests.includes("station")
+    readonly property var station: stationWanted && (skyState.bestWindow(stationCandidate)?.peak?.el || 0) >= (skyState.data?.settings?.observing?.minimum_elevation ?? 10) ? stationCandidate : null
+    readonly property var viewing: station ? (poorPass?.window || skyState.bestWindow(station)) : null
     readonly property string condition: viewing ? viewing.conditions.label : ""
     readonly property string glyph: condition === "Favourable" ? "●" : condition === "Mixed" ? "◐" : "◌"
     readonly property string countdown: viewing ? skyState.countdown(viewing.start.time) : ""
@@ -25,7 +28,7 @@ Ui.BarWidget {
         : !skyState.data.settings.online && !skyState.fixture ? qsTr("Off")
         : qsTr("Idle")
     implicitWidth: vertical ? barSize : label.implicitWidth + Style.space(14)
-    implicitHeight: vertical && root.station && !skyState.snapshotStale ? Style.space(47) : barSize
+    implicitHeight: vertical && (root.opportunity || root.station) && !skyState.snapshotStale ? Style.space(47) : barSize
 
     function openFallback() { skyState.reload(); popup.open() }
     function open() {
@@ -60,7 +63,7 @@ Ui.BarWidget {
         bar: root.bar
         labelVisible: false
         hasVisualContent: true
-        tooltipText: (skyState.snapshotStale ? "OMANOVA · Data stale. Refresh or check the worker."
+        tooltipText: root.opportunity ? "OMANOVA · " + root.opportunity.name + " · " + root.opportunity.assessment + " · " + root.opportunity.reason + " · Click for Observatory · Middle-click for compact panel" : (skyState.snapshotStale ? "OMANOVA · Data stale. Refresh or check the worker."
             : root.viewing ? ("OMANOVA · " + (root.station.source_id === 25544 ? "ISS" : "Tiangong") + " · " + (root.condition === "Favourable" ? "Favourable" : root.condition === "Mixed" ? "Mixed" : root.condition === "Poor" ? "Poor visibility" : "Weather uncertain"))
             : "OMANOVA · " + root.idleStatus) + " · Click for Observatory · Middle-click for compact panel"
         onPressed: function(mouseButton) {
@@ -73,7 +76,9 @@ Ui.BarWidget {
             id: label
             anchors.centerIn: parent
             textFormat: Text.PlainText
-            text: root.viewing
+            text: root.opportunity ? (root.vertical ? root.opportunity.kind + "\n" : "●  ")
+                    + (root.vertical ? "" : root.opportunity.name.slice(0, 22) + " ") + skyState.countdown(root.opportunity.start)
+                : root.viewing
                 ? (root.vertical ? (root.station.name === "ISS" ? "ISS" : "CSS") + "\n" + root.countdown
                         + (root.poorPass ? "\nPoor" : "")
                    : root.glyph + "  " + root.station.name + " " + root.countdown
