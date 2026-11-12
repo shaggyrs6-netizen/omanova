@@ -538,3 +538,35 @@ and preserve the UTC offset that applied when entered.
 The preview keeps entries in a private, persistent file under
 `.preview/observing-log/data/`. It makes no network requests and does not
 read the live observing location or write to the live Observatory.
+
+## Trip Planner & My Horizon preview
+
+Run `./preview-trip-planner` for a separate window, or add `--fixture` for
+public sample locations. Choose a destination and 1–14 observing nights,
+check both IANA time zones, then **Save & compare**. Each observing night
+runs from local noon to the following local noon at each place. Viewing
+times show both zones, dates and UTC offsets, including daylight saving.
+
+Home starts as a read-only copy of your saved location; its initial time
+zone comes from this computer and should be checked. Destination lookup
+is explicit and online; manual coordinates and time-zone entry also work.
+Forecast downloads start off and require a separate opt-in. Forecasts use
+rounded coordinates and cover only available near-term dates.
+
+In **My horizon**, add named trees/buildings by true compass bearing and
+height in degrees. North-crossing sectors and overlapping obstructions
+are supported. Each place keeps its own mask. These manually estimated
+masks trim target windows; they do not change astronomical darkness or
+remove the Moon's contribution to sky brightness.
+
+The comparison calculates Moon and five bright-planet windows, darkness
+and Moon-free darkness. Fresh cached station elements can supply pass
+windows within their validity range; this preview does not download new
+elements. Meteor entries show activity dates, not a radiant prediction.
+Cached launches remain context with local visibility unconfirmed. Missing
+or stale data must not be interpreted as a visibility promise.
+
+Trip settings, horizons and results stay locally in `.preview/trip-user/`
+(fixture mode uses `.preview/trip-fixture/`). **Save & compare** persists
+edits; forecast consent resets when reopening. The preview does not alter
+live locations, the observing log, bar integration, worker or autostart.

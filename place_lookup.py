@@ -20,7 +20,7 @@ def search(query, fetch=get_json):
             if not all(map(isfinite,(lat,lon,elevation))) or not -90<=lat<=90 or not -180<=lon<=180 or not -500<=elevation<=9000: continue
             name=' '.join(str(row['name']).split())[:48]
             label=', '.join(str(row.get(k,''))[:80] for k in ('name','admin1','country') if row.get(k))
-            result.append({'name':name,'label':label,'lat':lat,'lon':lon,'elevation':elevation})
+            result.append({'name':name,'label':label,'lat':lat,'lon':lon,'elevation':elevation,'timezone':row.get('timezone')})
         except (KeyError,ValueError,TypeError): continue
     return result
 
