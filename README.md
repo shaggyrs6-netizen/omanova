@@ -28,6 +28,19 @@ compact fallback. Set your observing location manually under **Settings**.
 | Observing Log | Local entries with what you saw, place, time and notes. |
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
+## Screenshots
+
+[Browse the full feature gallery](docs/SCREENSHOTS.md) — 21 actual app captures,
+including terrain estimation, observing height, Trip Planner, sky events,
+satellite tracking, settings and the local log. Screenshots use public sample
+locations and labelled demonstration data, not live forecasts or private observations.
+
+| Terrain skyline and manual obstructions | Home versus destination |
+| --- | --- |
+| [![Terrain estimate with separate manual trees and buildings](docs/screenshots/terrain-horizon.png)](docs/SCREENSHOTS.md#terrain-horizon) | [![Trip comparison with both time zones](docs/screenshots/trip-comparison.png)](docs/SCREENSHOTS.md#trip-comparison) |
+| ISS and Tiangong ground tracks | Moon and named full Moons |
+| [![Station ground track and observer](docs/screenshots/orbit.png)](docs/SCREENSHOTS.md#orbit) | [![Moon phase and next named full Moon](docs/screenshots/moon.png)](docs/SCREENSHOTS.md#moon) |
+
 ## Unified observing plan
 
 Overview and the bar select a next opportunity from local station/satellite,
