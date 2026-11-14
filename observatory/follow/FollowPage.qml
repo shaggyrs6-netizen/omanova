@@ -146,6 +146,6 @@ Item {
             }
             function source(mode:string):void {if(!root.deployed&&!helper.running&&["sample","live"].includes(mode)){root.mode=mode;root.dataSet=null;modeChoice.currentIndex=mode==="sample"?0:1}}
             function capture():void {if(root.mode==="sample")ui.grabToImage(r=>r.saveToFile(root.base+"/sample.png"))}
-            
+
         }
 }
