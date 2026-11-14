@@ -676,6 +676,21 @@ appearance persistence without changing observing files and the existing
 regressions. Native fixture checks cover theme-file/symlink changes,
 fallback, mode persistence, both panels and screen loading.
 
+## Launch Following (local integration)
+
+The Observatory's **Launch Following** tab stores real favourites separately
+under `$XDG_DATA_HOME/omanova-launch-follow/` (normally
+`~/.local/share/omanova-launch-follow/`). New/migrated installations start
+with downloads and schedule alerts off. Explicit live choices persist across
+Observatory sessions; a new session establishes fresh baselines rather than
+sending missed alerts. These controls are separate from local-viewing alerts.
+
+Monitoring remains active while the Observatory is open, including when
+other tabs are selected, and stops on close. This feature does not add a
+worker service or change login autostart. No source/package/marketplace upload
+is part of this local integration. The standalone preview below remains
+isolated, with its own sample/live favourites and session-reset opt-ins.
+
 ## Launch-following preview (local development)
 
 Run `./preview-launch-follow` to open a separate window. It inherits this

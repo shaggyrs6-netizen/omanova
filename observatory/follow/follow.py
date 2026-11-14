@@ -206,8 +206,9 @@ def command(directory,sample,action,payload,now=None,send=None,fetch=get_json):
     now=now or datetime.now(UTC)
     with lock(directory):
         state=initialise(directory,sample,now)
-        if action=='init':
-            state['prefs']['alerts']=False;state['prefs']['downloads']=False;state['pending']=[]
+        if action in ('init','open'):
+            if action=='init':state['prefs']['alerts']=False;state['prefs']['downloads']=False
+            state['pending']=[]
             if not sample:state['needsBaseline']=list(state['prefs']['favourites'])
         elif action=='preferences':
             enabled_before=state['prefs']['alerts']
@@ -240,9 +241,10 @@ def command(directory,sample,action,payload,now=None,send=None,fetch=get_json):
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,required=True);parser.add_argument('--mode',choices=('sample','live'),default='sample');parser.add_argument('action',choices=('init','preferences','favourite','refresh','simulate','tick'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,required=True);parser.add_argument('--mode',choices=('sample','live'),default='sample');parser.add_argument('action',choices=('init','open','preferences','favourite','refresh','simulate','tick'));args=parser.parse_args()
     base=args.root.resolve()
-    if not base.is_relative_to((ROOT/'.preview').resolve()):raise ValueError('Use a preview directory inside this checkout')
+    persistent=(Path(os.environ.get('XDG_DATA_HOME') or Path.home()/'.local/share')/'omanova-launch-follow').resolve()
+    if not base.is_relative_to((ROOT/'.preview').resolve()) and base!=persistent:raise ValueError('Use a preview directory or the dedicated launch-follow data directory')
     os.umask(0o077);payload={}
     if args.action in ('preferences','favourite','simulate'):
         raw=sys.stdin.buffer.readline(8193)

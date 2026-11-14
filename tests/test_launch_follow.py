@@ -129,6 +129,24 @@ class FollowTests(unittest.TestCase):
         send.side_effect=subprocess.TimeoutExpired('notify-send',5)
         self.assertFalse(notify(event,True,send))
 
+    def test_live_open_keeps_explicit_consent_and_favourites(self):
+        command(self.path,False,'init',{},NOW,send=self.send)
+        state=read(self.path/'state.json',{});state['rows']=[self.row];state['fetched']=iso(NOW)
+        from worker import write
+        write(self.path/'state.json',state)
+        command(self.path,False,'favourite',{'id':self.id,'on':True},NOW,send=self.send)
+        p=read(self.path/'state.json',{})['prefs'];p.update(alerts=True,downloads=True)
+        command(self.path,False,'preferences',p,NOW,send=self.send)
+        command(self.path,False,'open',{},NOW,send=self.send)
+        state=read(self.path/'state.json',{})
+        self.assertTrue(state['prefs']['alerts']);self.assertTrue(state['prefs']['downloads'])
+        self.assertEqual(state['prefs']['favourites'],[self.id]);self.assertEqual(state['needsBaseline'],[self.id]);self.send.assert_not_called()
+    def test_cli_rejects_other_data_directories(self):
+        import subprocess,sys
+        script=Path(__file__).resolve().parents[1]/'observatory/follow/follow.py'
+        result=subprocess.run([sys.executable,str(script),'--root',str(self.path),'init'],capture_output=True)
+        self.assertNotEqual(result.returncode,0);self.assertFalse((self.path/'sample').exists())
+
     def test_webcast_validation_and_invalid_preferences(self):
         for url in ('javascript:alert(1)','http://example.com','https://user:secret@example.com','https://example.com/ has space'):
             self.assertIsNone(stream_url(url))
