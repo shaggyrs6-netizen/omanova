@@ -106,3 +106,16 @@ class EquipmentTests(unittest.TestCase):
         path=self.path/'profile.json';path.write_text('{broken')
         with self.assertRaises(ValueError):command(self.path,'init',{},NOW)
         self.assertEqual(path.read_text(),'{broken')
+    def test_live_state_is_exact_and_never_uses_fixtures(self):
+        from observatory.equipment import equipment
+        live=self.path/'dedicated'
+        with patch.object(equipment,'LIVE_STATE',live):
+            self.assertTrue(equipment.allowed_state(live))
+            self.assertFalse(equipment.allowed_state(live/'other'))
+            live.mkdir();write(live/'source.json',{'source':'sample'})
+            p=profile({'gear':['binoculars','camera'],'sky':'dark'})
+            with patch.object(equipment,'build',return_value={'source':'live'}) as build_mock:
+                command(live,'save',p,NOW)
+                self.assertEqual(build_mock.call_args.args[1],'live')
+                self.assertEqual(read(live/'profile.json',{}),p)
+                with self.assertRaises(ValueError):command(live,'source',{'source':'sample'},NOW)

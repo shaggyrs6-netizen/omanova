@@ -14,6 +14,12 @@ from worker import DEFAULT_STATE,read,write,lock
 from astronomy import iso,utc
 from observatory.events.launches import stream_url
 
+LIVE_STATE=Path(os.environ.get('XDG_DATA_HOME') or Path.home()/'.local/share')/'omanova-equipment'
+
+def allowed_state(state):
+    state=state.resolve()
+    return state==LIVE_STATE.resolve() or state.is_relative_to((ROOT/'.preview').resolve())
+
 GEAR=('eye','binoculars','telescope','camera')
 SKIES=('unknown','bright','moderate','dark')
 DEFAULT={'gear':['eye'],'sky':'unknown','filter':True,'uncertain':True,'showExcluded':False}
@@ -179,11 +185,12 @@ def command(state,action,payload,now=None):
         stored=read(state/'profile.json',None)
         if stored is None and (state/'profile.json').exists():raise ValueError('Keep unreadable profile for inspection')
         p=profile(stored or {});source=read(state/'source.json',{'source':'sample'}).get('source','sample')
+        if state.resolve()==LIVE_STATE.resolve():source='live'
         if source not in ('sample','live'):raise ValueError('Invalid saved source selection')
         if action=='save':p=profile(payload);write(state/'profile.json',p)
         elif action=='source':
             source=payload.get('source')
-            if source not in ('sample','live'):raise ValueError('Choose sample or read-only live suggestions')
+            if source not in ('sample','live') or (state.resolve()==LIVE_STATE.resolve() and source!='live'):raise ValueError('Choose sample or read-only live suggestions')
             write(state/'source.json',{'source':source})
         elif action not in ('init','tick'):raise ValueError('Unknown profile action')
         write(state/'view.json',build(p,source,now,state))
@@ -192,7 +199,7 @@ def command(state,action,payload,now=None):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--state',type=Path,required=True);parser.add_argument('action',choices=('init','save','source','tick'));args=parser.parse_args()
     state=args.state.resolve()
-    if not state.is_relative_to((ROOT/'.preview').resolve()):raise ValueError('Use this checkout\'s preview directory')
+    if not allowed_state(state):raise ValueError('Use the dedicated equipment state or checkout preview directory')
     os.umask(0o077);payload={}
     if args.action in ('save','source'):
         raw=sys.stdin.buffer.readline(8193)

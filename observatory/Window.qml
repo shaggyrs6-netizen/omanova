@@ -70,7 +70,7 @@ ShellRoot {
             readonly property int gutter: width < 620 ? 16 : 30
             readonly property real contentHeight: scroll.contentHeight
             readonly property var screenItem: screenLoader.item
-            readonly property var tabs: ["Overview", "Sky View", "Conditions", "Events", "Orbit", "Moon", qsTr("Meteor Showers"), qsTr("Planets"), qsTr("Comets"), qsTr("Eclipses"), qsTr("Launch Plumes"), qsTr("Watchlist"), qsTr("Starlink Trains"), qsTr("Aurora"), qsTr("Dark-Sky Sites"), qsTr("Observing Log")].concat(!sky.fixture || shell.settingsTrial ? [qsTr("Settings"), qsTr("Trip Planner"), qsTr("Launch Following")] : [])
+            readonly property var tabs: ["Overview", "Sky View", "Conditions", "Events", "Orbit", "Moon", qsTr("Meteor Showers"), qsTr("Planets"), qsTr("Comets"), qsTr("Eclipses"), qsTr("Launch Plumes"), qsTr("Watchlist"), qsTr("Starlink Trains"), qsTr("Aurora"), qsTr("Dark-Sky Sites"), qsTr("Observing Log")].concat(!sky.fixture || shell.settingsTrial ? [qsTr("Settings"), qsTr("Trip Planner"), qsTr("Launch Following"), qsTr("My Equipment and Sky")] : [])
             property int screenIndex: shell.settingsTrial ? 16 : 0
             readonly property bool showingPlanets: screenIndex === 7
             property real scrub: -1
@@ -312,7 +312,7 @@ ShellRoot {
                 Rule {}
                 ScrollView {
                     id: scroll
-                    visible: !ui.showingPlanets && ui.screenIndex !== 17 && ui.screenIndex !== 18
+                    visible: !ui.showingPlanets && ui.screenIndex !== 17 && ui.screenIndex !== 18 && ui.screenIndex !== 19
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
@@ -321,7 +321,7 @@ ShellRoot {
                     Loader {
                         id: screenLoader
                         width: scroll.availableWidth
-                        sourceComponent: ui.showingPlanets || ui.screenIndex === 17 || ui.screenIndex === 18 ? null : [overview, skyView, conditions, eventsView, orbitView, moonView, meteorView, null, cometView, eclipseView, plumeView, watchlistView, trainView, auroraView, darkSitesView, logView, settingsView][ui.screenIndex]
+                        sourceComponent: ui.showingPlanets || ui.screenIndex === 17 || ui.screenIndex === 18 || ui.screenIndex === 19 ? null : [overview, skyView, conditions, eventsView, orbitView, moonView, meteorView, null, cometView, eclipseView, plumeView, watchlistView, trainView, auroraView, darkSitesView, logView, settingsView][ui.screenIndex]
                     }
                 }
                 Loader {
@@ -338,6 +338,12 @@ ShellRoot {
                     // Retain monitoring when another Observatory tab is selected.
                     active: !sky.fixture || ui.screenIndex===18 || !!item
                     sourceComponent:Component { FollowPage {} }
+                }
+                Loader {
+                    id: equipmentLoader
+                    Layout.fillWidth:true;Layout.fillHeight:true
+                    visible:ui.screenIndex===19;active:visible
+                    sourceComponent:Component {EquipmentPage {}}
                 }
                 Loader {
                     id: planetLoader

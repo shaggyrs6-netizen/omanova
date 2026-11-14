@@ -792,3 +792,20 @@ watching does not match telescope/binocular-only profiles. Solar observing
 requires appropriate dedicated protection; general kit selection cannot
 establish safe equipment. See [NASA skywatching guidance](https://science.nasa.gov/skywatching/faq/)
 and [NASA solar eclipse safety](https://science.nasa.gov/eclipses/safety/).
+
+
+#### Accepted Equipment and Sky integration (local only)
+
+The Observatory now includes **My Equipment and Sky** alongside Launch Following.
+The installed view uses actual local planner suggestions only and saves its
+profile in `~/.local/share/omanova-equipment/profile.json` (or XDG_DATA_HOME).
+Equipment and sky selections filter this view; they do not change global
+planner rankings, the bar or viewing-alert eligibility. The same EquipmentPage
+and backend power the standalone trial. Live state cannot select sample data.
+Choices persist between tabs and Observatory sessions. Unknown or stale data
+retain the preview's cautious treatment. Refresh reads stop when this tab is
+unloaded; opening it refreshes immediately. A failed profile read leaves the
+rest of the Observatory available without silently replacing that profile.
+
+This integration remains on `codex/equipment-sky-preview`, separate from the
+marketplace request. Public release/source/assets have not been updated.
