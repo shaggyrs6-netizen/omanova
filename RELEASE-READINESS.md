@@ -1,4 +1,29 @@
-# OMANOVA 0.1.2 — release validation and maintenance
+# OMANOVA — release validation and maintenance
+
+## Current release: 0.1.3 — 14 November 2026
+
+The completed feature build is authorised for GitHub publication. See
+[0.1.3 release notes](docs/RELEASE-0.1.3.md), [CHANGELOG](CHANGELOG.md) and the
+[new screenshot gallery](docs/SCREENSHOTS-0.1.3.md). Marketplace update request
+#14863 was withdrawn and closed; the existing listing is not changed. This
+release does not submit a replacement marketplace request.
+
+187 Python tests and five JavaScript checks passed. Release archives are
+tracked-source-only, version 0.1.3, with matching source commit and checksums.
+The archive installer uses tag v0.1.3; it must not be distributed as v0.1.2.
+Private state, caches, venv and downloaded ephemeris stay out of the package.
+No main-PC worker/autostart setting is changed by release preparation.
+
+Remaining practical limits: calendar import/reminders depend on the receiving
+client; actual printing/offline-device readability and live launch changes
+need ordinary use. Synthetic notification delivery/deduplication passed, but
+visual confirmation was tentative. Previous physical iMac startup and
+maintainer-confirmed sleep/resume checks are retained, not newly repeated.
+Comet coverage ends at 2026-12-12T00:00Z; this release does not extend it.
+
+## Historical 0.1.2 validation record
+
+The record below concerns the earlier release, not the current publication state.
 
 12 November 2026. The accepted terrain integration completes this feature pass.
 GitHub source and release publication are authorised; marketplace submission

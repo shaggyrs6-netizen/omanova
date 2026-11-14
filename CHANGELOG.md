@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased — local observing completion
+## 0.1.3 — 14 November 2026
 
-Held locally on a separate branch; the submitted/public 0.1.2 snapshot is unchanged.
+This GitHub release brings the completed observing tools together. Marketplace
+update request #14863 was withdrawn; this release is not a marketplace update.
 
 - Follow desktop theme, plus readable normal/dim/red modes in the Observatory and compact fallback. The normal display restores the chosen theme; screen brightness remains a device setting. New portable guides have their own display controls.
 - Launch following: favourites, explicit download/alert consent, delay/hold/scrub distinctions, validated webcast links, bounded cache/request budgets and no catch-up alerts. Monitoring requires the Observatory to remain open.
@@ -15,7 +16,20 @@ Held locally on a separate branch; the submitted/public 0.1.2 snapshot is unchan
 - Estimated astronomical/Moon-free darkness is calculated locally. Background light pollution/Bortle/SQM remains unknown unless separately documented; manual sky quality is retained.
 - Missing planner data does not lock away saved guide libraries. New guide creation and export revalidate source age; archive reopening never silently recalculates predictions.
 
-Source/runtime/installer remain local. A new version/tag/public archive requires a later release decision; no update to marketplace review scope is implied.
+- Retain guided automatic runtime/widget setup, pinned dependencies and checksum-verified ephemeris, hidden worker, optional login startup (off by default for new installs) and existing-data preservation.
+- Keep distance units reactive when changing kilometres/miles in Destination Sites.
+- Keep regression fixtures independent of the maintainer's personal equipment profile.
+- Update the archive-installer regression test to follow the manifest version instead of hard-coding 0.1.2.
+- Add a new screenshot gallery for the integrated features; retain the original 0.1.2 gallery and terrain images.
+
+Validation: 187 Python tests and five JavaScript checks cover source and the local
+installed build. Final release-artifact checks are recorded in the release notes.
+Original iMac login/reboot and maintainer-confirmed sleep/resume checks remain
+valid for the earlier installer/worker; this feature batch is not claimed as a
+new physical reboot test. Calendar-client reminders, printed guides and real
+launch changes remain dependent on the receiving app, device and source feed.
+The comet catalogue still ends at 12 December 2026 00:00 UTC; this release does
+not extend that coverage. Existing v0.1.2 tags/assets remain unchanged.
 
 ## 0.1.2 — 12 November 2026
 

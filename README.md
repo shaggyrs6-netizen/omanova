@@ -6,9 +6,9 @@ OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Local unreleased build:** the observing-completion branch includes the additions below. The linked v0.1.2 release and marketplace request do not contain them. Nothing from this local completion build has been uploaded.
+> **Version 0.1.3:** desktop theme and dim/red modes, launch following, equipment filters, calendar export, offline night guides, destination sites and Sky Finder. Includes the guided setup, hidden worker, Trip Planner and terrain horizons from 0.1.2. Read the [complete changelog](CHANGELOG.md) and [release notes](https://github.com/shaggyrs6-netizen/omanova/releases/tag/v0.1.3).
 
-> **Version 0.1.2:** guided setup, hidden worker, broader observing controls, Trip Planner and terrain horizons. Read the [complete changelog](CHANGELOG.md) and [release notes](https://github.com/shaggyrs6-netizen/omanova/releases/tag/v0.1.2).
+> **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
 
 ## Features and options
 
@@ -28,14 +28,26 @@ compact fallback. Set your observing location manually under **Settings**.
 | Dark-Sky Sites | Regional sample catalogue for Middle Tennessee and nearby states, with driving estimates, access and darkness evidence. |
 | Trip Planner & My Horizon | Destination/date comparison with Home, both time zones, manual obstruction profiles and observing height. Opt-in terrain estimates combine with manual obstructions; an isolated preview remains available. |
 | Observing Log | Local entries with what you saw, place, time and notes. |
+| Appearance | Follow the desktop theme or use Observatory colours; readable normal/dim/red modes in both windows. |
+| Launch Following | Up to five favourites, opted-in delay/hold/explicit scrub alerts, change history and supplied webcast links. Monitoring requires the Observatory open. |
+| My Equipment and Sky | Naked eye, binoculars, telescope and camera preferences, manual sky quality, optional capabilities and explained filtering across Overview/calendar/cards. |
+| Calendar Export | Local .ics snapshots from active or Trip locations, named-zone context and per-session optional reminders; manual import. |
+| Offline Cards | Private, immutable night guides with times, directions and equipment; self-contained HTML, print styling and stale-data warnings. |
+| Destination Sites | 12 curated examples across four countries, straight-line km/miles distances from active or Trip locations and dated official access evidence. |
+| Sky Finder | Five constellation landmarks and five starter deep-sky targets, local windows, compass, Sun/Moon context, equipment and saved-horizon guidance. |
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
 ## Screenshots
 
-[Browse the full feature gallery](docs/SCREENSHOTS.md) — 21 actual app captures,
+[Browse the new 0.1.3 feature gallery](docs/SCREENSHOTS-0.1.3.md), including the new
+observing tools, display modes and terrain. The [0.1.2 gallery](docs/SCREENSHOTS.md) retains 21 actual app captures,
 including terrain estimation, observing height, Trip Planner, sky events,
 satellite tracking, settings and the local log. Screenshots use public sample
 locations and labelled demonstration data, not live forecasts or private observations.
+
+| Sky Finder | Launch following |
+| --- | --- |
+| [![Sky Finder directions and equipment](docs/screenshots/0.1.3/sky-finder-detail.png)](docs/SCREENSHOTS-0.1.3.md#sky-finder-detail) | [![Launch favourites and opt-in alerts](docs/screenshots/0.1.3/launch-following.png)](docs/SCREENSHOTS-0.1.3.md#launch-following) |
 
 | Terrain skyline and manual obstructions | Home versus destination |
 | --- | --- |
@@ -83,7 +95,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.2 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.3 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```
@@ -149,7 +161,10 @@ plugin installer; leave it unset or set to `$HOME/.config`.
 
 Back up `~/.local/share/omasky/` (locations, preferences and observing log)
 and `~/.local/share/omanova-trips/` if present (trip settings, manual horizons
-and terrain cache). Substitute `$XDG_DATA_HOME` if you use a custom data root.
+and terrain cache). For 0.1.3 also retain `omanova-launch-follow`,
+`omanova-equipment`, `omanova-calendar`, and `omanova-offline` beneath the same
+data root: these contain favourites, preferences, exports and saved guides.
+Substitute `$XDG_DATA_HOME` if you use a custom data root.
 
 1. Stop the worker and close the Observatory. Use Ctrl+C for the foreground
    worker or `systemctl --user stop omanova-worker.service` for the service.
@@ -645,9 +660,9 @@ or disabled. Trees, roofs and actual visibility still need local judgement.
 Data source/attribution: [Terrain Tiles](https://registry.opendata.aws/terrain-tiles/),
 [provider notices](assets/terrain-attribution.txt) and [data sources](DATA-SOURCES.md).
 
-## Desktop theme preview (local development)
+## Desktop theme support and isolated preview
 
-This branch adds **Settings → Appearance → Follow desktop theme** to the
+OMANOVA includes **Settings → Appearance → Follow desktop theme** to the
 Observatory and compact panel. It starts with the original Observatory
 colours unless explicitly enabled. Theme colours are read from Omarchy's
 current `colors.toml`; watched file changes and a two-second reread handle
@@ -667,10 +682,9 @@ fallback too. Toggle off to return to Observatory colours. Appearance mode
 is stored separately from observing settings in `appearance.json`; there is
 no worker restart or network request for this choice.
 
-This preview is based on marketplace submission commit `e9bd3dc`. It is on
-`codex/desktop-theme-preview` and has not been uploaded or installed live.
-The existing marketplace request and immutable 0.1.2 release stay separate.
-Preview approval is required before any deployment or publication.
+The same theme support is included in the installed Observatory and compact
+panel. Sample theme controls are confined to the standalone preview. The
+original 0.1.2 release remains immutable; marketplace publication is separate.
 
 Validation: `node tests/theme-colors.test.cjs` checks the actual colour parser
 and contrast maths; `.venv/bin/python -m unittest discover -s tests` covers
@@ -678,7 +692,7 @@ appearance persistence without changing observing files and the existing
 regressions. Native fixture checks cover theme-file/symlink changes,
 fallback, mode persistence, both panels and screen loading.
 
-## Launch Following (local integration)
+## Launch Following
 
 The Observatory's **Launch Following** tab stores real favourites separately
 under `$XDG_DATA_HOME/omanova-launch-follow/` (normally
@@ -689,16 +703,15 @@ sending missed alerts. These controls are separate from local-viewing alerts.
 
 Monitoring remains active while the Observatory is open, including when
 other tabs are selected, and stops on close. This feature does not add a
-worker service or change login autostart. No source/package/marketplace upload
-is part of this local integration. The standalone preview below remains
+worker service or change login autostart. The standalone preview below remains
 isolated, with its own sample/live favourites and session-reset opt-ins.
 
 ## Launch-following preview (local development)
 
 Run `./preview-launch-follow` to open a separate window. It inherits this
 branch's accepted theme support; it does not change the live Observatory,
-worker, location, viewing alerts or autostart. The marketplace submission
-continues to target `e9bd3dc`; this work is local on a separate branch.
+worker, location, viewing alerts or autostart. Standalone previews keep sample
+data and preferences separate from the integrated Observatory.
 
 **Try the sample:** favourite the Falcon 9 demonstration, opt into desktop
 alerts, then press **Delay 40 minutes**, **Hold** or **Explicit scrub**.
@@ -750,12 +763,11 @@ source disappearance/outage, terminal missions, request caching/budgets,
 corrupt-state preservation and notification/URL safety. Native fixture tests
 exercise the actual QML/backend roundtrip without sending a desktop popup.
 
-### My Equipment and Sky — separate local preview
+### My Equipment and Sky and isolated preview
 
 Run `./preview-equipment`. This trial is based on the locally accepted desktop
-theme and launch-following work, separate from the marketplace source. It does
-not install anything, change the live bar/worker or enable autostart. Nothing
-from this branch has been uploaded.
+theme and launch-following work. It does not install anything, change the
+live bar/worker or enable autostart.
 
 Choose any combination of **Naked eye, Binoculars, Telescope and Camera**.
 Describe the sky manually as **Not sure, Bright/urban, Moderate/suburban or
@@ -786,8 +798,10 @@ filter switches, with no coordinates or place name. Only the appearance mode is
 copied for visual consistency. Requests use bounded stdin rather than private
 process arguments. Closing the preview stops its periodic reads.
 
-These are conservative overview rules. Telescope aperture, camera sensor,
-tracking, field of view, exposure and limiting magnitude are not modelled.
+These are conservative overview rules. Optional aperture, field of view,
+binocular power and camera context are recorded; field of view can inform
+Sky Finder framing. Quantitative sensitivity/exposure and camera sensors
+are not modelled.
 Comet tiers use existing dated planner guidance; unknown aperture/brightness
 stays uncertain, and camera capability is not inferred. Wide-field meteor
 watching does not match telescope/binocular-only profiles. Solar observing
@@ -796,29 +810,29 @@ establish safe equipment. See [NASA skywatching guidance](https://science.nasa.g
 and [NASA solar eclipse safety](https://science.nasa.gov/eclipses/safety/).
 
 
-#### Accepted Equipment and Sky integration (local only)
+#### Integrated Equipment and Sky
 
 The Observatory now includes **My Equipment and Sky** alongside Launch Following.
 The installed view uses actual local planner suggestions only and saves its
 profile in `~/.local/share/omanova-equipment/profile.json` (or XDG_DATA_HOME).
-Equipment and sky selections filter this view; they do not change global
-planner rankings, the bar or viewing-alert eligibility. The same EquipmentPage
+Equipment and sky selections filter this view, Overview suggestions and new
+calendar/card selections. They do not change global planner rankings, the
+bar or viewing-alert eligibility. The same EquipmentPage
 and backend power the standalone trial. Live state cannot select sample data.
 Choices persist between tabs and Observatory sessions. Unknown or stale data
 retain the preview's cautious treatment. Refresh reads stop when this tab is
 unloaded; opening it refreshes immediately. A failed profile read leaves the
 rest of the Observatory available without silently replacing that profile.
 
-This integration remains on `codex/equipment-sky-preview`, separate from the
-marketplace request. Public release/source/assets have not been updated.
+The integrated view uses your saved profile; the standalone preview retains
+its own profile and examples.
 
-### Calendar export — separate local preview
+### Calendar export and isolated preview
 
 Run `./preview-calendar`. Choose events and save a local `.ics` file, then
 import it yourself using your calendar's import command. This does not connect
 a calendar account, send invitations, publish a feed or change the live app.
-The preview is on `codex/calendar-export-preview`, separate from the current
-marketplace submission; nothing has been uploaded.
+This standalone preview has its own private export directory and samples.
 
 **Try it:** use the labelled public examples, choose a date range/event type,
 select individual entries or **Select shown**, and press **Export selected**.
@@ -841,8 +855,8 @@ look geometry and non-recommended planner rows require **Allow uncertain / poor 
 safety-review entries**. Their labels, source guidance and safety notes travel
 with the event; export is not an observing recommendation. Stale/past events,
 planner source failures and global launches lacking local-window/precision data
-remain unavailable even with that checkbox enabled. The new Equipment and Sky
-profile does not automatically filter this separate calendar trial.
+remain unavailable even with that checkbox enabled. Equipment preferences apply to new real-event selections; the standalone
+sample exercises retain their clearly labelled fixture rules.
 
 All calendar entries are tentative, private-classified and transparent to
 free/busy. Private classification is a calendar hint, not encryption or an
@@ -863,17 +877,19 @@ Changes to weather, pass geometry or schedules do not update/cancel imported
 entries. Recheck OMANOVA before observing. UIDs remain stable for the same
 source location/event identity, with separate sample/live namespaces; importer
 behaviour varies and repeated imports or changed event IDs may create duplicates.
-Trip Planner destinations and online calendar connections are not included.
+The integrated tab also supports Trip Home/destination from a saved matching
+comparison. Online calendar connections are not included.
 
 The writer follows [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html), with
 CRLF, escaped text, UTF-8-safe 75-octet folding, UTC DTSTART/DTEND, DTSTAMP and
 opaque UIDs. Tests cover timing, DST, safety/uncertainty, stale revalidation,
 consent, injection prevention, file permissions, privacy and selection limits.
 
-#### Accepted Calendar Export integration (local only)
+#### Integrated Calendar Export
 
 The Observatory now has a **Calendar Export** tab. It uses the same page and
-export writer as the standalone preview, with live planner data only. Files
+export writer as the standalone preview, with active-location planner or saved
+Trip Home/destination comparison data. Files
 and receipts are kept under `~/.local/share/omanova-calendar/` (or XDG_DATA_HOME),
 with exports in its `exports/` folder. No simulated exports or preview receipts
 are migrated into that folder.
@@ -883,17 +899,17 @@ current export session only. Earlier receipts never enable future reminders.
 The live directory rejects sample data. Closing or leaving the tab discards
 selection/reminder choices; exported files remain local. Export remains an
 explicit click followed by manual calendar import, with no account connection,
-invitations, subscriptions or automatic updates. The current public release
-and marketplace request remain separate and unchanged.
+invitations, subscriptions or automatic updates. Marketplace publication
+remains separate.
 
-### Offline observing cards — separate local preview
+### Offline observing cards and isolated preview
 
 Run `./preview-offline`. Choose the night and guide time zone, build the viewing
 list, select cards and **Save night guide**. Start with public examples; the
 optional **Live list · read-only** reads the existing active-location planner.
 It downloads nothing, does not change the live Observatory/worker and does not
-connect or upload to a service. This work is isolated on
-`codex/offline-cards-preview`, separate from the marketplace submission.
+connect or upload to a service. Preview samples stay separate from your
+integrated saved-guide library.
 
 A night means **local noon to the following noon**, including early evening and
 next morning. The IANA time zone (for example America/Chicago) is explicit and
@@ -907,9 +923,10 @@ azimuth and altitude apply, conservative equipment guidance and limitations,
 source references, visibility uncertainty, weather as captured, and safety
 notes. Equipment uses the existing rules; aperture, tracking, exposure, brightness
 and field-of-view assumptions are not invented. Solar cards retain safety review
-and never claim ordinary optics are safe. The Equipment and Sky profile is not
-applied automatically. Manual/terrain horizons and Trip Planner destinations
-are not applied/copied by this preview, and the guide clearly states this.
+and never claim ordinary optics are safe. New real-event selections use the
+equipment profile. The integrated tab can use Trip Home/destination windows
+already clipped by saved manual/enabled terrain horizons; it does not export
+raw horizon profiles or change existing archived guides.
 
 Saved guides are immutable snapshots in ignored private
 `.preview/offline/guides/<unique-id>/`: `deck.json` and a self-contained
@@ -950,13 +967,13 @@ corrupt-file preservation. The standalone JS tests exercise the actual saved
 HTML's aging script with advancing clocks. The full Python suite and native
 QML save/reopen roundtrip are recorded in the ignored preview evidence folder.
 
-#### Accepted Offline Cards integration (local only)
+#### Integrated Offline Cards
 
 The Observatory now includes **Offline Cards**. It uses the shared native page
 and existing immutable snapshot/HTML writer. Live guides and their library are
 stored under `~/.local/share/omanova-offline/guides/` (or XDG_DATA_HOME), separate
-from the standalone trial. Only real active-location planner data is accepted
-in that directory; samples remain available in the standalone preview.
+from the standalone trial. Real active-location planner or matching saved Trip
+comparison data are accepted; samples remain in the standalone preview.
 
 Saved guides remain available when the current planner is missing or malformed.
 Reopening a saved guide still reads only saved files and the device clock;
@@ -967,13 +984,12 @@ existing guides remain local. No worker, autostart, bar or compact-panel change
 is needed. Publication and marketplace submission changes remain separate.
 
 
-## Local observing-completion build
+## Observing tools, destinations and saved horizons
 
 This is the agreed stopping point for the app/widget feature pass. Desktop-shell
-work remains deferred. New code is isolated on `codex/observing-completion`; the
-public/submitted 0.1.2 version, tag and assets are unchanged. See **Unreleased**
-in CHANGELOG.md for the full combined local change list, including accepted
-theme, launch-following, equipment, calendar and offline-card work.
+work remains deferred. See **0.1.3** in CHANGELOG.md for the combined change
+list. The original 0.1.2 tag/assets and existing marketplace listing remain
+unchanged.
 
 Use **normal / dim / red display** above the Observatory tabs or in Settings.
 Contrast stays readable, labels carry status meaning and normal restores your
@@ -1028,6 +1044,6 @@ station forecast coverage remains unknown where not supplied; no GO is inferred.
 
 The existing guided installer, hidden worker and optional autostart are retained.
 No new background process or autostart setting is introduced by field tools.
-Before any eventual public release: choose a new version, rebuild its pinned
-archive/installer checks and obtain publication approval. Never replace the
-already-published v0.1.2 assets/tag with this source snapshot.
+The 0.1.3 archive uses its matching version tag for the widget. Existing
+v0.1.2 assets/tag are retained. Marketplace approval of an older snapshot does
+not cover these additions; any marketplace update needs a separate request.

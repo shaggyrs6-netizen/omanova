@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.shaggyrs6-netizen.omanova",
   "name": "OMANOVA",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "OMANOVA",
   "description": "Local astronomy Observatory, satellite passes and sky events",
   "kinds": [

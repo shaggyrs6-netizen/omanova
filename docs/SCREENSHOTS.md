@@ -1,5 +1,7 @@
 # OMANOVA 0.1.2 — screenshot gallery
 
+For the newer features and display modes, see the [0.1.3 gallery](SCREENSHOTS-0.1.3.md).
+
 Actual captures of the native Observatory, taken on 13 November 2026 from the
 published 0.1.2 application code. Click any image to open the full-size PNG.
 

@@ -187,7 +187,7 @@ printf '%s\\n' "$*" >"$QA/sudo-called"
         self.assertEqual(widget.read_text(), customised)
 
     def test_release_archive_uses_tag_when_remote_head_is_newer(self):
-        self.git('tag', 'v0.1.2')
+        self.git('tag', 'v' + json.loads((self.project / 'manifest.json').read_text())['version'])
         archive = self.root / 'archive'
         shutil.copytree(self.project, archive, ignore=shutil.ignore_patterns('.git'))
         with (self.project / 'BarWidget.qml').open('a') as f:
