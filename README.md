@@ -867,3 +867,19 @@ The writer follows [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html), with
 CRLF, escaped text, UTF-8-safe 75-octet folding, UTC DTSTART/DTEND, DTSTAMP and
 opaque UIDs. Tests cover timing, DST, safety/uncertainty, stale revalidation,
 consent, injection prevention, file permissions, privacy and selection limits.
+
+#### Accepted Calendar Export integration (local only)
+
+The Observatory now has a **Calendar Export** tab. It uses the same page and
+export writer as the standalone preview, with live planner data only. Files
+and receipts are kept under `~/.local/share/omanova-calendar/` (or XDG_DATA_HOME),
+with exports in its `exports/` folder. No simulated exports or preview receipts
+are migrated into that folder.
+
+Reminders start off whenever the tab opens; selecting a reminder affects the
+current export session only. Earlier receipts never enable future reminders.
+The live directory rejects sample data. Closing or leaving the tab discards
+selection/reminder choices; exported files remain local. Export remains an
+explicit click followed by manual calendar import, with no account connection,
+invitations, subscriptions or automatic updates. The current public release
+and marketplace request remain separate and unchanged.

@@ -34,7 +34,7 @@ if [[ $fixture == 0 ]]; then
     mkdir -p "$plume_schedule"
 fi
 mkdir -p "$state"/{config,cache,qml} "$launch_state"
-for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml observatory/trips/{TripPage,TripButton,TripField,TripChoice,TripSpin,TripNightCard,HorizonChart}.qml observatory/follow/FollowPage.qml observatory/equipment/EquipmentPage.qml SkyState.qml SettingsPage.qml ObservingPreferences.qml OpportunityCard.qml UnifiedEventsPage.qml SkyPanel.qml Compass.qml; do
+for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml observatory/trips/{TripPage,TripButton,TripField,TripChoice,TripSpin,TripNightCard,HorizonChart}.qml observatory/follow/FollowPage.qml observatory/equipment/EquipmentPage.qml observatory/calendar/CalendarPage.qml SkyState.qml SettingsPage.qml ObservingPreferences.qml OpportunityCard.qml UnifiedEventsPage.qml SkyPanel.qml Compass.qml; do
     ln -sfn "$PWD/$file" "$state/qml/${file##*/}"
 done
 ln -sfn "$PWD/qml" "$state/qml/qml"
@@ -105,5 +105,14 @@ else
 fi
 OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/equipment/equipment.py --state "$equipment_state" init || printf '%s\n' "Equipment profile unavailable; the Observatory can still open." >&2
 export OMANOVA_EQUIPMENT_STATE="$equipment_state" OMANOVA_EQUIPMENT_RUNTIME="$PWD"
+if [[ $fixture == 0 ]]; then
+    calendar_state="${XDG_DATA_HOME:-$HOME/.local/share}/omanova-calendar"
+    export OMANOVA_CALENDAR_DEPLOYED=1
+else
+    calendar_state="$state/calendar"
+    export OMANOVA_CALENDAR_DEPLOYED=0
+fi
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/calendar/calendar_export.py --state "$calendar_state" init || printf '%s\n' "Calendar catalogue unavailable; the Observatory can still open." >&2
+export OMANOVA_CALENDAR_STATE="$calendar_state" OMANOVA_CALENDAR_RUNTIME="$PWD"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
 exec qs --no-color -n -p "$state/qml/Window.qml" "$@"

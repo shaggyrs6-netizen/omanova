@@ -13,6 +13,18 @@ from astronomy import iso,utc
 from worker import DEFAULT_STATE,read,write,lock
 from observatory.equipment.equipment import clean_row,fixtures
 
+LIVE_STATE=Path(os.environ.get('XDG_DATA_HOME') or Path.home()/'.local/share')/'omanova-calendar'
+
+def allowed_state(state):
+    state=state.resolve()
+    return state==LIVE_STATE.resolve() or state.is_relative_to((ROOT/'.preview').resolve())
+
+def request_source(state,payload):
+    deployed=state.resolve()==LIVE_STATE.resolve()
+    source=payload.get('source','live' if deployed else 'sample')
+    if source not in ('sample','live') or (deployed and source!='live'):raise ValueError('Live calendar state requires real planner data')
+    return source
+
 MAX_EVENTS=50
 LEADS=(0,5,15,30,60)
 
@@ -109,7 +121,7 @@ def render(rows,now,source,lead=0):
 
 def export(state,payload,now=None):
     now=now or datetime.now(UTC)
-    source=payload.get('source','sample');ids=payload.get('ids');lead=payload.get('lead',0)
+    source=request_source(state,payload);ids=payload.get('ids');lead=payload.get('lead',0)
     if not isinstance(ids,list) or not 1<=len(ids)<=MAX_EVENTS or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids):raise ValueError('Select one to 50 different events')
     if type(payload.get('includeCaution',False)) is not bool:raise ValueError('Invalid caution choice')
     # Re-read and recheck at export time. UI data is never trusted as event content.
@@ -130,7 +142,7 @@ def export(state,payload,now=None):
 def run(state,action,payload,now=None):
     now=now or datetime.now(UTC)
     with lock(state):
-        source=payload.get('source','sample')
+        source=request_source(state,payload)
         if action=='export':export(state,payload,now)
         elif action not in ('init','refresh'):raise ValueError('Unknown action')
         write(state/'view.json',catalogue(state,source,now))
@@ -138,7 +150,7 @@ def run(state,action,payload,now=None):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--state',type=Path,required=True);parser.add_argument('action',choices=('init','refresh','export'));args=parser.parse_args()
     state=args.state.resolve()
-    if not state.is_relative_to((ROOT/'.preview').resolve()):raise ValueError('Use the checkout preview directory')
+    if not allowed_state(state):raise ValueError('Use the dedicated calendar state or checkout preview directory')
     os.umask(0o077);payload={}
     if args.action!='init':
         raw=sys.stdin.buffer.readline(16385)
@@ -146,8 +158,8 @@ def main():
         payload=json.loads(raw)
         if not isinstance(payload,dict):raise ValueError('Expected an export request')
     run(state,args.action,payload)
-    print('Local calendar preview updated')
+    print('Local calendar catalogue updated')
 
 if __name__=='__main__':
     try:main()
-    except (ValueError,OSError,KeyError,TypeError,AttributeError,OverflowError):raise SystemExit('Calendar preview could not update. Refresh and check selected events, caution choice and reminder.')
+    except (ValueError,OSError,KeyError,TypeError,AttributeError,OverflowError):raise SystemExit('Calendar export could not update. Refresh and check selected events, caution choice and reminder.')

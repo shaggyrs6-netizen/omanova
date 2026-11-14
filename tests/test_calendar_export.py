@@ -101,3 +101,21 @@ class CalendarTests(unittest.TestCase):
     def test_sample_clock_and_receipt_not_copied_into_source_data(self):
         run(self.state,'init',{},NOW);run(self.state,'refresh',{'source':'sample'},NOW+timedelta(days=1))
         self.assertEqual(read(self.state/'view.json',{})['clock'],iso(NOW))
+    def test_live_directory_guard_and_real_source_only(self):
+        from observatory.calendar import calendar_export as module
+        live=self.state/'dedicated'
+        with patch.object(module,'LIVE_STATE',live):
+            self.assertTrue(module.allowed_state(live));self.assertFalse(module.allowed_state(live/'other'))
+            self.assertEqual(module.request_source(live,{}),'live')
+            for request in ({'source':'sample'},{'source':'invented'}):
+                with self.assertRaises(ValueError):run(live,'init',request,NOW)
+            with patch.object(module,'catalogue',return_value={'source':'live','rows':[]}) as fetch:
+                run(live,'init',{},NOW)
+                self.assertEqual(fetch.call_args.args[1],'live')
+    def test_previous_export_does_not_enable_reminders(self):
+        payload={'source':'sample','ids':[self.iss['id']]}
+        first=export(self.state,{**payload,'lead':15},NOW)
+        self.assertIn(b'BEGIN:VALARM',Path(first['path']).read_bytes())
+        second=export(self.state,payload,NOW)
+        self.assertEqual(second['lead'],0)
+        self.assertNotIn(b'BEGIN:VALARM',Path(second['path']).read_bytes())
