@@ -820,6 +820,7 @@ marketplace submission; nothing has been uploaded.
 
 **Try it:** use the labelled public examples, choose a date range/event type,
 select individual entries or **Select shown**, and press **Export selected**.
+Open **Show filters, uncertain entries & reminders** for additional controls.
 The export receipt shows the exact file path; **Open export folder** opens the
 folder without importing anything. Use a separate test calendar for samples.
 Sample event titles and filenames explicitly say SIMULATED. The examples use

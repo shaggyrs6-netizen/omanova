@@ -17,6 +17,7 @@ ShellRoot {
     property int lead:0
     property bool includeCaution:false
     property bool inspectBlocked:false
+    property bool optionsOpen:false
     property string action:"refresh"
     property string pending:""
     property string result:""
@@ -76,6 +77,10 @@ ShellRoot {
                         }
                         Copy {text:root.source==="sample"?"SIMULATED EXAMPLES · Fixed clock "+(root.dataSet?root.when(root.dataSet.clock):"loading")+". Exports are labelled SIMULATED.":"LIVE SNAPSHOT · Uses existing local planner data. No downloads, changes to the worker, or new alerts.";color:App.Palette.warning}
                         Copy {text:"Exported events are tentative, leave your free/busy time free, and omit your location name and coordinates. Calendar times use UTC and display in your calendar’s time zone.";color:App.Palette.muted}
+                        Action {text:(root.optionsOpen?"Hide":"Show")+" filters, uncertain entries & reminders";onClicked:root.optionsOpen=!root.optionsOpen}
+                        Copy {text:(root.days===0?"All available":root.days===1?"Next 24 hours":"Next "+root.days+" days")+" · "+(root.kind==="all"?"All event types":root.kind)+" · "+(root.lead===0?"No reminder":root.lead+" min reminder")+" · "+(root.includeCaution?"Uncertain entries allowed":"Uncertain entries need opt-in");color:App.Palette.muted}
+                        ColumnLayout {
+                            visible:root.optionsOpen;Layout.fillWidth:true;spacing:10
                         Copy {text:"Show events";font.bold:true}
                         Flow {
                             Layout.fillWidth:true;spacing:8
@@ -97,6 +102,7 @@ ShellRoot {
                             Layout.fillWidth:true;spacing:8
                             Repeater {model:[0,5,15,30,60]
                                 Action {required property int modelData;text:(root.lead===modelData?"● ":"")+(modelData===0?"No reminder":modelData+" min before");onClicked:root.lead=modelData}}
+                        }
                         }
                         Flow {
                             Layout.fillWidth:true;spacing:10
@@ -140,7 +146,7 @@ ShellRoot {
         IpcHandler {
             target:"omanova-calendar-preview"
             function summary():string {return JSON.stringify({source:root.source,rows:root.rows.length,selected:root.selected.length,lead:root.lead,caution:root.includeCaution,busy:helper.running,error:root.dataSet?.error,exported:root.receipt?.count})}
-            function sampleReset():void {if(root.source==="sample"){root.selected=[];root.lead=0;root.includeCaution=false;root.inspectBlocked=false}}
+            function sampleReset():void {if(root.source==="sample"){root.selected=[];root.lead=0;root.includeCaution=false;root.inspectBlocked=false;root.optionsOpen=false;root.receipt=null}}
             function sampleSelect():void {if(root.source==="sample")root.selected=root.rows.filter(r=>root.selectable(r)).slice(0,50).map(r=>r.id)}
             function sampleExport():void {if(root.source==="sample"&&root.selected.length)root.request("export")}
             function capture():void {if(root.source==="sample")ui.grabToImage(r=>r.saveToFile(root.state+"/sample.png"))}
