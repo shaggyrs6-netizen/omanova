@@ -747,3 +747,48 @@ classification, stale/out-of-order observations, deduplication, delivery retry,
 source disappearance/outage, terminal missions, request caching/budgets,
 corrupt-state preservation and notification/URL safety. Native fixture tests
 exercise the actual QML/backend roundtrip without sending a desktop popup.
+
+### My Equipment and Sky — separate local preview
+
+Run `./preview-equipment`. This trial is based on the locally accepted desktop
+theme and launch-following work, separate from the marketplace source. It does
+not install anything, change the live bar/worker or enable autostart. Nothing
+from this branch has been uploaded.
+
+Choose any combination of **Naked eye, Binoculars, Telescope and Camera**.
+Describe the sky manually as **Not sure, Bright/urban, Moderate/suburban or
+Dark/rural**. This is a preference, not a measured Bortle/SQM rating. Turning
+**Filter suggestions** off shows the complete imported list; **Include uncertain
+matches** and **Inspect filtered-out entries** let you see what the rules could
+not establish. Each card explains its equipment match and any blockers. Counts
+cover all imported rows; at most 200 cards are displayed.
+
+The initial 14 public examples use a fixed, clearly labelled sample clock.
+Try telescope-only versus naked eye for the meteor shower, camera-only for the
+photography exercise, and dark versus bright skies for the faint comet. The
+solar example remains safety-restricted for every generic equipment choice.
+Poor-weather, stale and unconfirmed examples remain inspectable without
+becoming eligible. The fictional examples are not current predictions.
+
+**Live suggestions · read-only** reads the existing local `planner.json` every
+30 seconds. It makes no network requests and does not modify source forecasts,
+predictions, alerts, locations, logs or recommendations. Missing/expired source,
+forecast or look-direction data remain uncertain. Equipment matching can only
+remove eligibility inherited from the planner; it cannot promote an event the
+planner did not recommend. The optional live mode is for checking your existing
+suggestions with these filters; it is not a new astronomy calculator.
+
+Profiles, source choice and sample state persist only in the private ignored
+`.preview/equipment/` directory. The profile contains gear, sky description and
+filter switches, with no coordinates or place name. Only the appearance mode is
+copied for visual consistency. Requests use bounded stdin rather than private
+process arguments. Closing the preview stops its periodic reads.
+
+These are conservative overview rules. Telescope aperture, camera sensor,
+tracking, field of view, exposure and limiting magnitude are not modelled.
+Comet tiers use existing dated planner guidance; unknown aperture/brightness
+stays uncertain, and camera capability is not inferred. Wide-field meteor
+watching does not match telescope/binocular-only profiles. Solar observing
+requires appropriate dedicated protection; general kit selection cannot
+establish safe equipment. See [NASA skywatching guidance](https://science.nasa.gov/skywatching/faq/)
+and [NASA solar eclipse safety](https://science.nasa.gov/eclipses/safety/).

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+[[ $# == 0 ]] || { printf 'Usage: %s\n' "$0" >&2; exit 2; }
+umask 077
+state="$PWD/.preview/equipment"
+OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/equipment/equipment.py --state "$state" init
+# Copy appearance mode only. No locations, observing log or live profiles are copied.
+if [[ ! -e "$state/appearance.json" && -f "${XDG_DATA_HOME:-$HOME/.local/share}/omasky/appearance.json" ]]; then
+    cp -- "${XDG_DATA_HOME:-$HOME/.local/share}/omasky/appearance.json" "$state/appearance.json"
+fi
+display=${WAYLAND_DISPLAY:?Run from a Wayland session}
+[[ $display == /* ]] || display="${XDG_RUNTIME_DIR:?}/$display"
+export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omanova-equipment.XXXXXX)" WAYLAND_DISPLAY="$display"
+export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
+export OMANOVA_EQUIPMENT_STATE="$state" OMANOVA_EQUIPMENT_RUNTIME="$PWD" OMASKY_STATE="$state"
+exec qs -n --no-color -p "$PWD/observatory/equipment/Window.qml"
