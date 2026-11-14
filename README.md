@@ -809,3 +809,60 @@ rest of the Observatory available without silently replacing that profile.
 
 This integration remains on `codex/equipment-sky-preview`, separate from the
 marketplace request. Public release/source/assets have not been updated.
+
+### Calendar export — separate local preview
+
+Run `./preview-calendar`. Choose events and save a local `.ics` file, then
+import it yourself using your calendar's import command. This does not connect
+a calendar account, send invitations, publish a feed or change the live app.
+The preview is on `codex/calendar-export-preview`, separate from the current
+marketplace submission; nothing has been uploaded.
+
+**Try it:** use the labelled public examples, choose a date range/event type,
+select individual entries or **Select shown**, and press **Export selected**.
+The export receipt shows the exact file path; **Open export folder** opens the
+folder without importing anything. Use a separate test calendar for samples.
+Sample event titles and filenames explicitly say SIMULATED. The examples use
+a fixed demonstration clock and are not current predictions.
+
+Switch to **Live events · read-only** for the existing local planner catalogue.
+No new astronomy/weather downloads occur. Refresh reads that file again; export
+also rechecks it and rejects stale, ended or missing events. Up to 500 catalogue
+entries are listed and 50 can be exported per file. Date/type filters control
+the display; previously selected hidden entries remain selected and are counted
+explicitly. **Select shown** replaces the selection with the current visible,
+selectable entries, capped at 50. Clear selection removes every selection.
+
+Uncertain visibility, poor/mixed/unknown forecasts, solar safety review, missing
+look geometry and non-recommended planner rows require **Allow uncertain / poor /
+safety-review entries**. Their labels, source guidance and safety notes travel
+with the event; export is not an observing recommendation. Stale/past events,
+planner source failures and global launches lacking local-window/precision data
+remain unavailable even with that checkbox enabled. The new Equipment and Sky
+profile does not automatically filter this separate calendar trial.
+
+All calendar entries are tentative, private-classified and transparent to
+free/busy. Private classification is a calendar hint, not encryption or an
+access-control guarantee. Location names, addresses and coordinates are omitted.
+Files and receipts remain under ignored private `.preview/calendar/`; export
+files use mode 0600 and unique exclusive-create filenames. Importing a file to
+a cloud calendar is a separate action you choose outside this preview.
+
+UTC event times preserve the instant across desktop/calendar time zones and DST.
+The preview displays desktop local and UTC times; the importing calendar uses
+its own display zone. Reminders default off; optional 5/15/30/60-minute DISPLAY
+alarms take effect only after import, subject to your calendar's behaviour.
+A reminder whose trigger has already passed is omitted and explained.
+No actual desktop notification is sent by this trial.
+
+This is a **one-off snapshot**, not a calendar subscription or synchronisation.
+Changes to weather, pass geometry or schedules do not update/cancel imported
+entries. Recheck OMANOVA before observing. UIDs remain stable for the same
+source location/event identity, with separate sample/live namespaces; importer
+behaviour varies and repeated imports or changed event IDs may create duplicates.
+Trip Planner destinations and online calendar connections are not included.
+
+The writer follows [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html), with
+CRLF, escaped text, UTF-8-safe 75-octet folding, UTC DTSTART/DTEND, DTSTAMP and
+opaque UIDs. Tests cover timing, DST, safety/uncertainty, stale revalidation,
+consent, injection prevention, file permissions, privacy and selection limits.
