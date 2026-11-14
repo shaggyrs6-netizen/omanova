@@ -121,7 +121,7 @@ class OfflineCardsTests(unittest.TestCase):
     def test_live_guides_reopen_and_library_survives_broken_planner(self):
         write(self.path/'planner.json',{'generated':iso(NOW),'events':[self.iss]})
         payload={**self.request,'source':'live','ids':[self.iss['id']]}
-        with patch.object(m,'LIVE_STATE',self.path),patch.object(m,'DEFAULT_STATE',self.path):
+        with patch.object(m,'LIVE_STATE',self.path),patch.object(m,'DEFAULT_STATE',self.path),patch('observing_context.equipment_profile',return_value=__import__('observatory.equipment.equipment',fromlist=['profile']).profile({})):
             guide,d=m.save(self.path,payload,NOW);self.assertEqual(d['source'],'live')
             original=(self.path/'guides'/guide/'deck.json').read_bytes()
             with patch.object(m,'source_data',side_effect=AssertionError('No live source on reopen')):
