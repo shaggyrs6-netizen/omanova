@@ -147,6 +147,12 @@ class FollowTests(unittest.TestCase):
         result=subprocess.run([sys.executable,str(script),'--root',str(self.path),'init'],capture_output=True)
         self.assertNotEqual(result.returncode,0);self.assertFalse((self.path/'sample').exists())
 
+    def test_real_notifications_use_live_app_label(self):
+        from observatory.follow.follow import notify
+        send=Mock();notify({'name':'Public mission','messages':['Delayed by source']},False,send,preview=False)
+        args=send.call_args.args[0]
+        self.assertIn('--app-name=OMANOVA',args);self.assertNotIn('[Preview]',args[-2])
+
     def test_webcast_validation_and_invalid_preferences(self):
         for url in ('javascript:alert(1)','http://example.com','https://user:secret@example.com','https://example.com/ has space'):
             self.assertIsNone(stream_url(url))

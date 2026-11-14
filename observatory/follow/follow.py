@@ -64,10 +64,10 @@ def changes(old,new):
     return result
 
 
-def notify(event,sample,send=subprocess.run):
-    title=escape(('[Preview · simulated] ' if sample else '[Preview] ')+event['name']+' · schedule update')
+def notify(event,sample,send=subprocess.run,*,preview=True):
+    title=escape(('[Preview · simulated] ' if sample else '[Preview] ' if preview else '')+event['name']+' · schedule update')
     body='\n'.join(event['messages'])+'\nLaunch schedule only; local visibility unconfirmed.'
-    try:send(['/usr/bin/notify-send','--app-name=OMANOVA launch preview','--urgency=normal','--expire-time=12000','--',title,escape(body)],check=True,capture_output=True,timeout=5)
+    try:send(['/usr/bin/notify-send','--app-name='+('OMANOVA launch preview' if preview or sample else 'OMANOVA'),'--urgency=normal','--expire-time=12000','--',title,escape(body)],check=True,capture_output=True,timeout=5)
     except (OSError,subprocess.SubprocessError):return False
     return True
 
@@ -204,6 +204,9 @@ def view(state,sample,now):
 
 def command(directory,sample,action,payload,now=None,send=None,fetch=get_json):
     now=now or datetime.now(UTC)
+    if send is None:
+        preview=directory.resolve().is_relative_to((ROOT/'.preview').resolve())
+        send=lambda event,is_sample:notify(event,is_sample,preview=preview)
     with lock(directory):
         state=initialise(directory,sample,now)
         if action in ('init','open'):
@@ -251,8 +254,8 @@ def main():
         if len(raw)>8192 or not raw.endswith(b'\n'):raise ValueError('Expected one bounded JSON request')
         payload=json.loads(raw)
     command(base/args.mode,args.mode=='sample',args.action,payload)
-    print('Updated launch-follow preview')
+    print('Updated launch following')
 
 if __name__=='__main__':
     try:main()
-    except (OSError,ValueError,TypeError,KeyError,AttributeError):raise SystemExit('Could not update preview. Check settings, request limits and local files.')
+    except (OSError,ValueError,TypeError,KeyError,AttributeError):raise SystemExit('Could not update launch following. Check settings, request limits and local files.')
