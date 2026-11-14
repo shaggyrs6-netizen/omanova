@@ -360,8 +360,8 @@ ShellRoot {
                     visible:ui.screenIndex===21;active:visible
                     sourceComponent:Component {OfflinePage {}}
                 }
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===22;active:visible;sourceComponent:Component {FieldPage {section:"sites"}}}
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===23;active:visible;sourceComponent:Component {FieldPage {section:"finder"}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===22;active:visible;sourceComponent:Component {FieldPage {section:"sites";skyModel:sky}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===23;active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky}}}
                 Loader {
                     id: planetLoader
                     Layout.fillWidth: true

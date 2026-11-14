@@ -6,6 +6,8 @@ import Quickshell
 import Quickshell.Io
 Item {
  id:root
+ property var skyModel:null
+ readonly property bool useMiles:skyModel?skyModel.useMiles:Quickshell.env("OMANOVA_DISTANCE_MI")==="1"
  property string section:"sites"
  property string source:"active"
  property var dataSet:null
@@ -55,7 +57,7 @@ Item {
     Rectangle {id:card;required property var modelData;Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:App.Palette.line
      ColumnLayout {id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
       Copy {text:card.modelData.name;font.pixelSize:22;font.bold:true}
-      Copy {visible:root.section==="sites";text:(card.modelData.area||"")+" · "+(Quickshell.env("OMANOVA_DISTANCE_MI")==="1"?((card.modelData.distanceKm||0)/1.609344).toFixed(0)+" mi":(card.modelData.distanceKm||0).toFixed(0)+" km")+" straight-line";color:App.Palette.accent}
+      Copy {visible:root.section==="sites";text:(card.modelData.area||"")+" · "+(root.useMiles?((card.modelData.distanceKm||0)/1.609344).toFixed(0)+" mi":(card.modelData.distanceKm||0).toFixed(0)+" km")+" straight-line";color:App.Palette.accent}
       Copy {visible:root.section==="sites";text:card.modelData.darkness||""}
       Copy {visible:root.section==="sites";text:card.modelData.access||"";color:App.Palette.warning}
       Copy {visible:root.section==="sites";text:"Evidence checked: "+(card.modelData.checked||"")+(card.modelData.evidenceOld?" · older than 90 days; recheck":" · recheck access before travelling");color:App.Palette.muted}
