@@ -109,3 +109,25 @@ class OfflineCardsTests(unittest.TestCase):
         p=self.path/'planner.json';write(p,{'generated':iso(NOW),'events':[raw]})
         row=m.prepare(self.path,{**self.request,'source':'live'},NOW,p)['rows'][0]
         self.assertTrue(row['staleAtCapture'])
+    def test_exact_live_state_rejects_sample_guides_and_sources(self):
+        guide,_=self.save_iss()
+        with patch.object(m,'LIVE_STATE',self.path):
+            self.assertTrue(m.allowed_state(self.path));self.assertFalse(m.allowed_state(self.path/'other'))
+            self.assertEqual(m.request_source(self.path,{}),'live')
+            with self.assertRaises(ValueError):m.prepare(self.path,self.request,NOW)
+            with self.assertRaises(ValueError):m.load_saved(self.path,guide)
+            self.assertEqual(m.saved_list(self.path),[])
+        self.assertTrue((self.path/'guides'/guide/'deck.json').exists())
+    def test_live_guides_reopen_and_library_survives_broken_planner(self):
+        write(self.path/'planner.json',{'generated':iso(NOW),'events':[self.iss]})
+        payload={**self.request,'source':'live','ids':[self.iss['id']]}
+        with patch.object(m,'LIVE_STATE',self.path),patch.object(m,'DEFAULT_STATE',self.path):
+            guide,d=m.save(self.path,payload,NOW);self.assertEqual(d['source'],'live')
+            original=(self.path/'guides'/guide/'deck.json').read_bytes()
+            with patch.object(m,'source_data',side_effect=AssertionError('No live source on reopen')):
+                m.run(self.path,'open',{'guide':guide},NOW+timedelta(hours=3))
+            with patch.object(m,'prepare',side_effect=ValueError('Malformed live catalogue')):
+                m.run(self.path,'init',{},NOW)
+            v=read(self.path/'view.json',{});self.assertEqual(v['deck']['source'],'live');self.assertTrue(v['deck']['issues'])
+            self.assertEqual(v['saved'][0]['id'],guide)
+            self.assertEqual((self.path/'guides'/guide/'deck.json').read_bytes(),original)

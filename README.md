@@ -947,3 +947,19 @@ no live/network access on reopen, privacy, HTML escaping/CSP, private files and
 corrupt-file preservation. The standalone JS tests exercise the actual saved
 HTML's aging script with advancing clocks. The full Python suite and native
 QML save/reopen roundtrip are recorded in the ignored preview evidence folder.
+
+#### Accepted Offline Cards integration (local only)
+
+The Observatory now includes **Offline Cards**. It uses the shared native page
+and existing immutable snapshot/HTML writer. Live guides and their library are
+stored under `~/.local/share/omanova-offline/guides/` (or XDG_DATA_HOME), separate
+from the standalone trial. Only real active-location planner data is accepted
+in that directory; samples remain available in the standalone preview.
+
+Saved guides remain available when the current planner is missing or malformed.
+Reopening a saved guide still reads only saved files and the device clock;
+timing/weather age warnings and safety notes are unchanged. No guide is saved,
+refreshed or overwritten automatically. Selection and inspect-stale consent
+reset on tab load. Closing/leaving the tab ends its saved-age checks, and
+existing guides remain local. No worker, autostart, bar or compact-panel change
+is needed. Publication and marketplace submission changes remain separate.

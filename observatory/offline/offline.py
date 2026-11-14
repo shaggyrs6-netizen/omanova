@@ -14,6 +14,18 @@ ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT))
 from astronomy import iso,utc
 from worker import DEFAULT_STATE,read,write,lock
 from observatory.equipment.equipment import clean_row,fixtures,rule
+LIVE_STATE=Path(os.environ.get('XDG_DATA_HOME') or Path.home()/'.local/share')/'omanova-offline'
+
+def allowed_state(state):
+    state=state.resolve()
+    return state==LIVE_STATE.resolve() or state.is_relative_to((ROOT/'.preview').resolve())
+
+def request_source(state,payload):
+    deployed=state.resolve()==LIVE_STATE.resolve()
+    source=payload.get('source','live' if deployed else 'sample')
+    if source not in ('sample','live') or (deployed and source!='live'):raise ValueError('Live guides require real planner data')
+    return source
+
 LABELS={'eye':'Naked eye','binoculars':'Binoculars','telescope':'Telescope','camera':'Camera'}
 ID=re.compile(r'^\d{8}T\d{6}Z-[0-9a-f]{8}$')
 
@@ -59,7 +71,7 @@ def source_data(state,source,now,live_path=None):
 
 
 def prepare(state,request,now,live_path=None):
-    source=request.get('source','sample');zone=request.get('zone') or desktop_zone()
+    source=request_source(state,request);zone=request.get('zone') or desktop_zone()
     ZoneInfo(zone)
     raw,generated,clock,issues=source_data(state,source,now,live_path)
     d=clock.astimezone(ZoneInfo(zone))
@@ -142,6 +154,7 @@ def load_saved(state,guide):
     if not isinstance(guide,str) or not ID.fullmatch(guide):raise ValueError('Choose a saved guide')
     path=state/'guides'/guide/'deck.json';d=read(path,None)
     if not isinstance(d,dict) or d.get('schema')!=1 or not isinstance(d.get('rows'),list) or len(d['rows'])>50:raise ValueError('Saved guide unavailable; keep it for inspection')
+    if d.get('source') not in ('sample','live') or (state.resolve()==LIVE_STATE.resolve() and d['source']!='live'):raise ValueError('This saved guide is not valid for this library')
     night_window(d['night'],d['zone']);utc(d['capturedAt'])
     return d
 
@@ -200,7 +213,17 @@ def run(state,action,payload,now=None):
         if action=='open':
             guide=payload.get('guide');deck=load_saved(state,guide);mode='saved'
         elif action=='save':guide,deck=save(state,payload,now);mode='saved'
-        elif action in ('init','refresh'):guide='';deck=prepare(state,payload,now);mode='draft'
+        elif action in ('init','refresh'):
+            guide='';mode='draft'
+            try:deck=prepare(state,payload,now)
+            except (ValueError,TypeError,AttributeError,OverflowError):
+                # A damaged/unavailable catalogue must not lock away saved guides.
+                if action!='init':raise
+                source=request_source(state,payload);zone=desktop_zone();local=now.astimezone(ZoneInfo(zone))
+                night=(local.date()-timedelta(days=local.hour<12)).isoformat();start,end=night_window(night,zone)
+                deck={'schema':1,'source':source,'night':night,'zone':zone,'windowStart':iso(start),'windowEnd':iso(end),'capturedAt':iso(now),
+                      'sampleClock':'','issues':['Planning data unavailable. Saved guides can still be opened.'],'rows':[],'available':0}
+
         else:raise ValueError('Unknown action')
         shown=view(deck,now if mode=='saved' else utc(deck['capturedAt']))
         write(state/'view.json',{'mode':mode,'guide':guide,'html':str(state/'guides'/guide/'guide.html') if guide else '', 'deck':shown,'saved':saved_list(state)})
@@ -208,14 +231,14 @@ def run(state,action,payload,now=None):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--state',type=Path,required=True);p.add_argument('action',choices=('init','refresh','save','open'));a=p.parse_args();state=a.state.resolve()
-    if not state.is_relative_to((ROOT/'.preview').resolve()):raise ValueError('Use this checkout preview directory')
+    if not allowed_state(state):raise ValueError('Use the dedicated offline-guide state or checkout preview directory')
     os.umask(0o077);payload={}
     if a.action!='init':
         raw=sys.stdin.buffer.readline(16385)
         if len(raw)>16384 or not raw.endswith(b'\n'):raise ValueError('Expected one bounded request')
         payload=json.loads(raw)
         if not isinstance(payload,dict):raise ValueError('Expected an observing guide request')
-    run(state,a.action,payload);print('Offline guide preview updated')
+    run(state,a.action,payload);print('Offline guide catalogue updated')
 
 if __name__=='__main__':
     try:main()
