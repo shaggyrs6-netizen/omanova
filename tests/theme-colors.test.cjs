@@ -14,3 +14,9 @@ for(const bg of ['#ffffff','#f5f2e9','#19151e','#000000','#777777','#888888','#e
  for(const surface of ['background','surface','button','field','hover'])assert.ok(c.contrast(p.border,p[surface])>=2.99);
 }
 console.log('Theme parser, invalid input, light/dark/mid-grey contrast and status roles passed');
+for(const mode of ['dim','red']){
+ const p=c.observing(mode);
+ for(const role of ['ink','muted','accent','good','warning','bad','violet','terrain'])for(const bg of ['background','surface','field','button','hover'])assert.ok(c.contrast(p[role],p[bg])>=4.49,`${mode} ${role} ${bg}`);
+ for(const bg of ['background','surface','field','button','hover'])assert.ok(c.contrast(p.border,p[bg])>=2.99,`${mode} border ${bg}`);
+}
+assert.equal(c.observing('normal'),null);

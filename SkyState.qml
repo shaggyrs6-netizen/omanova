@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "./qml/Omanova/Equipment.js" as Equipment
 
 QtObject {
     id: root
@@ -8,6 +9,16 @@ QtObject {
     readonly property string dataHome: Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")
     readonly property string directory: overridePath || (dataHome + "/omasky")
     readonly property string runtime: Quickshell.env("OMASKY_RUNTIME") || (directory + "/runtime")
+    property bool applyEquipmentProfile:false
+    property var equipmentProfile: null
+    property bool equipmentInvalid: false
+    property FileView equipmentFile: FileView {
+        path:(Quickshell.env("OMANOVA_EQUIPMENT_STATE") || root.dataHome+"/omanova-equipment")+"/profile.json";watchChanges:true;printErrors:false
+        onFileChanged:reload()
+        onLoaded:{try{root.equipmentProfile=JSON.parse(text());root.equipmentInvalid=!Equipment.validProfile(root.equipmentProfile)}catch(e){root.equipmentInvalid=true}}
+        onLoadFailed:root.equipmentProfile=null
+    }
+    function equipmentMatches(row){return !equipmentInvalid&&Equipment.evaluate(row,equipmentProfile)}
     property var planning: null
     readonly property bool plannerStale: !planning || snapshotStale || planning.location_id !== data?.place?.id ||
         (!fixture && (!Number.isFinite(Date.parse(planning.generated)) || now - Date.parse(planning.generated) > 180000 || now < Date.parse(planning.generated)))
@@ -16,7 +27,7 @@ QtObject {
         if (plannerStale || (row.valid_until && now > Date.parse(row.valid_until))) {
             result.visibility = "stale"; result.assessment = "Data stale"; result.recommended = false
         }
-        if (row.conditions.fetched && now - Date.parse(row.conditions.fetched) >= 21600000) {
+        if (row.conditions.fetched && (!Number.isFinite(Date.parse(row.conditions.fetched)) || now < Date.parse(row.conditions.fetched) || now - Date.parse(row.conditions.fetched) >= 21600000)) {
             result.conditions = { label: "Uncertain", reason: "Forecast expired", hours: [] }
             result.assessment = result.visibility === "possible" ? "Potential viewing · weather uncertain" : result.assessment
             result.recommended = false
@@ -24,7 +35,7 @@ QtObject {
         return result
     }
     readonly property var plannedEvents: (planning?.events || []).filter(row => Date.parse(row.end) > now).map(row => assessPlanned(row))
-    readonly property var nextOpportunity: plannerStale ? null : plannedEvents.filter(row => row.recommended &&
+    readonly property var nextOpportunity: plannerStale ? null : plannedEvents.filter(row => row.recommended && (!applyEquipmentProfile||equipmentMatches(row)) &&
         (data?.settings?.observing?.interests || []).includes(row.kind)).sort((a,b) => b.score-a.score || Date.parse(a.start)-Date.parse(b.start))[0] || null
     property FileView plannerFile: FileView {
         path: root.directory + "/planner.json"

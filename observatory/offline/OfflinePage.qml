@@ -20,7 +20,7 @@ Item {
     property string pending:""
     property string result:""
     readonly property bool saved:dataSet?.mode==="saved"
-    function request(a,guide){if(helper.running)return;action=a;pending=JSON.stringify({source:source,night:night.text,zone:zone.text,ids:selected,includeStale:includeStale,guide:guide||""})+"\n";result="Working…";helper.stdinEnabled=true;helper.running=true}
+    function request(a,guide){if(helper.running)return;action=a;pending=JSON.stringify({source:source,night:night.text,zone:zone.text,ids:selected,includeStale:includeStale,displayMode:App.Palette.observingMode,guide:guide||""})+"\n";result="Working…";helper.stdinEnabled=true;helper.running=true}
     function selectable(r){return !r.unsupported&&(includeStale||!r.staleAtCapture&&!r.sourceIssues)}
     function choose(id,on){let a=selected.filter(v=>v!==id);if(on&&a.length<50)a.push(id);selected=a}
     function draft(source){root.source=source;root.selected=[];request("refresh")}
@@ -68,7 +68,9 @@ Item {
                         Flow {
                             Layout.fillWidth:true;spacing:10
                             Action {visible:!root.deployed;text:"Public examples";enabled:!helper.running;onClicked:root.draft("sample")}
-                            Action {text:root.deployed?"Build a new guide":"Live list · read-only";enabled:!helper.running;onClicked:root.draft("live")}
+                            Action {text:root.deployed?"Active location · new guide":"Live list · read-only";enabled:!helper.running;onClicked:root.draft("live")}
+                            Action {text:"Trip Home";enabled:!helper.running;onClicked:{night.text="";zone.text="";root.draft("trip-home")}}
+                            Action {text:"Trip destination";enabled:!helper.running;onClicked:{night.text="";zone.text="";root.draft("trip-destination")}}
                             Action {text:"Saved guides ("+(root.dataSet?.saved?.length||0)+")";enabled:!helper.running;onClicked:root.libraryOpen=!root.libraryOpen}
                         }
                         ColumnLayout {
@@ -77,7 +79,7 @@ Item {
                             Repeater {model:root.libraryOpen?root.dataSet?.saved||[]:[]
                                 Action {required property var modelData;text:modelData.night+" · "+modelData.zone+" · "+modelData.count+" cards · "+(modelData.source==="sample"?"SIMULATED":"live snapshot")+" · "+modelData.savedAt;enabled:!helper.running;onClicked:{root.selected=[];root.libraryOpen=false;root.request("open",modelData.id)}}}
                         }
-                        Copy {text:(root.source==="sample"?"SIMULATED EXAMPLES · ":root.saved?"SAVED LOCATION SNAPSHOT · ":"ACTIVE LOCATION SNAPSHOT · ")+(root.dataSet?.deck?.night||"")+" · "+(root.dataSet?.deck?.zone||"")+" · "+(root.saved?"Saved "+root.dataSet.deck.savedAt:"Available predictions only; not a fresh calculation for another place/date.");color:App.Palette.warning}
+                        Copy {text:(root.source==="sample"?"SIMULATED EXAMPLES · ":root.saved?"SAVED LOCATION SNAPSHOT · ":root.source.startsWith("trip-")?"TRIP PLANNER SNAPSHOT · ":"ACTIVE LOCATION SNAPSHOT · ")+(root.dataSet?.deck?.night||"")+" · "+(root.dataSet?.deck?.zone||"")+" · "+(root.saved?"Saved "+root.dataSet.deck.savedAt:"Available predictions only; not a fresh calculation for another place/date.");color:App.Palette.warning}
                         ColumnLayout {
                             visible:!root.saved;Layout.fillWidth:true;spacing:8
                             Copy {text:"Night beginning (YYYY-MM-DD) · guide time zone (IANA name)";font.bold:true}
@@ -101,10 +103,11 @@ Item {
                             Action {text:"Check saved ages now";enabled:!helper.running;onClicked:root.request("open",root.dataSet.guide)}
                         }
                         Copy {visible:root.saved;text:root.dataSet?.html||"";color:App.Palette.muted}
+                        Copy {visible:root.source.startsWith("trip-");text:"Save & compare nights in Trip Planner first. Recompare after changing place, dates or horizons. The guide uses its clipped comparison windows; no new predictions are silently calculated.";color:App.Palette.warning}
                         Copy {text:(root.dataSet?.deck?.rows?.length||0)+" cards shown · "+(root.saved?"No live lookups on reopen":"Up to 300 catalogue rows shown; 50 cards per saved guide");color:App.Palette.accent}
                         Copy {visible:!!root.result;text:root.result;color:App.Palette.muted}
                         Copy {visible:!!root.dataSet?.deck?.issues?.length;text:(root.dataSet?.deck?.issues||[]).join("\n");color:App.Palette.warning}
-                        Copy {text:"Timing snapshots need rechecking within two hours or an earlier source expiry. Weather has a separate six-hour age limit. Those are maximum recheck limits, not promises that conditions stay unchanged. Horizon obstructions and Trip Planner destinations are not applied by this guide.";color:App.Palette.muted}
+                        Copy {text:"Timing snapshots need rechecking within two hours or an earlier source expiry. Weather has a separate six-hour age limit. Those are maximum recheck limits, not promises that conditions stay unchanged. Trip sources use saved comparison windows with manual/terrain clipping; active sources do not. Equipment preferences apply to new selections; saved guides never change with your profile.";color:App.Palette.muted}
                     }
                     Repeater {
                         model:root.dataSet?.deck?.rows||[]

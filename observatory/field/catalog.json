@@ -1,0 +1,100 @@
+{
+  "checked": "2026-11-14",
+  "coordinateBasis": "Rounded J2000/ICRS catalogue centres for a small orientation finder; not telescope pointing or photometric predictions.",
+  "coordinateSource": "https://science.nasa.gov/wp-content/uploads/2023/09/Astrophotography_Guide.pdf",
+  "targets": [
+    {
+      "id": "M31",
+      "name": "M31 · Andromeda Galaxy",
+      "ra": 0.712314,
+      "dec": 41.26875,
+      "extent": 3.0,
+      "type": "Galaxy",
+      "hint": "Start in Andromeda; diffuse extended light, with a brighter core. Dark skies and a wide field help.",
+      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?M31"
+    },
+    {
+      "id": "M42",
+      "name": "M42 · Orion Nebula",
+      "ra": 5.59,
+      "dec": -5.45,
+      "extent": 1.5,
+      "type": "Nebula",
+      "hint": "Below Orion’s belt, in the sword. Optical detail depends on conditions and equipment."
+    },
+    {
+      "id": "M45",
+      "name": "M45 · Pleiades",
+      "ra": 3.7833,
+      "dec": 24.1167,
+      "extent": 2.0,
+      "type": "Open cluster",
+      "hint": "A broad cluster in Taurus. Binoculars offer a wider overview than high magnification."
+    },
+    {
+      "id": "M13",
+      "name": "M13 · Hercules Cluster",
+      "ra": 16.695,
+      "dec": 36.4667,
+      "extent": 0.35,
+      "type": "Globular cluster",
+      "hint": "In Hercules. Binoculars may show a patch; resolving individual stars needs suitable optics."
+    },
+    {
+      "id": "M57",
+      "name": "M57 · Ring Nebula",
+      "ra": 18.8933,
+      "dec": 33.0333,
+      "extent": 0.024,
+      "type": "Planetary nebula",
+      "hint": "Between the southern stars of Lyra. Small target; a telescope and finder practice are useful."
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "alnilam",
+      "name": "Orion · Alnilam, belt centre",
+      "ra": 5.603559,
+      "dec": -1.201919,
+      "type": "Constellation landmark",
+      "hint": "Middle star of Orion’s three-star belt. The nebula lies in the sword below the belt.",
+      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?Alnilam"
+    },
+    {
+      "id": "vega",
+      "name": "Lyra · Vega",
+      "ra": 18.615649,
+      "dec": 38.783689,
+      "type": "Constellation landmark",
+      "hint": "Bright anchor for Lyra; use the small parallelogram to work towards M57.",
+      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?Vega"
+    },
+    {
+      "id": "polaris",
+      "name": "Ursa Minor · Polaris",
+      "ra": 2.530304,
+      "dec": 89.264109,
+      "type": "Constellation landmark",
+      "hint": "Northern-sky anchor near the celestial pole. Not visible from most southern latitudes.",
+      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?Polaris"
+    },
+    {
+      "id": "dubhe",
+      "name": "Ursa Major · Dubhe",
+      "ra": 11.062131,
+      "dec": 61.751035,
+      "type": "Constellation landmark",
+      "hint": "One of the Big Dipper’s bowl stars; the Dipper is an asterism within Ursa Major.",
+      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?Dubhe"
+    },
+    {
+      "id": "canopus",
+      "name": "Carina · Canopus",
+      "ra": 6.399197,
+      "dec": -52.695661,
+      "type": "Constellation landmark",
+      "hint": "Bright southern-sky anchor in Carina; unavailable from far northern latitudes.",
+      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?Canopus"
+    }
+  ]
+}

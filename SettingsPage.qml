@@ -125,6 +125,11 @@ ColumnLayout {
             onClicked: App.Palette.toggle()
         }
         Copy { text: App.Palette.follow ? qsTr("Follows Omarchy's current colours, including theme changes. Text and status colours retain readable contrast.") : qsTr("Using the original Observatory colours."); color: App.Palette.muted }
+        Flow {Layout.fillWidth:true;spacing:8
+            Repeater {model:["normal","dim","red"]
+                Action {required property string modelData;text:(App.Palette.observingMode===modelData?"● ":"")+modelData+" display";enabled:!App.Palette.save.running;onClicked:App.Palette.setObserving(modelData)}}
+        }
+        Copy {text:"Dim/red mode affects OMANOVA only. Readable contrast is retained; lower your screen brightness separately if needed. Normal restores your chosen desktop/Observatory theme.";color:App.Palette.muted}
         Copy { visible: App.Palette.missing; text: qsTr("Desktop colours unavailable or incomplete. Using Observatory colours until they return."); color: App.Palette.warning }
         Copy { visible: App.Palette.error.length>0; text: App.Palette.error; color: App.Palette.warning }
         RowLayout {

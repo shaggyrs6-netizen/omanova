@@ -6,6 +6,8 @@ OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
+> **Local unreleased build:** the observing-completion branch includes the additions below. The linked v0.1.2 release and marketplace request do not contain them. Nothing from this local completion build has been uploaded.
+
 > **Version 0.1.2:** guided setup, hidden worker, broader observing controls, Trip Planner and terrain horizons. Read the [complete changelog](CHANGELOG.md) and [release notes](https://github.com/shaggyrs6-netizen/omanova/releases/tag/v0.1.2).
 
 ## Features and options
@@ -963,3 +965,69 @@ refreshed or overwritten automatically. Selection and inspect-stale consent
 reset on tab load. Closing/leaving the tab ends its saved-age checks, and
 existing guides remain local. No worker, autostart, bar or compact-panel change
 is needed. Publication and marketplace submission changes remain separate.
+
+
+## Local observing-completion build
+
+This is the agreed stopping point for the app/widget feature pass. Desktop-shell
+work remains deferred. New code is isolated on `codex/observing-completion`; the
+public/submitted 0.1.2 version, tag and assets are unchanged. See **Unreleased**
+in CHANGELOG.md for the full combined local change list, including accepted
+theme, launch-following, equipment, calendar and offline-card work.
+
+Use **normal / dim / red display** above the Observatory tabs or in Settings.
+Contrast stays readable, labels carry status meaning and normal restores your
+chosen desktop/Observatory theme. Compact fallback uses the same appearance
+file. Screen brightness, other apps and the desktop theme are not changed.
+New portable HTML guides also include their own display controls; old immutable
+guides are not rewritten.
+
+**Destination Sites** compares the active location, Trip Home or Trip destination
+with a curated list of 12 examples in the USA, UK, New Zealand and Australia.
+The initial 500 km view can expand to all examples. Distance is great-circle,
+not driving distance/time. Point coordinates are approximate references; official
+pages and local signs determine actual access. Evidence dates and older-than-90-
+day warnings remain visible. The original regional Dark-Sky Sites page remains.
+No coordinates are sent for distance calculation, and no routing API is used.
+
+**Sky Finder** includes Orion/Alnilam, Lyra/Vega, Ursa Minor/Polaris, Ursa Major/
+Dubhe and Carina/Canopus as constellation anchors, plus M31, M42, M45, M13 and
+M57. It calculates local windows at least 20° above the geometric/saved horizon,
+using twilight for bright anchors and astronomical darkness for deep-sky targets.
+The compass depicts one target at its own suggested time, not a simultaneous
+whole-sky chart. No full constellation outlines, tracking/alignment solution,
+weather download or actual sighting guarantee is claimed. Ended windows, aged
+results, unknown brightness and Moon context are explicit. Geometry uses the
+existing checksum-bound NASA kernel and rounded J2000/ICRS catalogue positions.
+Catalogue references: NASA Astrophotography Guide (Messier list) and CDS Sesame/
+SIMBAD (named-star and M31 coordinates); only a small numerical subset is bundled.
+
+Darkness estimates report Sun-below-minus-18-degree hours and Moon-free hours.
+They are not an address-derived Bortle/SQM measurement or cloud assessment.
+Equipment sky description remains manual. Optional equipment details accept
+aperture 20–600 mm, field of view 0.1–180 degrees, binocular power 2–30x and
+unknown/wide-field/tracked camera context. Field size can be compared with a
+finder target's extent; aperture/power do not invent a sensitivity threshold.
+
+Equipment/sky filters now apply to Overview suggestions and new calendar/card
+selections. Excluded entries remain inspectable; turn Filter suggestions off
+in Equipment and Sky if you explicitly want an unfiltered selection. This does
+not override stale/poor/safety gates, change worker alerts or remove the bar's
+next-pass fallback. Existing saved cards retain their captured equipment advice.
+
+For trip exports, **Save & compare nights** in Trip Planner first, then choose
+**Trip Home** or **Trip destination** in Calendar Export or Offline Cards. These
+sources contain the compared Moon/planet windows and station passes supported
+by cached elements, clipped by saved manual and enabled terrain horizons.
+Legacy/mismatched comparisons must be recomputed; changed place/date/height/
+horizon/terrain inputs cannot silently reuse old geometry. There are no implicit
+weather/terrain/orbital downloads. Calendar rows show the destination-zone label
+as well as UTC; importing calendars use their own display zone. Offline cards
+adopt the trip column's zone/night and preserve the original context. Trip
+station forecast coverage remains unknown where not supplied; no GO is inferred.
+
+The existing guided installer, hidden worker and optional autostart are retained.
+No new background process or autostart setting is introduced by field tools.
+Before any eventual public release: choose a new version, rebuild its pinned
+archive/installer checks and obtain publication approval. Never replace the
+already-published v0.1.2 assets/tag with this source snapshot.

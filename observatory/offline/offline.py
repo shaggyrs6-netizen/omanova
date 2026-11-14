@@ -23,7 +23,7 @@ def allowed_state(state):
 def request_source(state,payload):
     deployed=state.resolve()==LIVE_STATE.resolve()
     source=payload.get('source','live' if deployed else 'sample')
-    if source not in ('sample','live') or (deployed and source!='live'):raise ValueError('Live guides require real planner data')
+    if source not in ('sample','live','trip-home','trip-destination') or (deployed and source=='sample'):raise ValueError('Live guides require real planner data')
     return source
 
 LABELS={'eye':'Naked eye','binoculars':'Binoculars','telescope':'Telescope','camera':'Camera'}
@@ -60,6 +60,11 @@ def source_data(state,source,now,live_path=None):
             for r in rows:r['look']['time']=iso(utc(r['start'])+(utc(r['end'])-utc(r['start']))/2)
             stored={'clock':iso(clock),'rows':rows};write(state/'samples.json',stored)
         return stored['rows'],stored['clock'],utc(stored['clock']),issues
+    if source in ('trip-home','trip-destination'):
+        from observing_context import trip_events
+        data=trip_events(source,now)
+        for r in data['events']:r['contextNight']=data.get('nightStart','')
+        return data['events'],data['generated'],now,[]
     if source!='live':raise ValueError('Choose sample or live data')
     data=read(live_path or DEFAULT_STATE/'planner.json',{})
     if not isinstance(data,dict):data={}
@@ -71,14 +76,18 @@ def source_data(state,source,now,live_path=None):
 
 
 def prepare(state,request,now,live_path=None):
-    source=request_source(state,request);zone=request.get('zone') or desktop_zone()
-    ZoneInfo(zone)
+    source=request_source(state,request)
     raw,generated,clock,issues=source_data(state,source,now,live_path)
+    zone=request.get('zone') or (raw[0].get('timeZone') if source.startswith('trip-') and raw else None) or desktop_zone()
+    ZoneInfo(zone)
     d=clock.astimezone(ZoneInfo(zone))
-    night=request.get('night') or (d.date()-timedelta(days=d.hour<12)).isoformat()
+    night=request.get('night') or (raw[0].get('contextNight') if source.startswith('trip-') and raw else None) or (d.date()-timedelta(days=d.hour<12)).isoformat()
     start,end=night_window(night,zone)
     try:source_stale=not timedelta(0)<=clock-utc(generated)<=timedelta(minutes=3)
     except (ValueError,TypeError,OverflowError):source_stale=True
+    from observing_context import equipment_profile,match
+    from observatory.equipment.equipment import profile
+    equipment=equipment_profile() if state.resolve()==LIVE_STATE.resolve() else profile({})
     rows=[];seen=set()
     for original in raw:
         r=clean_row(original)
@@ -109,10 +118,14 @@ def prepare(state,request,now,live_path=None):
         r['weatherExpires']=''
         try:r['weatherExpires']=iso(utc(r['conditions']['fetched'])+timedelta(hours=6))
         except (ValueError,TypeError,OverflowError):pass
+        assessment=match(r,equipment,clock)
+        if assessment:
+            r['equipmentNote']+=' '+('Selected kit: '+', '.join(equipment['gear'])+'. ')+' '.join(assessment['notes'])
+            if equipment['filter'] and assessment['excluded'] and not assessment['restricted']:r['unsupported']=r['unsupported'] or 'Excluded by Equipment and Sky preferences; adjust that profile to include it.'
         rows.append(r)
     rows.sort(key=lambda r:(r['segmentStart'],r['name'],r['id']))
     return {'schema':1,'source':source,'night':night,'zone':zone,'windowStart':iso(start),'windowEnd':iso(end),'capturedAt':iso(clock),
-            'sampleClock':iso(clock) if source=='sample' else '', 'issues':issues,'rows':rows[:300],'available':len(rows)}
+            'horizonApplied':source.startswith('trip-'),'sampleClock':iso(clock) if source=='sample' else '', 'issues':issues,'rows':rows[:300],'available':len(rows)}
 
 
 def row_status(row,now):
@@ -154,7 +167,7 @@ def load_saved(state,guide):
     if not isinstance(guide,str) or not ID.fullmatch(guide):raise ValueError('Choose a saved guide')
     path=state/'guides'/guide/'deck.json';d=read(path,None)
     if not isinstance(d,dict) or d.get('schema')!=1 or not isinstance(d.get('rows'),list) or len(d['rows'])>50:raise ValueError('Saved guide unavailable; keep it for inspection')
-    if d.get('source') not in ('sample','live') or (state.resolve()==LIVE_STATE.resolve() and d['source']!='live'):raise ValueError('This saved guide is not valid for this library')
+    if d.get('source') not in ('sample','live','trip-home','trip-destination') or (state.resolve()==LIVE_STATE.resolve() and d['source']=='sample'):raise ValueError('This saved guide is not valid for this library')
     night_window(d['night'],d['zone']);utc(d['capturedAt'])
     return d
 
@@ -179,6 +192,9 @@ def save(state,request,now):
     if any(i not in rows or rows[i]['unsupported'] for i in ids):raise ValueError('Refresh and select available cards')
     chosen=[rows[i] for i in ids]
     if any(r['staleAtCapture'] or r['sourceIssues'] for r in chosen) and request.get('includeStale') is not True:raise ValueError('Explicitly include stale/incomplete records first')
+    display=request.get('displayMode','normal')
+    if display not in ('normal','dim','red'):raise ValueError('Choose normal, dim or red display')
+    deck['displayMode']=display
     deck['rows']=chosen;deck['available']=len(chosen);deck['savedAt']=iso(now)
     guide=now.strftime('%Y%m%dT%H%M%SZ')+'-'+secrets.token_hex(4)
     folder=state/'guides'/guide;folder.mkdir(parents=True,mode=0o700,exist_ok=False)
@@ -199,11 +215,11 @@ def render_html(deck,now):
 <p><b>Weather at capture:</b> {e(r['conditions']['label'])} · <span class="weather-status">{e(r['weatherStatus'])}</span><br>Forecast fetched: {e(r['conditions']['fetched'] or 'unknown')}; expires: {e(r['weatherExpires'] or 'unknown')}</p>
 <p>Timing source checked: {e(r['sourceGenerated'] or 'unknown')}. Recheck no later than {e(r['recheckAt'])} (conservative two-hour snapshot limit, or earlier source expiry).</p>
 <p>{e(r['reason'])}</p><p class="warning">{e(r['safety'])}</p><p class="source">Source reference (not fetched offline): {e(r['source'] or 'not supplied')}</p></article>''')
-    script='''function refresh(){const now=Date.now();document.querySelectorAll('article').forEach(a=>{const p=a.dataset,cap=Date.parse(p.captured),end=Date.parse(p.end),check=Date.parse(p.recheck);let s='Saved timing snapshot — not a live prediction';if(!Number.isFinite(cap)||!Number.isFinite(check)||!Number.isFinite(end))s='Timing freshness unknown — inspect only';else if(now<cap)s='Clock mismatch — saved time is in the future';else if(now>=end)s='Ended — saved record only';else if(p.stale==='1')s='Stale when captured — inspect only';else if(p.issue==='1')s='Incomplete when captured — recheck sources';else if(now>=check)s='Saved timing aged — recheck needed';a.querySelector('.status').textContent=s;const f=Date.parse(p.fetched),w=Date.parse(p.weather);a.querySelector('.weather-status').textContent=!Number.isFinite(f)||!Number.isFinite(w)?'Weather freshness unknown':now<f?'Forecast clock mismatch — do not rely on it':now>=w?'Saved weather stale — recheck needed':'Saved forecast only — local conditions can differ';});}refresh();setInterval(refresh,30000);'''
+    script='''function setDisplay(mode){if(['normal','dim','red'].includes(mode))document.body.dataset.mode=mode;}function refresh(){const now=Date.now();document.querySelectorAll('article').forEach(a=>{const p=a.dataset,cap=Date.parse(p.captured),end=Date.parse(p.end),check=Date.parse(p.recheck);let s='Saved timing snapshot — not a live prediction';if(!Number.isFinite(cap)||!Number.isFinite(check)||!Number.isFinite(end))s='Timing freshness unknown — inspect only';else if(now<cap)s='Clock mismatch — saved time is in the future';else if(now>=end)s='Ended — saved record only';else if(p.stale==='1')s='Stale when captured — inspect only';else if(p.issue==='1')s='Incomplete when captured — recheck sources';else if(now>=check)s='Saved timing aged — recheck needed';a.querySelector('.status').textContent=s;const f=Date.parse(p.fetched),w=Date.parse(p.weather);a.querySelector('.weather-status').textContent=!Number.isFinite(f)||!Number.isFinite(w)?'Weather freshness unknown':now<f?'Forecast clock mismatch — do not rely on it':now>=w?'Saved weather stale — recheck needed':'Saved forecast only — local conditions can differ';});}refresh();setInterval(refresh,30000);'''
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>OMANOVA · {e(d['night'])} observing guide</title>
-<style>body{{background:#0a1220;color:#eef5ff;font:16px/1.55 system-ui,sans-serif;max-width:980px;margin:auto;padding:28px}}article{{background:#142137;border:1px solid #3f5872;border-radius:12px;padding:22px;margin:20px 0;break-inside:avoid}}h1,h2{{line-height:1.2}}.tag,.status{{color:#77e3df;font-weight:bold}}.warning,.weather-status,.status{{color:#ffcf8b}}.source{{overflow-wrap:anywhere;color:#afc0d5}}@media print{{body,article{{background:white;color:black}}article{{border:1px solid #777}}.tag,.status,.warning,.weather-status,.source{{color:black}}}}</style></head><body>
-<header><p>OMANOVA / {'SIMULATED EXAMPLES' if d['source']=='sample' else 'SAVED OFFLINE SNAPSHOT'}</p><h1>Your night: {e(d['night'])}</h1><p>Guide zone: {e(d['zone'])}. Noon to noon: {e(d['windowStart'])} — {e(d['windowEnd'])} UTC.</p>
-<p>Saved {e(d['savedAt'])}. Prediction snapshot {e(d['capturedAt'])}. No address, coordinates or location name included.</p><p class="warning">{'SIMULATED: not real predictions. ' if d['source']=='sample' else ''}Recheck timing, weather, local horizon and safety before observing. Applies to the observing location used when saved, not a newly selected place. No automatic updates, alarms or live visibility guarantee. Source links are references only. Manual/terrain horizons and Trip Planner destinations have not been applied by this guide.</p><p>On-screen freshness uses this device's clock. Printed copies cannot update: use the timestamps and recheck deadlines on each card.</p><noscript><p class="warning">Dynamic age checks are unavailable. Treat freshness as unknown; inspect each saved timestamp and recheck deadline.</p></noscript></header>
+<style>body{{background:#0a1220;color:#eef5ff;font:16px/1.55 system-ui,sans-serif;max-width:980px;margin:auto;padding:28px}}article{{background:#142137;border:1px solid #3f5872;border-radius:12px;padding:22px;margin:20px 0;break-inside:avoid}}h1,h2{{line-height:1.2}}.tag,.status{{color:#77e3df;font-weight:bold}}.warning,.weather-status,.status{{color:#ffcf8b}}.source{{overflow-wrap:anywhere;color:#afc0d5}}body[data-mode="dim"]{{background:#020508;color:#a8c0c3}}body[data-mode="red"],body[data-mode="red"] article{{background:#0c0202;color:#ffaaa0;border-color:#ce6c64}}body[data-mode="red"] .tag,body[data-mode="red"] .status,body[data-mode="red"] .warning,body[data-mode="red"] .weather-status,body[data-mode="red"] .source{{color:#ffc0b8}}button{{background:#142137;color:#eef5ff;border:1px solid #607a94;border-radius:5px;padding:10px}}body[data-mode="red"] button{{background:#240807;color:#ffaaa0;border-color:#ce6c64}}@media print{{button{{display:none}}body,article{{background:white;color:black}}article{{border:1px solid #777}}.tag,.status,.warning,.weather-status,.source{{color:black}}}}</style></head><body data-mode="{e(d.get('displayMode','normal'))}">
+<header><p><button onclick="setDisplay('normal')">Normal</button> <button onclick="setDisplay('dim')">Dim</button> <button onclick="setDisplay('red')">Red</button></p><p>OMANOVA / {'SIMULATED EXAMPLES' if d['source']=='sample' else 'SAVED OFFLINE SNAPSHOT'}</p><h1>Your night: {e(d['night'])}</h1><p>Guide zone: {e(d['zone'])}. Noon to noon: {e(d['windowStart'])} — {e(d['windowEnd'])} UTC.</p>
+<p>Saved {e(d['savedAt'])}. Prediction snapshot {e(d['capturedAt'])}. No address, coordinates or location name included.</p><p class="warning">{'SIMULATED: not real predictions. ' if d['source']=='sample' else ''}Recheck timing, weather, local horizon and safety before observing. Applies to the observing location used when saved, not a newly selected place. No automatic updates, alarms or live visibility guarantee. Source links are references only. {('Saved Trip Planner manual/terrain horizon clipping applied.' if d.get('horizonApplied') else 'Active-location guide; Trip Planner horizons are not applied.')}</p><p>On-screen freshness uses this device's clock. Printed copies cannot update: use the timestamps and recheck deadlines on each card.</p><noscript><p class="warning">Dynamic age checks are unavailable. Treat freshness as unknown; inspect each saved timestamp and recheck deadline.</p></noscript></header>
 {''.join(cards)}<script>{script}</script></body></html>'''
 
 

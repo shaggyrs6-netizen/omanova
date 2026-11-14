@@ -209,6 +209,8 @@ def compare(config,state,now=None,orbit=None,schedule=None):
                 'stationNote':station_note,'weatherNote':weather_note,'meteors':active,
                 'clearWindowCount':sum(len(t['windows']) for n in nights for t in n['targets']),
                 'blockedMinutes':sum(t['blockedMinutes'] for n in nights for t in n['targets'])}
+    from observing_context import trip_signature
+    result['configurationHash']=trip_signature(config,state)
     # Global launch schedules are useful while travelling, but are not local visibility predictions.
     schedule=schedule if schedule is not None else read(DEFAULT_STATE/'planning/launches/launches.json',{})
     start=night_bounds(days[0],config['destination']['timezone'])[0];end=night_bounds(days[-1],config['destination']['timezone'])[1]

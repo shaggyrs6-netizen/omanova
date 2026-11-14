@@ -11,6 +11,7 @@ Item {
     readonly property bool deployed:Quickshell.env("OMANOVA_EQUIPMENT_DEPLOYED")==="1"
     readonly property color backgroundColour:App.Palette.background
     Component.onCompleted:if(deployed)request("tick")
+    property bool capabilitiesOpen:false
     property var dataSet:null
     property string action:"tick"
     property string pending:""
@@ -77,6 +78,20 @@ Item {
                             }
                         }
                         Copy {text:"A camera means a wide-field/tripod overview. Aperture, tracking, field of view and exposure are unassessed. Telescope selection alone does not establish faint-target capability.";color:App.Palette.muted}
+                        Action {text:root.capabilitiesOpen?"Hide equipment details":"Optional equipment details";onClicked:root.capabilitiesOpen=!root.capabilitiesOpen}
+                        ColumnLayout {visible:root.capabilitiesOpen;Layout.fillWidth:true;spacing:8
+                            Copy {text:"Aperture (20–600 mm), field of view (0.1–180°), binocular power (2–30×). Leave unknown values blank.";color:App.Palette.muted}
+                            Flow {Layout.fillWidth:true;spacing:8
+                                TextField {id:aperture;width:145;placeholderText:"Aperture mm";text:root.dataSet?.profile?.apertureMm??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
+                                TextField {id:fov;width:145;placeholderText:"Field of view °";text:root.dataSet?.profile?.fieldOfViewDeg??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
+                                TextField {id:power;width:145;placeholderText:"Binocular ×";text:root.dataSet?.profile?.binocularMagnification??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
+                                Action {text:"Save details";enabled:!!root.dataSet&&!helper.running;onClicked:{let p=JSON.parse(JSON.stringify(root.dataSet.profile));p.apertureMm=aperture.text.trim()?Number(aperture.text):null;p.fieldOfViewDeg=fov.text.trim()?Number(fov.text):null;p.binocularMagnification=power.text.trim()?Number(power.text):null;if([p.apertureMm,p.fieldOfViewDeg,p.binocularMagnification].some(v=>v!==null&&!Number.isFinite(v))){root.result="Enter numbers or leave unknown values blank.";return}root.request("save",p)}}
+                            }
+                            Flow {Layout.fillWidth:true;spacing:8
+                                Repeater {model:["unknown","widefield","tracked"];Action {required property string modelData;text:(root.dataSet?.profile?.cameraMode===modelData?"● ":"")+"Camera: "+modelData;enabled:!!root.dataSet&&!helper.running;onClicked:root.preference("cameraMode",modelData)}}
+                            }
+                            Copy {text:"Sky Finder compares your field of view with target size. Aperture/power/camera mode are recorded as context, not a promise of limiting magnitude, exposure or resolved detail. Equipment preferences also filter Overview and new calendar/offline selections; saved guides retain their original snapshot.";color:App.Palette.muted}
+                        }
                         Copy {text:"My sky · manual description";font.bold:true}
                         Flow {
                             Layout.fillWidth:true;spacing:8

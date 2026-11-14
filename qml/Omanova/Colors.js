@@ -38,3 +38,9 @@ function palette(text) {
         good:onAll(p.green||'#21874b',4.5),warning:onAll(p.yellow||'#ae6d00',4.5),
         bad:onAll(p.red||'#bd3041',4.5),terrain:onAll(p.orange||'#b66d21',4.5)}
 }
+
+function observing(mode) {
+ if(mode==='dim')return palette('background="#03080b"\nforeground="#a8c0c3"\naccent="#98bbbd"\nmuted="#94afb1"')
+ if(mode==='red')return {background:'#0c0202',surface:'#180605',field:'#120403',button:'#240807',hover:'#300b09',ink:'#ffaaa0',muted:'#f28f86',accent:'#ffc0b8',violet:'#ffaaa0',border:'#ce6c64',good:'#ffc0b8',warning:'#ffaaa0',bad:'#ffd0c8',terrain:'#ffaaa0'}
+ return null
+}

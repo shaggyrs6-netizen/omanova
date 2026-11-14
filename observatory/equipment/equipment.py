@@ -22,7 +22,7 @@ def allowed_state(state):
 
 GEAR=('eye','binoculars','telescope','camera')
 SKIES=('unknown','bright','moderate','dark')
-DEFAULT={'gear':['eye'],'sky':'unknown','filter':True,'uncertain':True,'showExcluded':False}
+DEFAULT={'gear':['eye'],'sky':'unknown','filter':True,'uncertain':True,'showExcluded':False,'apertureMm':None,'fieldOfViewDeg':None,'binocularMagnification':None,'cameraMode':'unknown'}
 
 
 def profile(raw):
@@ -33,6 +33,10 @@ def profile(raw):
     if out['sky'] not in SKIES:raise ValueError('Choose a sky description')
     for k in ('filter','uncertain','showExcluded'):
         if type(out[k]) is not bool:raise ValueError('Filter controls require true or false')
+    for key,lo,hi in (('apertureMm',20,600),('fieldOfViewDeg',.1,180),('binocularMagnification',2,30)):
+        v=out[key]
+        if v is not None and (type(v) not in (int,float) or not isfinite(v) or not lo<=v<=hi):raise ValueError('Equipment value outside supported range')
+    if out['cameraMode'] not in ('unknown','widefield','tracked'):raise ValueError('Choose a camera mode')
     return out
 
 
@@ -41,6 +45,11 @@ def rule(row,sample=False):
     kind=row['kind'];name=row['name'].casefold();reason=row.get('reason','')
     if sample and row.get('sampleRule')=='meteor-photo':
         return ['camera'],'dark','Wide-field camera exercise: tripod and exposure technique needed; no exposure prediction.'
+    if kind=='landmark':return ['eye','binoculars','camera'],'any','Bright-star landmark overview; not a whole-constellation visibility guarantee.'
+    if kind=='deep-sky':
+        if 'M57' in row['name']:return ['telescope'],'dark','Small planetary nebula; telescope scale and dark adaptation matter.'
+        if 'M13' in row['name']:return ['binoculars','telescope'],'dark','Cluster may be a faint patch; resolving stars is instrument dependent.'
+        return ['eye','binoculars','telescope','camera'],'dark','Overview only under dark skies; diffuse detail and imaging results depend on conditions and kit.'
     if kind=='moon':return list(GEAR),'any','Moon viewing fits all four choices. Telescope detail and camera results depend on the instrument.'
     if kind=='planet' and row['name'] in ('Mercury','Venus','Mars','Jupiter','Saturn'):
         return list(GEAR),'any','Bright-planet overview: an eye/camera may record a point; resolved detail requires appropriate optics.'

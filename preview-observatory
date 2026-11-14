@@ -34,7 +34,7 @@ if [[ $fixture == 0 ]]; then
     mkdir -p "$plume_schedule"
 fi
 mkdir -p "$state"/{config,cache,qml} "$launch_state"
-for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml observatory/trips/{TripPage,TripButton,TripField,TripChoice,TripSpin,TripNightCard,HorizonChart}.qml observatory/follow/FollowPage.qml observatory/equipment/EquipmentPage.qml observatory/calendar/CalendarPage.qml observatory/offline/OfflinePage.qml SkyState.qml SettingsPage.qml ObservingPreferences.qml OpportunityCard.qml UnifiedEventsPage.qml SkyPanel.qml Compass.qml; do
+for file in observatory/Window.qml observatory/InstrumentPlot.qml observatory/events/EventsPage.qml observatory/orbit/{OrbitPage,GroundMap}.qml observatory/moon/{MoonPage,MoonDisk}.qml observatory/meteors/MeteorPage.qml observatory/planets/PlanetPage.qml observatory/comets/CometPage.qml observatory/eclipses/EclipsePage.qml observatory/plumes/PlumePage.qml observatory/satellites/WatchlistPage.qml observatory/trains/TrainPage.qml observatory/aurora/AuroraPage.qml observatory/dark-sites/DarkSitesPage.qml observatory/observing-log/ObservingLogPage.qml observatory/trips/{TripPage,TripButton,TripField,TripChoice,TripSpin,TripNightCard,HorizonChart}.qml observatory/follow/FollowPage.qml observatory/equipment/EquipmentPage.qml observatory/calendar/CalendarPage.qml observatory/offline/OfflinePage.qml observatory/field/FieldPage.qml SkyState.qml SettingsPage.qml ObservingPreferences.qml OpportunityCard.qml UnifiedEventsPage.qml SkyPanel.qml Compass.qml; do
     ln -sfn "$PWD/$file" "$state/qml/${file##*/}"
 done
 ln -sfn "$PWD/qml" "$state/qml/qml"
@@ -123,5 +123,12 @@ else
 fi
 OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/offline/offline.py --state "$offline_state" init || printf '%s\n' "Offline catalogue unavailable; the Observatory can still open." >&2
 export OMANOVA_OFFLINE_STATE="$offline_state" OMANOVA_OFFLINE_RUNTIME="$PWD"
+if [[ $fixture == 0 ]]; then field_state="${XDG_DATA_HOME:-$HOME/.local/share}/omanova-field";else field_state="$state/field";fi
+mkdir -p "$field_state"
+export OMANOVA_FIELD_STATE="$field_state" OMANOVA_FIELD_RUNTIME="$PWD"
+if [[ $fixture == 0 ]]; then
+    distance_mi=$(.venv/bin/python -c 'from worker import settings_at,DEFAULT_STATE;print("1" if settings_at(DEFAULT_STATE).get("distance_unit")=="mi" else "0")')
+    export OMANOVA_DISTANCE_MI="$distance_mi"
+fi
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
 exec qs --no-color -n -p "$state/qml/Window.qml" "$@"

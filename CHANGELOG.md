@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased — local observing completion
+
+Held locally on a separate branch; the submitted/public 0.1.2 snapshot is unchanged.
+
+- Follow desktop theme, plus readable normal/dim/red modes in the Observatory and compact fallback. The normal display restores the chosen theme; screen brightness remains a device setting. New portable guides have their own display controls.
+- Launch following: favourites, explicit download/alert consent, delay/hold/scrub distinctions, validated webcast links, bounded cache/request budgets and no catch-up alerts. Monitoring requires the Observatory to remain open.
+- My Equipment and Sky: additive equipment choices, manual sky description, optional aperture/FOV/binocular power/camera context, explicit uncertainty and profile exclusions. Overview and new calendar/offline selections now honour those preferences; bar and existing alert rules are unchanged. No invented limiting magnitude or exposure guarantee.
+- Calendar Export: local private .ics snapshots, explicit event selection, UTC/DST-safe times, safety/uncertainty labels and per-session opt-in reminders. No calendar account, invitation or live subscription.
+- Offline Cards: immutable private JSON/self-contained printable HTML guides with local/UTC times, direction-time labels, equipment guidance, separate timing/weather age checks and offline reopening. Saved guides retain their original context.
+- Trip Home/destination sources for calendar/cards use an explicitly saved comparison, including manual and enabled terrain horizon clipping. A configuration/terrain signature rejects changed or legacy comparisons until recomputed. No implicit new network calls. Exported data omit place names, addresses and coordinates.
+- Destination Sites: 12 curated regional/international examples, ordered by local straight-line distance from active/Trip locations, with dated darkness/access evidence and official links. Not a comprehensive search, driving route or access guarantee.
+- Sky Finder: five constellation landmarks and five starter deep-sky targets, local windows/directions, a single-target compass, Moon context, equipment/FOV notes and saved-horizon clipping. Geometry remains unconfirmed for actual visibility.
+- Estimated astronomical/Moon-free darkness is calculated locally. Background light pollution/Bortle/SQM remains unknown unless separately documented; manual sky quality is retained.
+- Missing planner data does not lock away saved guide libraries. New guide creation and export revalidate source age; archive reopening never silently recalculates predictions.
+
+Source/runtime/installer remain local. A new version/tag/public archive requires a later release decision; no update to marketplace review scope is implied.
+
 ## 0.1.2 — 12 November 2026
 
 OMANOVA 0.1.2 adds destination planning, manual and terrain horizons, a broader

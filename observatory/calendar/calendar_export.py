@@ -22,7 +22,7 @@ def allowed_state(state):
 def request_source(state,payload):
     deployed=state.resolve()==LIVE_STATE.resolve()
     source=payload.get('source','live' if deployed else 'sample')
-    if source not in ('sample','live') or (deployed and source!='live'):raise ValueError('Live calendar state requires real planner data')
+    if source not in ('sample','live','trip-home','trip-destination') or (deployed and source=='sample'):raise ValueError('Live calendar state requires real planner data')
     return source
 
 MAX_EVENTS=50
@@ -61,8 +61,14 @@ def catalogue(state,source,now,live_path=None):
         if data.get('issues'):error='Planner reports source issues; recheck in the live Observatory. Export is blocked.'
         if not rows:error='No live planning events available. No data were downloaded.'
         namespace='live-'+hashlib.sha256(str(data.get('location_id','unknown')).encode()).hexdigest()
+    elif source in ('trip-home','trip-destination'):
+        from observing_context import trip_events
+        data=trip_events(source,now);rows=data['events'];generated=data['generated'];namespace=source+'-'+data['configurationHash']
     else:raise ValueError('Unknown source')
     if not isinstance(rows,list) or len(rows)>3000:raise ValueError('Unexpected event catalogue')
+    from observing_context import equipment_profile,match
+    from observatory.equipment.equipment import profile
+    equipment=equipment_profile() if state.resolve()==LIVE_STATE.resolve() else profile({})
     output=[];seen=set()
     for raw in rows:
         r=clean_row(raw)
@@ -90,6 +96,10 @@ def catalogue(state,source,now,live_path=None):
         notes.extend(['Visibility: '+r['visibility']+'. Weather: '+weather+'.',r['reason']])
         if solar:notes.append('Solar safety: generic eye/binocular/telescope/camera choices do not establish safe viewing equipment. Use appropriate certified solar viewers or front-mounted solar filters for optics; check NASA safety guidance.')
         if r['safety']:notes.append(r['safety'])
+        assessment=match(r,equipment,now)
+        if equipment['filter'] and assessment and assessment['excluded'] and not assessment['restricted']:blocked=blocked or 'Excluded by Equipment and Sky preferences; change that profile to include it.'
+        if assessment:notes.extend(assessment['notes'])
+        for key in ('timeZone','displayStart','displayEnd'):r[key]=raw.get(key,'')
         key=hashlib.sha256((namespace+'|'+r['id']).encode()).hexdigest()+'@omanova.local'
         output.append({**r,'conditions':{**r['conditions'],'label':weather},'uid':key,'blocked':blocked,'caution':caution,'label':label,'notes':[n for n in notes if n]})
     output.sort(key=lambda r:(bool(r['blocked']),r['start'],r['name']))
@@ -106,7 +116,7 @@ def render(rows,now,source,lead=0):
         if look.get('az') is not None:direction+=' ('+str(round(look['az'],1))+'° azimuth)'
         if look.get('el') is not None:direction+=', '+str(round(look['el'],1))+'° altitude'
         note='\n'.join((('SIMULATED EXAMPLE — not a real prediction.\n' if source=='sample' else '')+'OMANOVA observing window. Visibility is not guaranteed.',
-                        *r['notes'],direction,'Source: '+(r['source'] or 'Not supplied'),
+                        *r['notes'],direction,'Source: '+(r['source'] or 'Not supplied'),'Observing time zone: '+r.get('timeZone','calendar/desktop zone'),
                         'One-off snapshot. Recheck current times, weather, horizon and safety in OMANOVA before observing. This export will not update or cancel itself.',
                         'Times are UTC; your calendar displays its selected time zone. Location name and coordinates are omitted.'))
         alarm=lead>0 and utc(r['start'])-timedelta(minutes=lead)>now

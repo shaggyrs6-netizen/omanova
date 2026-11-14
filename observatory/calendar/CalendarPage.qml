@@ -71,10 +71,12 @@ Item {
                         Flow {
                             Layout.fillWidth:true;spacing:10
                             Action {visible:!root.deployed;text:(root.source==="sample"?"● ":"")+"Public examples";enabled:!helper.running;onClicked:{root.source="sample";root.selected=[];root.dataSet=null;root.request("refresh")}}
-                            Action {visible:!root.deployed;text:(root.source==="live"?"● ":"")+"Live events · read-only";enabled:!helper.running;onClicked:{root.source="live";root.selected=[];root.dataSet=null;root.request("refresh")}}
+                            Action {text:(root.source==="live"?"● ":"")+"Live events · read-only";enabled:!helper.running;onClicked:{root.source="live";root.selected=[];root.dataSet=null;root.request("refresh")}}
+                            Action {text:"Trip Home";enabled:!helper.running;onClicked:{root.source="trip-home";root.selected=[];root.days=0;root.request("refresh")}}
+                            Action {text:"Trip destination";enabled:!helper.running;onClicked:{root.source="trip-destination";root.selected=[];root.days=0;root.request("refresh")}}
                             Action {text:"Refresh list";enabled:!helper.running;onClicked:root.request("refresh")}
                         }
-                        Copy {text:root.source==="sample"?"SIMULATED EXAMPLES · Fixed clock "+(root.dataSet?root.when(root.dataSet.clock):"loading")+". Exports are labelled SIMULATED.":"LIVE SNAPSHOT · Uses existing local planner data. No downloads, changes to the worker, or new alerts.";color:App.Palette.warning}
+                        Copy {text:root.source==="sample"?"SIMULATED EXAMPLES · Fixed clock "+(root.dataSet?root.when(root.dataSet.clock):"loading")+". Exports are labelled SIMULATED.":root.source.startsWith("trip-")?"TRIP COMPARISON · Save & compare nights in Trip Planner first. Recompare after place, dates or horizon changes. The comparison’s own time zone and clipped windows are used.":"LIVE SNAPSHOT · Uses existing local planner data. No downloads, changes to the worker, or new alerts.";color:App.Palette.warning}
                         Copy {text:"Exported events are tentative, leave your free/busy time free, and omit your location name and coordinates. Calendar times use UTC and display in your calendar’s time zone.";color:App.Palette.muted}
                         Action {text:(root.optionsOpen?"Hide":"Show")+" filters, uncertain entries & reminders";onClicked:root.optionsOpen=!root.optionsOpen}
                         Copy {text:(root.days===0?"All available":root.days===1?"Next 24 hours":"Next "+root.days+" days")+" · "+(root.kind==="all"?"All event types":root.kind)+" · "+(root.lead===0?"No reminder":root.lead+" min reminder")+" · "+(root.includeCaution?"Uncertain entries allowed":"Uncertain entries need opt-in");color:App.Palette.muted}
@@ -132,7 +134,7 @@ Item {
                                 id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
                                 Toggle {text:card.modelData.name;checked:root.selected.includes(card.modelData.id);enabled:!helper.running&&root.selectable(card.modelData)&&(checked||root.selected.length<50);onClicked:root.choose(card.modelData.id,checked)}
                                 Copy {text:card.modelData.kind.toUpperCase()+" · "+card.modelData.label+(card.modelData.blocked?" · Unavailable":"");color:card.modelData.caution||card.modelData.blocked?App.Palette.warning:App.Palette.accent}
-                                Copy {text:root.when(card.modelData.start)+" – "+Qt.formatDateTime(new Date(card.modelData.end),"ddd d MMM · HH:mm")+"\nUTC: "+card.modelData.start+" – "+card.modelData.end}
+                                Copy {text:(card.modelData.displayStart||root.when(card.modelData.start))+" – "+(card.modelData.displayEnd||Qt.formatDateTime(new Date(card.modelData.end),"ddd d MMM · HH:mm"))+"\nUTC: "+card.modelData.start+" – "+card.modelData.end}
                                 Copy {text:card.modelData.blocked||card.modelData.notes.join("\n");color:App.Palette.muted}
                             }
                         }

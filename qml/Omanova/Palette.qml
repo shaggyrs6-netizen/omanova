@@ -10,12 +10,15 @@ QtObject {
     readonly property string runtime: Quickshell.env("OMASKY_RUNTIME") || Quickshell.env("OMASKY_ORBIT_TOOL") || directory+"/runtime"
     property bool testFile: false
     readonly property string themeFile: testFile && Quickshell.env("OMANOVA_THEME_TRIAL")==="1" ? directory+"/theme-test.toml" : Quickshell.env("HOME")+"/.local/state/omarchy/current/theme/colors.toml"
+    property string observingMode: "normal"
+    property string pendingMode: ""
+    property string pendingObserving: ""
     property bool follow: false
     property string previewTheme: ""
     property string raw: ""
     property string error: ""
-    readonly property var resolved: Colors.palette(previewTheme || raw)
-    readonly property bool themed: follow && !!resolved
+    readonly property var resolved: Colors.observing(observingMode) || Colors.palette(previewTheme || raw)
+    readonly property bool themed: (observingMode!=="normal" || follow) && !!resolved
     readonly property bool missing: follow && !resolved
     readonly property color background: themed ? resolved.background : "#070d1b"
     readonly property color surface: themed ? resolved.surface : "#101c32"
@@ -37,7 +40,7 @@ QtObject {
     property FileView preferences: FileView {
         path: root.directory+"/appearance.json";watchChanges:true;printErrors:false
         onFileChanged:reload()
-        onLoaded:{try {root.follow=JSON.parse(text()).mode==="desktop"}catch(e){root.follow=false}}
+        onLoaded:{try {let p=JSON.parse(text());root.follow=p.mode==="desktop";root.observingMode=["dim","red"].includes(p.observing)?p.observing:"normal"}catch(e){root.follow=false}}
         onLoadFailed:root.follow=false
     }
     property FileView desktop: FileView {
@@ -49,9 +52,9 @@ QtObject {
     // Reopen the path after a theme's symlink target changes as well as file edits.
     property Timer refresh: Timer {interval:2000;repeat:true;running:root.follow;onTriggered:desktop.reload()}
     property Process save: Process {
-        command:[root.runtime+"/.venv/bin/python",root.runtime+"/appearance.py","--state",root.directory,"--mode",root.follow?"observatory":"desktop"]
+        command:[root.runtime+"/.venv/bin/python",root.runtime+"/appearance.py","--state",root.directory,"--mode",root.pendingMode||(root.follow?"desktop":"observatory"),"--observing",root.pendingObserving||root.observingMode]
         stderr:StdioCollector {id:diagnostics}
-        onExited:function(code){if(code===0){root.error="";preferences.reload()}else root.error="Appearance could not be saved. Try again."}
+        onExited:function(code){root.pendingMode="";root.pendingObserving="";if(code===0){root.error="";preferences.reload()}else root.error="Appearance could not be saved. Try again."}
     }
     function sample(name) {
         if(Quickshell.env("OMANOVA_THEME_TRIAL")!=="1")return
@@ -59,5 +62,6 @@ QtObject {
         previewTheme=name==="light" ? 'background="#f5f2e9"\nforeground="#24202c"\naccent="#694086"\nmuted="#6c6672"\ngreen="#267c42"\nyellow="#9c6400"\nred="#b6273c"\norange="#a65b12"\nmagenta="#85417e"'
             : name==="dark" ? 'background="#101c20"\nforeground="#e4f1ec"\naccent="#78cba7"\nmuted="#a4b7b0"\ngreen="#8cd59e"\nyellow="#e9c97a"\nred="#ee929e"\norange="#e2aa72"\nmagenta="#c0a9e3"' : ""
     }
-    function toggle() {if(!save.running)save.running=true}
+    function toggle() {if(!save.running){pendingMode=follow?"observatory":"desktop";save.running=true}}
+    function setObserving(mode){if(!save.running&&["normal","dim","red"].includes(mode)){pendingObserving=mode;save.running=true}}
 }

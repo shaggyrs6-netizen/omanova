@@ -7,7 +7,7 @@ import Quickshell.Io
 
 ShellRoot {
     id: shell
-    property SkyState stateModel: SkyState { id: sky }
+    property SkyState stateModel: SkyState { id: sky;applyEquipmentProfile:true }
     readonly property bool settingsTrial: Quickshell.env("OMASKY_SETTINGS_PREVIEW") === "1" && stateModel.fixture
     property bool compactOpen: false
 
@@ -70,7 +70,7 @@ ShellRoot {
             readonly property int gutter: width < 620 ? 16 : 30
             readonly property real contentHeight: scroll.contentHeight
             readonly property var screenItem: screenLoader.item
-            readonly property var tabs: ["Overview", "Sky View", "Conditions", "Events", "Orbit", "Moon", qsTr("Meteor Showers"), qsTr("Planets"), qsTr("Comets"), qsTr("Eclipses"), qsTr("Launch Plumes"), qsTr("Watchlist"), qsTr("Starlink Trains"), qsTr("Aurora"), qsTr("Dark-Sky Sites"), qsTr("Observing Log")].concat(!sky.fixture || shell.settingsTrial ? [qsTr("Settings"), qsTr("Trip Planner"), qsTr("Launch Following"), qsTr("My Equipment and Sky"), qsTr("Calendar Export"), qsTr("Offline Cards")] : [])
+            readonly property var tabs: ["Overview", "Sky View", "Conditions", "Events", "Orbit", "Moon", qsTr("Meteor Showers"), qsTr("Planets"), qsTr("Comets"), qsTr("Eclipses"), qsTr("Launch Plumes"), qsTr("Watchlist"), qsTr("Starlink Trains"), qsTr("Aurora"), qsTr("Dark-Sky Sites"), qsTr("Observing Log")].concat(!sky.fixture || shell.settingsTrial ? [qsTr("Settings"), qsTr("Trip Planner"), qsTr("Launch Following"), qsTr("My Equipment and Sky"), qsTr("Calendar Export"), qsTr("Offline Cards"), qsTr("Destination Sites"), qsTr("Sky Finder")] : [])
             property int screenIndex: shell.settingsTrial ? 16 : 0
             readonly property bool showingPlanets: screenIndex === 7
             property real scrub: -1
@@ -309,10 +309,13 @@ ShellRoot {
                         }
                     }
                 }
+                Flow {Layout.fillWidth:true;Layout.leftMargin:ui.gutter;spacing:6
+                    Repeater {model:["normal","dim","red"];Button {required property string modelData;text:modelData+" display";enabled:!App.Palette.save.running;palette.buttonText:App.Palette.ink;palette.button:App.Palette.button;onClicked:App.Palette.setObserving(modelData);background:Rectangle {radius:5;color:App.Palette.button;border.color:App.Palette.border}}}
+                }
                 Rule {}
                 ScrollView {
                     id: scroll
-                    visible: !ui.showingPlanets && ui.screenIndex !== 17 && ui.screenIndex !== 18 && ui.screenIndex !== 19 && ui.screenIndex !== 20 && ui.screenIndex !== 21
+                    visible: !ui.showingPlanets && ui.screenIndex !== 17 && ui.screenIndex !== 18 && ui.screenIndex !== 19 && ui.screenIndex !== 20 && ui.screenIndex !== 21 && ui.screenIndex !== 22 && ui.screenIndex !== 23
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
@@ -321,7 +324,7 @@ ShellRoot {
                     Loader {
                         id: screenLoader
                         width: scroll.availableWidth
-                        sourceComponent: ui.showingPlanets || ui.screenIndex === 17 || ui.screenIndex === 18 || ui.screenIndex === 19 || ui.screenIndex === 20 || ui.screenIndex === 21 ? null : [overview, skyView, conditions, eventsView, orbitView, moonView, meteorView, null, cometView, eclipseView, plumeView, watchlistView, trainView, auroraView, darkSitesView, logView, settingsView][ui.screenIndex]
+                        sourceComponent: ui.showingPlanets || ui.screenIndex === 17 || ui.screenIndex === 18 || ui.screenIndex === 19 || ui.screenIndex === 20 || ui.screenIndex === 21 || ui.screenIndex === 22 || ui.screenIndex === 23 ? null : [overview, skyView, conditions, eventsView, orbitView, moonView, meteorView, null, cometView, eclipseView, plumeView, watchlistView, trainView, auroraView, darkSitesView, logView, settingsView][ui.screenIndex]
                     }
                 }
                 Loader {
@@ -357,6 +360,8 @@ ShellRoot {
                     visible:ui.screenIndex===21;active:visible
                     sourceComponent:Component {OfflinePage {}}
                 }
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===22;active:visible;sourceComponent:Component {FieldPage {section:"sites"}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===23;active:visible;sourceComponent:Component {FieldPage {section:"finder"}}}
                 Loader {
                     id: planetLoader
                     Layout.fillWidth: true
@@ -456,6 +461,7 @@ ShellRoot {
                             ui.changeScreen(selected.page)
                         }
                     }
+                    Copy {Layout.leftMargin:ui.gutter;Layout.rightMargin:ui.gutter;Layout.fillWidth:true;visible:!sky.nextOpportunity;text:"No ranked suggestion matches current data and equipment/sky preferences. Cached station geometry remains below for inspection; it is not a GO recommendation.";color:App.Palette.warning}
                     GridLayout {
                         visible: !sky.nextOpportunity
                         columns: parent.narrow ? 1 : 2
@@ -467,7 +473,7 @@ ShellRoot {
                             Layout.fillWidth: true
                             Layout.preferredWidth: 340
                             spacing: 10
-                            Tag { Layout.fillWidth: true; text: "●  NEXT VIEWING OPPORTUNITY"; color: ui.accent }
+                            Tag { Layout.fillWidth: true; text: "STATION GEOMETRY · INSPECT ONLY"; color: ui.accent }
                             Title { Layout.fillWidth: true; text: !ui.event ? "No viewing opportunity" :
                                     ui.event.name === "ISS" ? "International Space Station" : ui.event.name }
                             Copy {
@@ -675,6 +681,7 @@ ShellRoot {
                 if(mode==="toggle")App.Palette.toggle()
                 return JSON.stringify({follow:App.Palette.follow,themed:App.Palette.themed,missing:App.Palette.missing,background:String(App.Palette.background),ink:String(App.Palette.ink),error:App.Palette.error})
             }
+            function observingDisplay(mode:string):void {if(shell.settingsTrial)App.Palette.setObserving(mode)}
             function screen(index: int): void { ui.changeScreen(index) }
             function planets(section: int): string {
                 ui.changeScreen(7)
