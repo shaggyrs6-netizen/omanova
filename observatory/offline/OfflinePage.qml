@@ -64,7 +64,7 @@ Item {
                         Layout.fillWidth:true;Layout.margins:24;spacing:10
                         Copy {text:root.deployed?"O M A N O V A   /   OFFLINE OBSERVING CARDS":"O M A N O V A   /   SEPARATE PREVIEW";font.pixelSize:12;color:App.Palette.accent}
                         Heading {text:root.saved?"Your saved night guide":"A night’s viewing, ready to take with you"}
-                        Copy {text:root.saved?"This is a saved snapshot. Opening it reads only your saved guide and the device clock; predictions and forecasts are not refreshed.":"Choose a night, select cards and save a guide with times, directions and equipment. Live mode uses the active location’s existing predictions.";color:App.Palette.muted}
+                        Copy {text:root.saved?"This is a saved snapshot. Opening it reads only your saved guide and the device clock; predictions and forecasts are not refreshed. It belongs to the observing location used when saved, even if your active location has since changed.":"Choose a night, select cards and save a guide with times, directions and equipment. Live mode uses the active location’s existing predictions.";color:App.Palette.muted}
                         Flow {
                             Layout.fillWidth:true;spacing:10
                             Action {visible:!root.deployed;text:"Public examples";enabled:!helper.running;onClicked:root.draft("sample")}
@@ -77,7 +77,7 @@ Item {
                             Repeater {model:root.libraryOpen?root.dataSet?.saved||[]:[]
                                 Action {required property var modelData;text:modelData.night+" · "+modelData.zone+" · "+modelData.count+" cards · "+(modelData.source==="sample"?"SIMULATED":"live snapshot")+" · "+modelData.savedAt;enabled:!helper.running;onClicked:{root.selected=[];root.libraryOpen=false;root.request("open",modelData.id)}}}
                         }
-                        Copy {text:(root.source==="sample"?"SIMULATED EXAMPLES · ":"ACTIVE LOCATION SNAPSHOT · ")+(root.dataSet?.deck?.night||"")+" · "+(root.dataSet?.deck?.zone||"")+" · "+(root.saved?"Saved "+root.dataSet.deck.savedAt:"Available predictions only; not a fresh calculation for another place/date.");color:App.Palette.warning}
+                        Copy {text:(root.source==="sample"?"SIMULATED EXAMPLES · ":root.saved?"SAVED LOCATION SNAPSHOT · ":"ACTIVE LOCATION SNAPSHOT · ")+(root.dataSet?.deck?.night||"")+" · "+(root.dataSet?.deck?.zone||"")+" · "+(root.saved?"Saved "+root.dataSet.deck.savedAt:"Available predictions only; not a fresh calculation for another place/date.");color:App.Palette.warning}
                         ColumnLayout {
                             visible:!root.saved;Layout.fillWidth:true;spacing:8
                             Copy {text:"Night beginning (YYYY-MM-DD) · guide time zone (IANA name)";font.bold:true}
