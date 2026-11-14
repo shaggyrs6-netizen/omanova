@@ -675,3 +675,60 @@ and contrast maths; `.venv/bin/python -m unittest discover -s tests` covers
 appearance persistence without changing observing files and the existing
 regressions. Native fixture checks cover theme-file/symlink changes,
 fallback, mode persistence, both panels and screen loading.
+
+## Launch-following preview (local development)
+
+Run `./preview-launch-follow` to open a separate window. It inherits this
+branch's accepted theme support; it does not change the live Observatory,
+worker, location, viewing alerts or autostart. The marketplace submission
+continues to target `e9bd3dc`; this work is local on a separate branch.
+
+**Try the sample:** favourite the Falcon 9 demonstration, opt into desktop
+alerts, then press **Delay 40 minutes**, **Hold** or **Explicit scrub**.
+Repeating an unchanged scenario does not send another alert. **Change history**
+shows what changed and whether delivery succeeded. Other scenarios demonstrate
+cancellation, date-only timing, a missing feed entry and a provider outage.
+The sample webcast button opens the YouTube homepage as a labelled example;
+it is not a real mission broadcast. No synthetic desktop notification is sent
+until alerts are explicitly enabled and an eligible sample change is requested.
+
+Select **Live schedule · opt-in** to try actual missions, then enable launch
+downloads and **Check schedule**. Favourite up to five launches; provider-supplied
+HTTPS webcast links open only when clicked. A missing webcast is stated rather
+than invented. This is launch-schedule following, not a claim that the launch
+can be seen locally. Global schedule following needs no observing coordinates.
+
+Downloads and master alerts start off on every launch of the preview. Favourites
+and history persist separately for sample and live modes under the ignored,
+private `.preview/launch-follow/` directory. The first fresh live observation
+after restarting/re-enabling alerts establishes a baseline; it does not replay
+missed alerts. Unfavouriting cancels pending alerts for that mission. Turning
+alerts off clears pending deliveries and continues recording changes while
+download monitoring remains enabled.
+
+Upcoming LL2 data is cached for 15 minutes; favourites outside that feed are
+checked individually at most hourly. This preview makes at most nine requests
+per rolling hour, including errors; other applications share the provider's
+quota. The window checks cached/eligible data once per minute while monitoring
+is enabled, and stops when closed. Network failures preserve cached favourites;
+HTTP 429 adds a one-hour cooldown. This is not a real-time launch-control feed.
+
+A later precise NET is a **delay**. Other time/precision changes are labelled
+**schedule changed**. A **hold** remains distinct from a scrub. Scrub/cancellation
+alerts require explicit source status wording; a time shift, missing feed entry,
+expired monitoring gap or provider failure never establishes a scrub. If LL2
+only reports a hold or revised time, that is all the app can report. Completed
+or in-flight mission updates do not become schedule alerts. Failed desktop
+notifications are retried at most three times, and old pending updates expire.
+
+Private requests travel to the local backend on bounded stdin. Provider data
+and webcast URLs are validated. Live/simulated alerts are labelled Preview, and
+simulated alerts are additionally marked simulated. The existing local worker
+and its alert history are separate. This window creates no service, autostart,
+schedule or background monitor outside its own lifetime.
+
+Validation: tests cover consent, favourites, baseline/persistence, delay/status
+classification, stale/out-of-order observations, deduplication, delivery retry,
+source disappearance/outage, terminal missions, request caching/budgets,
+corrupt-state preservation and notification/URL safety. Native fixture tests
+exercise the actual QML/backend roundtrip without sending a desktop popup.
