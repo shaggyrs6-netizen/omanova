@@ -883,3 +883,67 @@ selection/reminder choices; exported files remain local. Export remains an
 explicit click followed by manual calendar import, with no account connection,
 invitations, subscriptions or automatic updates. The current public release
 and marketplace request remain separate and unchanged.
+
+### Offline observing cards — separate local preview
+
+Run `./preview-offline`. Choose the night and guide time zone, build the viewing
+list, select cards and **Save night guide**. Start with public examples; the
+optional **Live list · read-only** reads the existing active-location planner.
+It downloads nothing, does not change the live Observatory/worker and does not
+connect or upload to a service. This work is isolated on
+`codex/offline-cards-preview`, separate from the marketplace submission.
+
+A night means **local noon to the following noon**, including early evening and
+next morning. The IANA time zone (for example America/Chicago) is explicit and
+DST-aware. Changing date/zone filters existing windows; it does not calculate a
+new location, recompute future ephemerides or fill gaps in the catalogue. Empty
+nights say so. Source windows are clipped to the chosen night; a source look
+point outside that segment is marked unavailable rather than extrapolated.
+
+Each card records local/UTC times, the time to which its compass direction,
+azimuth and altitude apply, conservative equipment guidance and limitations,
+source references, visibility uncertainty, weather as captured, and safety
+notes. Equipment uses the existing rules; aperture, tracking, exposure, brightness
+and field-of-view assumptions are not invented. Solar cards retain safety review
+and never claim ordinary optics are safe. The Equipment and Sky profile is not
+applied automatically. Manual/terrain horizons and Trip Planner destinations
+are not applied/copied by this preview, and the guide clearly states this.
+
+Saved guides are immutable snapshots in ignored private
+`.preview/offline/guides/<unique-id>/`: `deck.json` and a self-contained
+`guide.html`. Use **Saved guides** to reopen a guide in the native preview,
+**Open offline HTML / print** to open the portable file, or **Open saved folder**
+to find both files. No live source is read when reopening, including periodic
+age checks. The HTML has inline styles/script and no external resources/fonts,
+images, fetches or clickable source links. It can be read in a local browser
+without OMANOVA or internet, and includes print styling.
+
+Timing and weather age independently. A conservative **two-hour snapshot
+recheck deadline**, shortened by any earlier source expiry, is an app policy,
+not an astronomical accuracy guarantee. Weather freshness becomes unknown or
+stale after its independent six-hour age limit. Ended, stale-at-capture,
+incomplete, future-clock and unknown-data states remain explicit; there is no
+GO or confirmed sighting claim. Stale/incomplete source records need explicit
+**Allow stale / incomplete records · inspect only** consent before saving.
+Global launch schedules without local observing windows are not selectable.
+Printed copies cannot update: each includes saved/source/forecast times and
+recheck deadlines. Browser age checks rely on its clock and JavaScript; a
+noscript warning explains the fallback. Recheck before observing even within
+the stated age limits.
+
+Public examples use a fixed, labelled sample clock and retain SIMULATED labels
+in the native view and HTML. Real saved data omit observer names, addresses,
+coordinates and raw location IDs. Files are mode 0600 in private guide folders;
+no live state, settings, logs or personal horizon data are copied. Up to 300
+matching catalogue rows are shown, 50 cards can be saved per guide, and the
+library lists the newest 50 guides; older files remain intact. New saves use
+exclusive unique folders and never overwrite an existing guide. There are no
+calendar alarms, desktop notifications, automatic updates, subscriptions or
+service/autostart changes.
+
+Validation covers DST, date segmentation, look-time validity, equipment/solar
+safety, timing/weather age, source expiry, save consent, snapshot immutability,
+no live/network access on reopen, privacy, HTML escaping/CSP, private files and
+corrupt-file preservation. The standalone JS tests exercise the actual saved
+HTML's aging script with advancing clocks. The full Python suite and native
+QML save/reopen roundtrip are recorded in the ignored preview evidence folder.
