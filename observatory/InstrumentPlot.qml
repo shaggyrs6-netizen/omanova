@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 
 Item {
@@ -5,8 +6,8 @@ Item {
     property var path: []
     property var viewing: null
     property var position: null
-    property color accent: "#70edeb"
-    property color violet: "#a8a1ff"
+    property color accent: App.Palette.accent
+    property color violet: App.Palette.violet
     readonly property real radius: Math.max(0, Math.min(width, height) / 2 - 28)
 
     Accessible.name: "North-up sky plot with horizon, elevation rings and station track"
@@ -23,6 +24,7 @@ Item {
 
     Canvas {
         id: chart
+        Connections { target: App.Palette; function onResolvedChanged() { chart.requestPaint() } function onFollowChanged() { chart.requestPaint() } }
         anchors.fill: parent
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -31,7 +33,7 @@ Item {
             ctx.reset()
             const x = width / 2, y = height / 2, r = plot.radius
             if (r < 5) return
-            ctx.strokeStyle = "#324862"
+            ctx.strokeStyle = App.Palette.line
             ctx.lineWidth = 1
             for (let ring = 1; ring <= 3; ring++) {
                 ctx.beginPath()
@@ -48,13 +50,13 @@ Item {
             }
             ctx.textAlign = "center"
             ctx.textBaseline = "middle"
-            ctx.fillStyle = "#f2f7ff"
+            ctx.fillStyle = App.Palette.ink
             ctx.font = "600 15px sans-serif"
             ctx.fillText("N", x, y - r - 15)
             ctx.fillText("S", x, y + r + 15)
             ctx.fillText("W", x - r - 15, y)
             ctx.fillText("E", x + r + 15, y)
-            ctx.fillStyle = "#a7b7ce"
+            ctx.fillStyle = App.Palette.muted
             ctx.font = "12px sans-serif"
             ctx.fillText("30°", x + 17, y - 2 * r / 3 - 9)
             ctx.fillText("60°", x + 17, y - r / 3 - 9)
@@ -75,7 +77,7 @@ Item {
                 }
                 ctx.stroke()
             }
-            trace(plot.path, "#a7b7ce", 1.5, true)
+            trace(plot.path, App.Palette.muted, 1.5, true)
             if (!plot.viewing) return
             const window = plot.viewing
             const track = plot.path.filter(point => point.time > window.start.time && point.time < window.end.time)
@@ -86,12 +88,12 @@ Item {
                 const point = plot.project(marks[i])
                 ctx.beginPath()
                 ctx.arc(point.x, point.y, 4, 0, Math.PI * 2)
-                ctx.fillStyle = "#101c32"
+                ctx.fillStyle = App.Palette.surface
                 ctx.fill()
                 ctx.strokeStyle = plot.accent
                 ctx.lineWidth = 1.5
                 ctx.stroke()
-                ctx.fillStyle = "#f2f7ff"
+                ctx.fillStyle = App.Palette.ink
                 ctx.fillText(String(i + 1), point.x + labels[i][0], point.y + labels[i][1])
             }
         }

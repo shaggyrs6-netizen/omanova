@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -14,37 +15,37 @@ ColumnLayout {
         (kinds.currentIndex === 0 || row.kind === kinds.currentText)
         && (horizon.currentIndex === 2 || Date.parse(row.start) <= sky.now + (horizon.currentIndex === 0 ? 1 : 7)*86400000)
         && (!localOnly.checked || row.visibility === "possible"))
-    component Copy: Text { Layout.fillWidth: true; Layout.leftMargin: 22; Layout.rightMargin: 22; wrapMode: Text.Wrap; textFormat: Text.PlainText; color: "#eef5ff"; font.pixelSize: 15 }
+    component Copy: Text { Layout.fillWidth: true; Layout.leftMargin: 22; Layout.rightMargin: 22; wrapMode: Text.Wrap; textFormat: Text.PlainText; color: App.Palette.ink; font.pixelSize: 15 }
     Copy { Layout.topMargin: 22; text: qsTr("Your observing timeline"); font.pixelSize: 32; font.bold: true }
-    Copy { text: qsTr("Local viewing windows across the Observatory. Unconfirmed launches and stale geometry remain inspectable. Times use your system time zone."); color: "#a7b7ce" }
+    Copy { text: qsTr("Local viewing windows across the Observatory. Unconfirmed launches and stale geometry remain inspectable. Times use your system time zone."); color: App.Palette.muted }
     Flow {
         Layout.fillWidth: true; Layout.leftMargin: 22; Layout.rightMargin: 22; spacing: 8
         ComboBox {
             implicitWidth: 170
             font.pixelSize: 14; implicitHeight: 37
-            palette.base: "#0a1424"; palette.button: "#15253c"; palette.window: "#101c32"
-            palette.text: "#eef5ff"; palette.buttonText: "#eef5ff"; palette.windowText: "#eef5ff"
-            palette.highlight: "#365c77"; palette.highlightedText: "#ffffff"; palette.mid: "#36516d"
-            background: Rectangle { radius: 6; color: "#15253c"; border.color: parent.activeFocus ? "#70edeb" : "#36516d" }
+            palette.base: App.Palette.field; palette.button: App.Palette.button; palette.window: App.Palette.surface
+            palette.text: App.Palette.ink; palette.buttonText: App.Palette.ink; palette.windowText: App.Palette.ink
+            palette.highlight: App.Palette.button; palette.highlightedText: App.Palette.ink; palette.mid: App.Palette.border
+            background: Rectangle { radius: 6; color: App.Palette.button; border.color: parent.activeFocus ? App.Palette.accent : App.Palette.border }
  id: horizon; model: [qsTr("Next 24 hours"), qsTr("Next 7 days"), qsTr("All available")]; Accessible.name: qsTr("Timeline range") }
         ComboBox {
             implicitWidth: 170
             font.pixelSize: 14; implicitHeight: 37
-            palette.base: "#0a1424"; palette.button: "#15253c"; palette.window: "#101c32"
-            palette.text: "#eef5ff"; palette.buttonText: "#eef5ff"; palette.windowText: "#eef5ff"
-            palette.highlight: "#365c77"; palette.highlightedText: "#ffffff"; palette.mid: "#36516d"
-            background: Rectangle { radius: 6; color: "#15253c"; border.color: parent.activeFocus ? "#70edeb" : "#36516d" }
+            palette.base: App.Palette.field; palette.button: App.Palette.button; palette.window: App.Palette.surface
+            palette.text: App.Palette.ink; palette.buttonText: App.Palette.ink; palette.windowText: App.Palette.ink
+            palette.highlight: App.Palette.button; palette.highlightedText: App.Palette.ink; palette.mid: App.Palette.border
+            background: Rectangle { radius: 6; color: App.Palette.button; border.color: parent.activeFocus ? App.Palette.accent : App.Palette.border }
  id: kinds; model: [qsTr("All types"), "station", "satellite", "moon", "meteor", "planet", "conjunction", "comet", "eclipse", "launch", "plume", "train", "aurora"]; Accessible.name: qsTr("Event type") }
         CheckBox {
-                palette.windowText: "#eef5ff"; palette.text: "#eef5ff"; palette.buttonText: "#eef5ff"; palette.button: "#15253c"; palette.base: "#0a1424"; palette.highlight: "#70edeb"; id: localOnly; text: qsTr("Local possibilities only") }
+                palette.windowText: App.Palette.ink; palette.text: App.Palette.ink; palette.buttonText: App.Palette.ink; palette.button: App.Palette.button; palette.base: App.Palette.field; palette.highlight: App.Palette.accent; id: localOnly; text: qsTr("Local possibilities only") }
         Button {
             font.pixelSize: 14; implicitHeight: 37; leftPadding: 12; rightPadding: 12
-            palette.buttonText: "#eef5ff"; palette.text: "#eef5ff"; palette.button: "#15253c"
-            background: Rectangle { radius: 6; color: parent.down ? "#243a54" : parent.hovered ? "#1a3049" : "#15253c"; border.color: parent.visualFocus ? "#70edeb" : "#36516d" }
+            palette.buttonText: App.Palette.ink; palette.text: App.Palette.ink; palette.button: App.Palette.button
+            background: Rectangle { radius: 6; color: parent.down ? App.Palette.button : parent.hovered ? App.Palette.hover : App.Palette.button; border.color: parent.visualFocus ? App.Palette.accent : App.Palette.border }
  text: page.stationDetail ? qsTr("Unified timeline") : qsTr("Station and launch detail"); onClicked: page.stationDetail = !page.stationDetail }
     }
-    Copy { visible: page.sky.plannerStale; text: qsTr("Planning data is missing or stale. Inspect cached geometry below; recommendations and alerts are withheld."); color: "#ffcc7b" }
-    Copy { visible: (page.sky.planning?.issues || []).length > 0; text: (page.sky.planning?.issues || []).join(" · "); color: "#ffcc7b" }
+    Copy { visible: page.sky.plannerStale; text: qsTr("Planning data is missing or stale. Inspect cached geometry below; recommendations and alerts are withheld."); color: App.Palette.warning }
+    Copy { visible: (page.sky.planning?.issues || []).length > 0; text: (page.sky.planning?.issues || []).join(" · "); color: App.Palette.warning }
     Copy { visible: !page.stationDetail && !page.rows.length; text: qsTr("No events in this selection. Try a longer range or another type.") }
     Repeater {
         model: page.stationDetail ? [] : page.rows.slice(0,100)

@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -24,7 +25,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -36,15 +37,15 @@ ColumnLayout {
         rightPadding: 11
         contentItem: Text {
             text: action.text
-            color: "#eef5ff"
+            color: App.Palette.ink
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pixelSize: 14
         }
         background: Rectangle {
             radius: 6
-            color: action.checked || action.hovered ? "#233c55" : "#15253c"
-            border.color: action.visualFocus || action.checked ? "#70edeb" : "#36516d"
+            color: action.checked || action.hovered ? App.Palette.hover : App.Palette.button
+            border.color: action.visualFocus || action.checked ? App.Palette.accent : App.Palette.border
         }
     }
 
@@ -61,16 +62,16 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: Quickshell.env("OMASKY_DARK_SITES_EMBEDDED") === "1" ? qsTr("OMANOVA OBSERVATORY  /  FIELD GUIDE") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW"); color: "#70edeb"; font.pixelSize: 12; font.letterSpacing: 1.6 }
+        Copy { text: Quickshell.env("OMASKY_DARK_SITES_EMBEDDED") === "1" ? qsTr("OMANOVA OBSERVATORY  /  FIELD GUIDE") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW"); color: App.Palette.accent; font.pixelSize: 12; font.letterSpacing: 1.6 }
         Copy { text: qsTr("Dark-sky sites"); font.pixelSize: 34; font.bold: true }
-        Copy { text: qsTr("Near Mount Juliet, Tennessee"); color: "#a7b7ce" }
+        Copy { text: qsTr("Near Mount Juliet, Tennessee"); color: App.Palette.muted }
         Copy {
             text: qsTr("Approximate road distances and drive times from central Mount Juliet. Routes use public map data without live traffic. Check the site’s access page before heading out.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             text: qsTr("Lower Bortle numbers and higher SQM readings mean darker skies. Ratings describe the site in good conditions. Moonlight, clouds and nearby lights can change what you see.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Action {
             checkable: true
@@ -81,7 +82,7 @@ ColumnLayout {
         Copy {
             visible: !!page.catalog?.checked
             text: visible ? qsTr("Access and routes checked · %1").arg(page.catalog.checked) : ""
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             visible: !page.catalog
@@ -98,8 +99,8 @@ ColumnLayout {
             Layout.leftMargin: 22
             Layout.rightMargin: 22
             implicitHeight: details.implicitHeight + 34
-            color: "#111e31"
-            border.color: "#2a3e58"
+            color: App.Palette.surface
+            border.color: App.Palette.line
             radius: 12
 
             ColumnLayout {
@@ -114,12 +115,12 @@ ColumnLayout {
                         .arg(page.formatDistance ? page.formatDistance(card.modelData.roadMiles * 1.609344, 0)
                                                 : qsTr("%1 mi").arg(card.modelData.roadMiles))
                         .arg(page.duration(card.modelData.driveMinutes))
-                    color: "#70edeb"
+                    color: App.Palette.accent
                 }
                 Copy { text: card.modelData.darkness; font.bold: true }
-                Copy { text: card.modelData.darknessDetail; color: "#a7b7ce" }
-                Copy { text: card.modelData.access; color: card.modelData.dropIn ? "#eef5ff" : "#ffcc7b"; font.bold: true }
-                Copy { text: card.modelData.accessDetail; color: "#a7b7ce" }
+                Copy { text: card.modelData.darknessDetail; color: App.Palette.muted }
+                Copy { text: card.modelData.access; color: card.modelData.dropIn ? App.Palette.ink : App.Palette.warning; font.bold: true }
+                Copy { text: card.modelData.accessDetail; color: App.Palette.muted }
                 Flow {
                     Layout.fillWidth: true
                     spacing: 8
@@ -138,6 +139,6 @@ ColumnLayout {
     Copy {
         Layout.margins: 22
         text: qsTr("Route estimates via OSRM · map data © OpenStreetMap contributors.")
-        color: "#a7b7ce"
+        color: App.Palette.muted
     }
 }

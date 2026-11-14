@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -11,7 +12,7 @@ ShellRoot {
         implicitWidth: 640
         implicitHeight: 570
         minimumSize: Qt.size(360, 390)
-        color: "#070d1b"
+        color: App.Palette.background
         onVisibleChanged: if (!visible) Qt.quit()
 
         Item {
@@ -21,9 +22,9 @@ ShellRoot {
             readonly property string state: Quickshell.env("OMASKY_ALERT_STATE")
             readonly property var stationIds: [25544, 48274]
             readonly property var scenarios: ["favourable", "poor", "missing", "stale", "ended"]
-            readonly property color ink: "#f2f7ff"
-            readonly property color muted: "#a7b7ce"
-            readonly property color accent: "#70edeb"
+            readonly property color ink: App.Palette.ink
+            readonly property color muted: App.Palette.muted
+            readonly property color accent: App.Palette.accent
             readonly property int margin: width < 480 ? 16 : 28
             property string result: "Preview alerts are off."
 
@@ -55,9 +56,9 @@ ShellRoot {
             }
             component LabelledChoice: ComboBox {
                 Layout.fillWidth: true
-                palette.button: "#172a42"
+                palette.button: App.Palette.surface
                 palette.buttonText: ui.ink
-                palette.base: "#101c32"
+                palette.base: App.Palette.surface
                 palette.text: ui.ink
                 palette.highlight: ui.accent
             }
@@ -105,7 +106,7 @@ ShellRoot {
                         Layout.leftMargin: ui.margin
                         text: "Simulate pass"
                         enabled: consent.checked && !runner.running
-                        palette.button: "#172a42"
+                        palette.button: App.Palette.surface
                         palette.buttonText: ui.ink
                         focusPolicy: Qt.StrongFocus
                         onClicked: ui.attempt()
@@ -115,8 +116,8 @@ ShellRoot {
                         Layout.leftMargin: ui.margin; Layout.rightMargin: ui.margin; Layout.bottomMargin: ui.margin
                         implicitHeight: feedback.implicitHeight + 24
                         radius: 8
-                        color: "#101c32"
-                        border.color: "#2a3e58"
+                        color: App.Palette.surface
+                        border.color: App.Palette.line
                         Copy {
                             id: feedback
                             x: 12; y: 12

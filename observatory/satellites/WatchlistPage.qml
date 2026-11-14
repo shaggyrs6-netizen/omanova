@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -31,7 +32,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -66,7 +67,7 @@ ColumnLayout {
         spacing: 8
         Copy {
             text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW")
-            color: "#70edeb"
+            color: App.Palette.accent
             font.letterSpacing: 1.6
             font.pixelSize: 12
         }
@@ -74,11 +75,11 @@ ColumnLayout {
         Copy {
             text: page.catalog?.fixture ? qsTr("Nashville sample location · frozen orbital data")
                 : qsTr("Saved observing location · times on your desktop clock")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             text: qsTr("Next three days. Windows show sunlit passes at least 10° up with the Sun at least 6° below your horizon. Actual brightness varies with orientation and distance. Clouds and skyglow can hide a pass.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         ComboBox {
             id: filter
@@ -87,30 +88,30 @@ ColumnLayout {
             model: [{ name: qsTr("All watchlist satellites"), number: 0 }].concat(page.catalog?.targets ?? [])
             textRole: "name"
             valueRole: "number"
-            palette.base: "#101c32"
-            palette.button: "#15253c"
-            palette.text: "#eef5ff"
-            palette.buttonText: "#eef5ff"
-            palette.window: "#101c32"
-            palette.windowText: "#eef5ff"
+            palette.base: App.Palette.surface
+            palette.button: App.Palette.button
+            palette.text: App.Palette.ink
+            palette.buttonText: App.Palette.ink
+            palette.window: App.Palette.surface
+            palette.windowText: App.Palette.ink
         }
         Copy {
             readonly property var missing: (page.catalog?.targets ?? []).filter(target => !target.usable)
             visible: missing.length > 0
             text: qsTr("Current elements unavailable for %1.").arg(missing.map(target => target.name).join(", "))
-            color: "#ffcc7b"
+            color: App.Palette.warning
         }
         Copy {
             visible: !!page.catalog && !page.catalog.fixture
             text: page.catalog?.error ? qsTr("Feed refresh issue · %1. Only usable cached elements are shown.").arg(page.catalog.error)
                 : !page.catalog?.online ? qsTr("Orbital downloads paused. Using any usable cached elements.")
                 : page.catalog?.fetched ? qsTr("Orbital feed fetched · %1 local").arg(page.stamp(page.catalog.fetched)) : ""
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             visible: !!page.loadError || !page.catalog || !page.visibleWindows.length
             text: page.loadError || (!page.catalog ? qsTr("Loading passes…") : qsTr("No upcoming viewing windows for this selection."))
-            color: "#ffcc7b"
+            color: App.Palette.warning
         }
     }
 
@@ -123,8 +124,8 @@ ColumnLayout {
             Layout.leftMargin: 22
             Layout.rightMargin: 22
             implicitHeight: details.implicitHeight + 32
-            color: "#111e31"
-            border.color: "#2a3e58"
+            color: App.Palette.surface
+            border.color: App.Palette.line
             radius: 12
 
             ColumnLayout {
@@ -137,18 +138,18 @@ ColumnLayout {
                     text: qsTr("Look from %1 to %2")
                         .arg(page.stamp(card.modelData.start.time, "ddd d MMM · HH:mm:ss"))
                         .arg(page.stamp(card.modelData.end.time, "HH:mm:ss"))
-                    color: "#70edeb"
+                    color: App.Palette.accent
                 }
                 Copy { text: qsTr("Start · %1").arg(page.position(card.modelData.start)) }
                 Copy {
                     text: qsTr("Highest visible point · %1 · %2")
                         .arg(page.stamp(card.modelData.peak.time, "HH:mm:ss")).arg(page.position(card.modelData.peak))
                 }
-                Copy { text: qsTr("Finish · %1").arg(page.position(card.modelData.end)); color: "#a7b7ce" }
+                Copy { text: qsTr("Finish · %1").arg(page.position(card.modelData.end)); color: App.Palette.muted }
                 Copy {
                     text: qsTr("NORAD %1 · Elements %2 local")
                         .arg(card.modelData.number).arg(page.stamp(card.modelData.epoch))
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                     font.pixelSize: 13
                 }
             }

@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,9 +10,9 @@ ColumnLayout {
     spacing: 16
     property var lunar: null
     property var formatDistance: (km, digits) => km.toLocaleString(Qt.locale(), 'f', digits) + " km"
-    readonly property color ink: "#f2f7ff"
-    readonly property color muted: "#a7b7ce"
-    readonly property color cyan: "#70edeb"
+    readonly property color ink: App.Palette.ink
+    readonly property color muted: App.Palette.muted
+    readonly property color cyan: App.Palette.accent
     readonly property int gutter: width < 650 ? 15 : 28
     readonly property var full: lunar?.full || null
     readonly property bool named: Quickshell.env("OMASKY_NAMED_MOONS") === "1"
@@ -44,7 +45,7 @@ ColumnLayout {
     component Rule: Rectangle {
         Layout.fillWidth: true
         implicitHeight: 1
-        color: "#2a3e58"
+        color: App.Palette.line
     }
     component ViewingList: ColumnLayout {
         id: list
@@ -131,8 +132,8 @@ ColumnLayout {
             Layout.preferredWidth: 1
             implicitHeight: 295
             radius: 10
-            color: "#101c32"
-            border.color: "#2a3e58"
+            color: App.Palette.surface
+            border.color: App.Palette.line
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 13

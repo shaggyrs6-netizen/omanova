@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -19,7 +20,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -56,7 +57,7 @@ ColumnLayout {
         spacing: 8
         Copy {
             text: qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY")
-            color: "#70edeb"
+            color: App.Palette.accent
             font.pixelSize: 12
             font.letterSpacing: 1.8
         }
@@ -64,11 +65,11 @@ ColumnLayout {
         Copy {
             text: page.catalog?.fixture ? qsTr("Nashville test location · fixture")
                 : qsTr("Saved observing location · times on your desktop clock")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             text: qsTr("Viewing windows cover nights near each peak, with the Sun at least 18° below the horizon and the radiant at least 20° up. Clouds, light pollution and obstructions affect what you’ll see.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
     }
 
@@ -81,8 +82,8 @@ ColumnLayout {
             Layout.leftMargin: 22
             Layout.rightMargin: 22
             implicitHeight: details.implicitHeight + 36
-            color: "#111e31"
-            border.color: "#2a3e58"
+            color: App.Palette.surface
+            border.color: App.Palette.line
             radius: 12
 
             ColumnLayout {
@@ -92,12 +93,12 @@ ColumnLayout {
                 spacing: 9
 
                 Copy { text: card.modelData.name; font.pixelSize: 23; font.bold: true }
-                Copy { text: qsTr("Activity · %1 to %2%3").arg(card.modelData.activeStart || "—").arg(card.modelData.activeEnd || "—").arg(card.modelData.activeNow ? qsTr(" · Active now") : ""); color: "#70edeb" }
+                Copy { text: qsTr("Activity · %1 to %2%3").arg(card.modelData.activeStart || "—").arg(card.modelData.activeEnd || "—").arg(card.modelData.activeNow ? qsTr(" · Active now") : ""); color: App.Palette.accent }
                 Copy {
                     text: card.modelData.dateOnly
                         ? qsTr("Published peak date · %1 UTC").arg(card.modelData.peak)
                         : qsTr("Expected peak · %1 local").arg(page.when(card.modelData.peak, "ddd d MMM yyyy · HH:mm"))
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Copy {
                     visible: !card.modelData.windows.length
@@ -110,10 +111,10 @@ ColumnLayout {
                         required property var modelData
                         Layout.fillWidth: true
                         spacing: 5
-                        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#2a3e58" }
+                        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: App.Palette.line }
                         Copy {
                             text: page.span(row.modelData.start, row.modelData.end)
-                            color: "#70edeb"
+                            color: App.Palette.accent
                             font.bold: true
                         }
                         Copy {
@@ -128,7 +129,7 @@ ColumnLayout {
                                 ? qsTr("Moon below horizon · %1").arg(row.modelData.moonless.map(
                                     item => page.span(item.start, item.end)).join(" / "))
                                 : qsTr("No moon-free stretch of 15 minutes")
-                            color: "#a7b7ce"
+                            color: App.Palette.muted
                         }
                     }
                 }
@@ -142,7 +143,7 @@ ColumnLayout {
 
     Copy {
         Layout.margins: 22
-        color: "#a7b7ce"
+        color: App.Palette.muted
         text: page.loadMessage || (!page.catalog ? qsTr("Loading calendar…") : page.catalog.showers.length
             ? qsTr("The radiant is where the meteors appear to come from. Watch a wide patch of sky away from it.")
             : qsTr("No upcoming peaks in the bundled calendar."))

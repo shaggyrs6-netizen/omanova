@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -10,10 +11,10 @@ Item {
     readonly property bool staleOrbit: selected?.confidence === "Stale orbit"
     readonly property bool geometryOnly: staleOrbit || sky.snapshotStale
     readonly property var window: sky.bestWindow(selected)
-    Rectangle { anchors.fill: parent; color: "#070d1b" }
-    readonly property color ink: "#eef5ff"
-    readonly property color accent: "#70edeb"
-    readonly property color surface: "#101c32"
+    Rectangle { anchors.fill: parent; color: App.Palette.background }
+    readonly property color ink: App.Palette.ink
+    readonly property color accent: App.Palette.accent
+    readonly property color surface: App.Palette.surface
 
     component ThemedButton: Button {
         palette.button: root.surface
@@ -25,15 +26,15 @@ Item {
         implicitHeight: 36
         contentItem: Text {
             text: tab.text
-            color: tab.checked ? root.ink : "#a7b7ce"
+            color: tab.checked ? root.ink : App.Palette.muted
             font.pixelSize: 13
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
         background: Rectangle {
-            color: tab.checked ? "#15253c" : root.surface
-            border.color: tab.checked || tab.visualFocus ? root.accent : "#2a3e58"
+            color: tab.checked ? App.Palette.button : root.surface
+            border.color: tab.checked || tab.visualFocus ? root.accent : App.Palette.line
         }
     }
 
@@ -83,7 +84,7 @@ Item {
         TabBar {
             id: tabs
             Layout.fillWidth: true
-            background: Rectangle { color: "#070d1b" }
+            background: Rectangle { color: App.Palette.background }
             SkyTab { text: "Now & Next" }
             SkyTab { text: "Sky Compass" }
             SkyTab { text: "Upcoming" }
@@ -187,7 +188,7 @@ Item {
                     required property var modelData
                     width: ListView.view.width - 12
                     highlighted: root.selected && root.selected.id === modelData.id
-                    background: Rectangle { color: parent.highlighted || parent.hovered ? "#15253c" : "transparent" }
+                    background: Rectangle { color: parent.highlighted || parent.hovered ? App.Palette.hover : "transparent" }
                     onClicked: {
                         root.selection = modelData.id
                         tabs.currentIndex = 0

@@ -1,10 +1,11 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 ComboBox {
     id: control
     font.pixelSize: 14; implicitHeight: 38; implicitWidth: 200
-    palette.base: "#0a1424"; palette.button: "#15253c"; palette.window: "#101c32"
-    palette.text: "#eef5ff"; palette.buttonText: "#eef5ff"; palette.windowText: "#eef5ff"
-    palette.highlight: "#365c77"; palette.highlightedText: "#ffffff"
-    background: Rectangle { radius: 6; color: "#15253c"; border.color: control.activeFocus ? "#70edeb" : "#36516d" }
+    palette.base: App.Palette.field; palette.button: App.Palette.button; palette.window: App.Palette.surface
+    palette.text: App.Palette.ink; palette.buttonText: App.Palette.ink; palette.windowText: App.Palette.ink
+    palette.highlight: App.Palette.button; palette.highlightedText: App.Palette.ink
+    background: Rectangle { radius: 6; color: App.Palette.button; border.color: control.activeFocus ? App.Palette.accent : App.Palette.border }
 }

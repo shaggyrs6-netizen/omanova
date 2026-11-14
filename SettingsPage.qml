@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -36,7 +37,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 14
         textFormat: Text.PlainText
         wrapMode: Text.Wrap
@@ -54,38 +55,38 @@ ColumnLayout {
         contentItem: Text {
             text: action.text
             textFormat: Text.PlainText
-            color: action.enabled ? "#eef5ff" : "#8190a6"
+            color: action.enabled ? App.Palette.ink : App.Palette.muted
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
         }
         background: Rectangle {
             radius: 6
-            color: action.down ? "#243a54" : action.hovered ? "#1a3049" : "#15253c"
-            border.color: action.visualFocus ? "#70edeb" : "#36516d"
+            color: action.down ? App.Palette.button : action.hovered ? App.Palette.hover : App.Palette.button
+            border.color: action.visualFocus ? App.Palette.accent : App.Palette.border
         }
     }
     component Field: TextField {
         Layout.fillWidth: true
         Layout.preferredWidth: 0
-        color: "#eef5ff"
-        placeholderTextColor: "#a7b7ce"
-        selectionColor: "#365c77"
-        selectedTextColor: "#ffffff"
+        color: App.Palette.ink
+        placeholderTextColor: App.Palette.muted
+        selectionColor: App.Palette.button
+        selectedTextColor: App.Palette.ink
         implicitHeight: 37
         Accessible.name: placeholderText
         background: Rectangle {
-            color: "#0a1424"
+            color: App.Palette.field
             radius: 5
-            border.color: parent.activeFocus ? "#70edeb" : "#36516d"
+            border.color: parent.activeFocus ? App.Palette.accent : App.Palette.border
         }
     }
     component Card: Rectangle {
         Layout.fillWidth: true
         Layout.leftMargin: page.gutter
         Layout.rightMargin: page.gutter
-        color: "#101c32"
-        border.color: "#2a3e58"
+        color: App.Palette.surface
+        border.color: App.Palette.line
         radius: 10
     }
 
@@ -96,18 +97,44 @@ ColumnLayout {
         Layout.topMargin: page.compact ? 4 : 20
         visible: !page.compact
         spacing: 7
-        Copy { text: qsTr("OMANOVA OBSERVATORY  /  CONFIGURATION"); color: "#70edeb"; font.letterSpacing: 1.3 }
+        Copy { text: qsTr("OMANOVA OBSERVATORY  /  CONFIGURATION"); color: App.Palette.accent; font.letterSpacing: 1.3 }
         Heading { text: qsTr("Settings"); font.pixelSize: 32 }
         Copy {
             visible: page.trial
             text: qsTr("Offline preview. These controls use sample data and save changes only in this trial.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Action {
             visible: page.trial
             text: qsTr("Show compact panel preview")
             onClicked: page.openCompact()
         }
+    }
+
+    ColumnLayout {
+        Layout.fillWidth: true
+        Layout.leftMargin: page.gutter; Layout.rightMargin: page.gutter
+        spacing: 6
+        Heading { text: qsTr("Appearance") }
+        CheckBox {
+            text: qsTr("Follow desktop theme")
+            checked: App.Palette.follow
+            enabled: !App.Palette.save.running
+            palette.windowText: App.Palette.ink; palette.text: App.Palette.ink
+            palette.buttonText: App.Palette.ink; palette.highlight: App.Palette.accent
+            onClicked: App.Palette.toggle()
+        }
+        Copy { text: App.Palette.follow ? qsTr("Follows Omarchy's current colours, including theme changes. Text and status colours retain readable contrast.") : qsTr("Using the original Observatory colours."); color: App.Palette.muted }
+        Copy { visible: App.Palette.missing; text: qsTr("Desktop colours unavailable or incomplete. Using Observatory colours until they return."); color: App.Palette.warning }
+        Copy { visible: App.Palette.error.length>0; text: App.Palette.error; color: App.Palette.warning }
+        RowLayout {
+            visible: page.trial && Quickshell.env("OMANOVA_THEME_TRIAL")==="1"
+            Action {text: qsTr("Your desktop theme");enabled:App.Palette.follow;onClicked:App.Palette.sample("desktop")}
+            Action {text: qsTr("Sample light");enabled:App.Palette.follow;onClicked:App.Palette.sample("light")}
+            Action {text: qsTr("Sample dark");enabled:App.Palette.follow;onClicked:App.Palette.sample("dark")}
+        }
+        Copy { visible: App.Palette.previewTheme.length>0; text: qsTr("Previewing sample colours. Your desktop theme has not changed.");color:App.Palette.warning }
+
     }
 
     Card {
@@ -123,7 +150,7 @@ ColumnLayout {
                     ? (page.preferences.temporary ? qsTr("Temporary · %1") : qsTr("Active · %1"))
                         .arg(page.sky.data.place.name)
                     : qsTr("No active location")
-                color: "#70edeb"
+                color: App.Palette.accent
             }
             RowLayout {
                 Layout.fillWidth: true
@@ -134,13 +161,13 @@ ColumnLayout {
                     model: page.preferences.profiles
                     textRole: "name"
                     Accessible.name: qsTr("Saved locations")
-                    palette.base: "#101c32"
-                    palette.button: "#15253c"
-                    palette.text: "#eef5ff"
-                    palette.buttonText: "#eef5ff"
-                    palette.window: "#101c32"
-                    palette.windowText: "#eef5ff"
-                    palette.highlight: "#365c77"
+                    palette.base: App.Palette.surface
+                    palette.button: App.Palette.button
+                    palette.text: App.Palette.ink
+                    palette.buttonText: App.Palette.ink
+                    palette.window: App.Palette.surface
+                    palette.windowText: App.Palette.ink
+                    palette.highlight: App.Palette.button
                 }
                 Action {
                     text: qsTr("Use saved")
@@ -148,7 +175,7 @@ ColumnLayout {
                     onClicked: page.sky.run(["use", page.preferences.profiles[saved.currentIndex].id])
                 }
             }
-            Copy { text: qsTr("Optional city or postcode lookup sends only the text you enter to Open-Meteo/GeoNames when you press Search. It does not read your current coordinates. Place data: GeoNames."); color: "#a7b7ce" }
+            Copy { text: qsTr("Optional city or postcode lookup sends only the text you enter to Open-Meteo/GeoNames when you press Search. It does not read your current coordinates. Place data: GeoNames."); color: App.Palette.muted }
             RowLayout {
                 Field { id: lookupQuery; placeholderText: qsTr("City or postcode, optionally country"); maximumLength: 120 }
                 Action {
@@ -190,7 +217,7 @@ ColumnLayout {
             Copy {
                 visible: !page.sky.supports("save-stdin") || !page.sky.supports("temporary-stdin")
                 text: qsTr("Update the runtime checkout and rerun ./setup-runtime to enter locations privately.")
-                color: "#ffcc7b"
+                color: App.Palette.warning
             }
         }
     }
@@ -202,7 +229,7 @@ ColumnLayout {
             anchors.fill: parent
             anchors.margins: 16
             Heading { text: qsTr("Distance units") }
-            Copy { text: page.sky.useMiles ? qsTr("Showing miles") : qsTr("Showing kilometres"); color: "#70edeb" }
+            Copy { text: page.sky.useMiles ? qsTr("Showing miles") : qsTr("Showing kilometres"); color: App.Palette.accent }
             Flow {
                 Layout.fillWidth: true
                 spacing: 8
@@ -220,7 +247,7 @@ ColumnLayout {
             Copy {
                 visible: !page.sky.supports("distance-unit")
                 text: qsTr("Update the runtime checkout and rerun ./setup-runtime, then reopen OMANOVA.")
-                color: "#ffcc7b"
+                color: App.Palette.warning
             }
         }
     }
@@ -237,7 +264,7 @@ ColumnLayout {
                 text: page.preferences.online ? qsTr("Orbital data · Enabled") : qsTr("Orbital data · Paused")
                 font.bold: true
             }
-            Copy { text: qsTr("CelesTrak receives no observing coordinates."); color: "#a7b7ce" }
+            Copy { text: qsTr("CelesTrak receives no observing coordinates."); color: App.Palette.muted }
             Action {
                 text: page.preferences.online ? qsTr("Pause orbital downloads") : qsTr("Enable orbital downloads")
                 enabled: !page.busy && (!page.sky.fixture || page.trial)
@@ -250,7 +277,7 @@ ColumnLayout {
             }
             Copy {
                 text: qsTr("Open-Meteo receives coordinates rounded to two decimal places when downloads are enabled.")
-                color: "#a7b7ce"
+                color: App.Palette.muted
             }
             Action {
                 text: page.preferences.weather ? qsTr("Turn weather off") : qsTr("Opt in to weather")
@@ -259,7 +286,7 @@ ColumnLayout {
             }
             Copy {
                 text: qsTr("Launch schedules and NOAA aurora guidance are separate opt-ins. Neither sends observing coordinates. Reopen the Observatory for launch changes, or reopen the Aurora tab for aurora changes.")
-                color: "#a7b7ce"
+                color: App.Palette.muted
             }
             Flow {
                 Layout.fillWidth: true
@@ -288,7 +315,7 @@ ColumnLayout {
         Layout.bottomMargin: 12
         visible: text.length > 0
         text: page.sky.message
-        color: "#ffcc7b"
+        color: App.Palette.warning
         Accessible.role: Accessible.StaticText
     }
 }

@@ -13,6 +13,7 @@ mkdir -p "$preview"/{qml,config,cache}
 for module in Commons Ui; do
     ln -sfn "$shell_root/$module" "$preview/qml/$module"
 done
+ln -sfn "$project/qml" "$preview/qml/qml"
 for file in *.qml; do
     ln -sfn "$project/$file" "$preview/qml/$file"
 done

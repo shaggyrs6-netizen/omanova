@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -12,11 +13,11 @@ ColumnLayout {
     signal inspect(string eventId)
     spacing: 14
 
-    readonly property color ink: "#f2f7ff"
-    readonly property color muted: "#a7b7ce"
-    readonly property color accent: "#70edeb"
-    readonly property color amber: "#ffcc7b"
-    readonly property color line: "#2a3e58"
+    readonly property color ink: App.Palette.ink
+    readonly property color muted: App.Palette.muted
+    readonly property color accent: App.Palette.accent
+    readonly property color amber: App.Palette.warning
+    readonly property color line: App.Palette.line
     readonly property int gutter: width < 620 ? 16 : 30
     readonly property bool stale: sky.snapshotStale
     readonly property bool launchStale: launchFeed && launchFeed.fetched &&
@@ -125,7 +126,7 @@ ColumnLayout {
         }
         background: Rectangle {
             radius: 6
-            color: button.down || button.hovered ? "#20384e" : "#172a42"
+            color: button.down || button.hovered ? App.Palette.surface : App.Palette.surface
             border.color: button.visualFocus ? page.accent : page.line
         }
     }
@@ -197,7 +198,7 @@ ColumnLayout {
             Layout.rightMargin: page.gutter
             implicitHeight: details.implicitHeight + 28
             radius: 9
-            color: "#101c32"
+            color: App.Palette.surface
             border.color: page.line
             ColumnLayout {
                 id: details

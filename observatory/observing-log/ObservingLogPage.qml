@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -55,7 +56,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -64,13 +65,13 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.preferredWidth: 0
         implicitHeight: 39
-        color: "#eef5ff"
-        placeholderTextColor: "#a7b7ce"
-        selectionColor: "#365c77"
-        selectedTextColor: "#ffffff"
+        color: App.Palette.ink
+        placeholderTextColor: App.Palette.muted
+        selectionColor: App.Palette.button
+        selectedTextColor: App.Palette.ink
         background: Rectangle {
-            color: "#0a1424"
-            border.color: parent.activeFocus ? "#70edeb" : "#36516d"
+            color: App.Palette.field
+            border.color: parent.activeFocus ? App.Palette.accent : App.Palette.border
             radius: 6
         }
     }
@@ -81,23 +82,23 @@ ColumnLayout {
         rightPadding: 12
         contentItem: Text {
             text: action.text
-            color: action.enabled ? "#eef5ff" : "#8190a6"
+            color: action.enabled ? App.Palette.ink : App.Palette.muted
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pixelSize: 14
         }
         background: Rectangle {
             radius: 6
-            color: action.down ? "#243a54" : action.hovered ? "#1a3049" : "#15253c"
-            border.color: action.visualFocus ? "#70edeb" : "#36516d"
+            color: action.down ? App.Palette.button : action.hovered ? App.Palette.hover : App.Palette.button
+            border.color: action.visualFocus ? App.Palette.accent : App.Palette.border
         }
     }
     component Card: Rectangle {
         Layout.fillWidth: true
         Layout.leftMargin: 22
         Layout.rightMargin: 22
-        color: "#111e31"
-        border.color: "#2a3e58"
+        color: App.Palette.surface
+        border.color: App.Palette.line
         radius: 12
     }
 
@@ -176,12 +177,12 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: page.embedded ? qsTr("OMANOVA OBSERVATORY  /  FIELD NOTES") : qsTr("OMANOVA OBSERVATORY  /  PRIVATE PREVIEW"); color: "#70edeb"; font.letterSpacing: 1.5; font.pixelSize: 12 }
+        Copy { text: page.embedded ? qsTr("OMANOVA OBSERVATORY  /  FIELD NOTES") : qsTr("OMANOVA OBSERVATORY  /  PRIVATE PREVIEW"); color: App.Palette.accent; font.letterSpacing: 1.5; font.pixelSize: 12 }
         Copy { text: qsTr("Observing log"); font.pixelSize: 34; font.bold: true }
         Copy {
             text: page.embedded ? qsTr("Entries stay on this computer. Times use your computer’s time zone.")
                 : qsTr("Entries stay on this computer in a separate preview log. Times use your computer’s time zone.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
     }
 
@@ -214,14 +215,14 @@ ColumnLayout {
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                 TextArea {
                     id: notes
-                    color: "#eef5ff"
-                    placeholderTextColor: "#a7b7ce"
+                    color: App.Palette.ink
+                    placeholderTextColor: App.Palette.muted
                     placeholderText: qsTr("What stood out? How was the view?")
                     Accessible.name: qsTr("Notes")
                     wrapMode: TextEdit.Wrap
                     background: Rectangle {
-                        color: "#0a1424"
-                        border.color: parent.activeFocus ? "#70edeb" : "#36516d"
+                        color: App.Palette.field
+                        border.color: parent.activeFocus ? App.Palette.accent : App.Palette.border
                         radius: 6
                     }
                 }
@@ -234,7 +235,7 @@ ColumnLayout {
             Copy {
                 visible: !!page.message
                 text: page.message
-                color: page.failed ? "#ffcc7b" : "#70edeb"
+                color: page.failed ? App.Palette.warning : App.Palette.accent
             }
         }
     }
@@ -251,7 +252,7 @@ ColumnLayout {
         Layout.rightMargin: 22
         visible: page.ready && !page.entries.length
         text: qsTr("Your saved entries will appear here, newest observation first.")
-        color: "#a7b7ce"
+        color: App.Palette.muted
     }
     Repeater {
         model: page.entries
@@ -265,8 +266,8 @@ ColumnLayout {
                 anchors.margins: 16
                 spacing: 6
                 Copy { text: entry.modelData.seen; font.pixelSize: 20; font.bold: true }
-                Copy { text: entry.modelData.observed.replace("T", " · "); color: "#70edeb" }
-                Copy { text: entry.modelData.place; color: "#a7b7ce" }
+                Copy { text: entry.modelData.observed.replace("T", " · "); color: App.Palette.accent }
+                Copy { text: entry.modelData.place; color: App.Palette.muted }
                 Copy { visible: !!entry.modelData.notes; text: entry.modelData.notes }
             }
         }

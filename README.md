@@ -642,3 +642,36 @@ or disabled. Trees, roofs and actual visibility still need local judgement.
 
 Data source/attribution: [Terrain Tiles](https://registry.opendata.aws/terrain-tiles/),
 [provider notices](assets/terrain-attribution.txt) and [data sources](DATA-SOURCES.md).
+
+## Desktop theme preview (local development)
+
+This branch adds **Settings → Appearance → Follow desktop theme** to the
+Observatory and compact panel. It starts with the original Observatory
+colours unless explicitly enabled. Theme colours are read from Omarchy's
+current `colors.toml`; watched file changes and a two-second reread handle
+symlink replacement during theme switches. Unavailable/incomplete colours
+fall back to the original palette. No shell configuration or desktop theme
+is changed. Text, controls and status roles are contrast-adjusted; labels
+remain alongside observing verdicts. Moon surface illustrations keep their
+scientific shading, and terrain also uses a dashed line to distinguish it
+from manual obstructions.
+
+Run `./preview-theme` in this checkout. It uses isolated public fixture data
+under `.preview/settings/`, and appearance is saved only there. Choose
+**Follow desktop theme**, then try **Your desktop theme**, **Sample light**
+and **Sample dark**. Sample buttons only appear in this isolated trial and
+do not change the desktop. Use **Show compact panel preview** to check the
+fallback too. Toggle off to return to Observatory colours. Appearance mode
+is stored separately from observing settings in `appearance.json`; there is
+no worker restart or network request for this choice.
+
+This preview is based on marketplace submission commit `e9bd3dc`. It is on
+`codex/desktop-theme-preview` and has not been uploaded or installed live.
+The existing marketplace request and immutable 0.1.2 release stay separate.
+Preview approval is required before any deployment or publication.
+
+Validation: `node tests/theme-colors.test.cjs` checks the actual colour parser
+and contrast maths; `.venv/bin/python -m unittest discover -s tests` covers
+appearance persistence without changing observing files and the existing
+regressions. Native fixture checks cover theme-file/symlink changes,
+fallback, mode persistence, both panels and screen loading.

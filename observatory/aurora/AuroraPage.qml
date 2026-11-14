@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -29,7 +30,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -41,23 +42,23 @@ ColumnLayout {
         rightPadding: 12
         contentItem: Text {
             text: action.text
-            color: action.enabled ? "#eef5ff" : "#8190a6"
+            color: action.enabled ? App.Palette.ink : App.Palette.muted
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pixelSize: 14
         }
         background: Rectangle {
             radius: 6
-            color: action.hovered ? "#1a3049" : "#15253c"
-            border.color: action.visualFocus ? "#70edeb" : "#36516d"
+            color: action.hovered ? App.Palette.hover : App.Palette.button
+            border.color: action.visualFocus ? App.Palette.accent : App.Palette.border
         }
     }
     component Card: Rectangle {
         Layout.fillWidth: true
         Layout.leftMargin: 22
         Layout.rightMargin: 22
-        color: "#111e31"
-        border.color: "#2a3e58"
+        color: App.Palette.surface
+        border.color: App.Palette.line
         radius: 12
     }
 
@@ -95,12 +96,12 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: page.embedded ? qsTr("OMANOVA OBSERVATORY  /  SPACE WEATHER") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW"); color: "#70edeb"; font.letterSpacing: 1.5; font.pixelSize: 12 }
+        Copy { text: page.embedded ? qsTr("OMANOVA OBSERVATORY  /  SPACE WEATHER") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW"); color: App.Palette.accent; font.letterSpacing: 1.5; font.pixelSize: 12 }
         Copy { text: qsTr("Aurora"); font.pixelSize: 34; font.bold: true }
         Copy {
             text: page.catalog?.fixture ? qsTr("SIMULATED STORM · Nashville · no real alert")
                 : qsTr("Saved observing location · times on your desktop clock")
-            color: page.catalog?.fixture ? "#ffcc7b" : "#a7b7ce"
+            color: page.catalog?.fixture ? App.Palette.warning : App.Palette.muted
         }
         Flow {
             Layout.fillWidth: true
@@ -121,12 +122,12 @@ ColumnLayout {
         Copy {
             visible: !page.catalog?.fixture && page.catalog?.enabled === false
             text: qsTr("Aurora downloads paused · Showing any usable cached guidance. Enable in Settings.")
-            color: "#ffcc7b"
+            color: App.Palette.warning
         }
         Copy {
             visible: !!page.loadError || !!page.catalog?.issues.length
             text: page.loadError || qsTr("Feed refresh issue · %1").arg(page.catalog?.issues.join(", ") ?? "")
-            color: "#ffcc7b"
+            color: App.Palette.warning
         }
     }
 
@@ -144,13 +145,13 @@ ColumnLayout {
                     : page.verdict === "daylight" ? qsTr("Sky too bright at the forecast time")
                     : page.verdict === "unlikely" ? qsTr("Unlikely from here in this model run")
                     : qsTr("Visibility uncertain · fresh local model guidance unavailable")
-                color: page.verdict === "possible" ? "#70edeb" : "#ffcc7b"
+                color: page.verdict === "possible" ? App.Palette.accent : App.Palette.warning
                 font.bold: true
             }
             Copy {
                 visible: !!page.current?.valid
                 text: visible ? qsTr("Model valid around %1").arg(page.stamp(page.current.valid)) : ""
-                color: "#a7b7ce"
+                color: App.Palette.muted
             }
             Copy {
                 visible: page.verdict === "possible" && !!page.current?.look
@@ -160,7 +161,7 @@ ColumnLayout {
             }
             Copy {
                 text: qsTr("The NOAA model shows where the aurora may occur. This view checks whether part of it could be above your horizon in darkness. Clouds, skyglow and aurora height can change what you see.")
-                color: "#a7b7ce"
+                color: App.Palette.muted
             }
             Action {
                 text: qsTr("NOAA aurora forecast ↗")
@@ -176,7 +177,7 @@ ColumnLayout {
         Copy { text: qsTr("After dark · next three nights"); font.pixelSize: 22; font.bold: true }
         Copy {
             text: qsTr("Kp is a global activity forecast. These times are for checking the next local model run. Kp alone gives no local sighting prediction.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
     }
     Repeater {
@@ -192,7 +193,7 @@ ColumnLayout {
                 spacing: 6
                 Copy {
                     text: qsTr("Dark sky · %1").arg(page.span(night.modelData.start, night.modelData.end))
-                    color: "#70edeb"
+                    color: App.Palette.accent
                     font.bold: true
                 }
                 Copy {
@@ -201,7 +202,7 @@ ColumnLayout {
                             .arg(night.modelData.kp.toLocaleString(Qt.locale(), "f", 1))
                             .arg(page.span(night.modelData.kpStart, night.modelData.kpEnd))
                 }
-                Copy { text: qsTr("Local visibility uncertain until a fresh near-term model covers this time."); color: "#a7b7ce" }
+                Copy { text: qsTr("Local visibility uncertain until a fresh near-term model covers this time."); color: App.Palette.muted }
             }
         }
     }

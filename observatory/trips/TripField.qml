@@ -1,8 +1,9 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 TextField {
     id: control
-    font.pixelSize: 14; implicitHeight: 38; color: "#eef5ff"; placeholderTextColor: "#a7b7ce"
-    selectionColor: "#365c77"; selectedTextColor: "#ffffff"
-    background: Rectangle { radius: 5; color: "#0a1424"; border.color: control.activeFocus ? "#70edeb" : "#36516d" }
+    font.pixelSize: 14; implicitHeight: 38; color: App.Palette.ink; placeholderTextColor: App.Palette.muted
+    selectionColor: App.Palette.button; selectedTextColor: App.Palette.ink
+    background: Rectangle { radius: 5; color: App.Palette.field; border.color: control.activeFocus ? App.Palette.accent : App.Palette.border }
 }

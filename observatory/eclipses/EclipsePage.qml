@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -30,7 +31,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -52,7 +53,7 @@ ColumnLayout {
             delegate: Copy {
                 required property var modelData
                 text: qsTr("%1 · %2").arg(rows.label).arg(page.span(modelData.start, modelData.end))
-                color: "#70edeb"
+                color: App.Palette.accent
             }
         }
     }
@@ -64,8 +65,8 @@ ColumnLayout {
         Layout.leftMargin: 22
         Layout.rightMargin: 22
         implicitHeight: details.implicitHeight + 36
-        color: "#111e31"
-        border.color: "#2a3e58"
+        color: App.Palette.surface
+        border.color: App.Palette.line
         radius: 12
 
         ColumnLayout {
@@ -82,7 +83,7 @@ ColumnLayout {
             Copy {
                 text: card.solar ? qsTr("Local maximum · %1").arg(page.when(card.modelData.peak))
                     : qsTr("Greatest eclipse · %1").arg(page.when(card.modelData.peak))
-                color: "#a7b7ce"
+                color: App.Palette.muted
             }
             WindowRows { label: qsTr("Visible window"); windows: card.modelData.visible }
             WindowRows {
@@ -110,12 +111,12 @@ ColumnLayout {
             Copy {
                 visible: !card.solar && card.modelData.kind === "penumbral"
                 text: qsTr("Expect subtle shading on the Moon. Twilight and haze can make it harder to notice.")
-                color: "#a7b7ce"
+                color: App.Palette.muted
             }
             Copy {
                 visible: card.modelData.look.altitude <= 5
                 text: qsTr("Low on the horizon. You’ll need a clear view in that direction.")
-                color: "#ffcc7b"
+                color: App.Palette.warning
             }
         }
     }
@@ -149,7 +150,7 @@ ColumnLayout {
         spacing: 8
         Copy {
             text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW")
-            color: "#70edeb"
+            color: App.Palette.accent
             font.pixelSize: 12
             font.letterSpacing: 1.8
         }
@@ -157,11 +158,11 @@ ColumnLayout {
         Copy {
             text: page.catalog?.fixture ? qsTr("Nashville test location · fixture")
                 : qsTr("Saved observing location · times on your desktop clock")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             text: qsTr("Local solar and lunar eclipses through 2029. The viewing windows account for sunrise, sunset, moonrise and moonset on an unobstructed horizon. Times are approximate.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             visible: !page.catalog
@@ -176,14 +177,14 @@ ColumnLayout {
         Layout.rightMargin: 22
         implicitHeight: safety.implicitHeight + 32
         radius: 12
-        color: "#281e1d"
-        border.color: "#795443"
+        color: App.Palette.surface
+        border.color: App.Palette.warning
         ColumnLayout {
             id: safety
             anchors.fill: parent
             anchors.margins: 16
             spacing: 7
-            Copy { text: qsTr("Solar viewing safety"); font.bold: true; color: "#ffcc7b" }
+            Copy { text: qsTr("Solar viewing safety"); font.bold: true; color: App.Palette.warning }
             Copy {
                 text: qsTr("Use ISO 12312-2 eclipse glasses or a safe handheld solar viewer throughout partial or annular phases. Sunglasses are unsafe. Cameras, binoculars and telescopes require a purpose-made solar filter over the front of the optics.")
             }
@@ -209,7 +210,7 @@ ColumnLayout {
         Layout.leftMargin: 22
         Layout.rightMargin: 22
         text: qsTr("Lunar eclipses are safe to watch with the naked eye.")
-        color: "#a7b7ce"
+        color: App.Palette.muted
     }
     Repeater {
         model: page.catalog?.lunar ?? []

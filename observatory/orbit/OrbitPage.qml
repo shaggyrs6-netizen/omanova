@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -15,10 +16,10 @@ ColumnLayout {
     readonly property var station: orbitData ? orbitData.stations[stationIndex] : null
     readonly property var selected: station ? (station.passes[passIndex] || null) : null
     readonly property var sample: selected ? (selected.pass[sampleIndex] || null) : null
-    readonly property color accent: stationIndex === 0 ? "#70edeb" : "#b2a7ff"
-    readonly property color ink: "#f2f7ff"
-    readonly property color muted: "#a7b7ce"
-    readonly property color line: "#2a3e58"
+    readonly property color accent: stationIndex === 0 ? App.Palette.accent : App.Palette.violet
+    readonly property color ink: App.Palette.ink
+    readonly property color muted: App.Palette.muted
+    readonly property color line: App.Palette.line
     readonly property int margin: width < 650 ? 14 : 25
     onStationChanged: {
         const preferred = station ? station.passes.findIndex(pass => pass.id === station.preferred) : -1
@@ -80,7 +81,7 @@ ColumnLayout {
         contentItem: Copy { text: button.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
         background: Rectangle {
             radius: 6
-            color: ui.stationIndex === button.index || button.hovered ? "#172b43" : "#101c32"
+            color: ui.stationIndex === button.index || button.hovered ? App.Palette.hover : App.Palette.surface
             border.color: button.visualFocus || ui.stationIndex === button.index ? ui.accent : ui.line
         }
     }
@@ -142,8 +143,8 @@ ColumnLayout {
         currentIndex: count ? ui.passIndex : -1
         Accessible.name: "Upcoming station pass"
         onActivated: index => ui.passIndex = index
-        palette.button: "#101c32"; palette.buttonText: ui.ink
-        palette.base: "#101c32"; palette.text: ui.ink
+        palette.button: App.Palette.surface; palette.buttonText: ui.ink
+        palette.base: App.Palette.surface; palette.text: ui.ink
     }
     GroundMap {
         Layout.fillWidth: true

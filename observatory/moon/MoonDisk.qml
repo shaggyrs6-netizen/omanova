@@ -1,7 +1,9 @@
+import "./qml/Omanova" as App
 import QtQuick
 
 Canvas {
     id: disk
+        Connections { target: App.Palette; function onResolvedChanged() { disk.requestPaint() } function onFollowChanged() { disk.requestPaint() } }
     property real fraction: 0
     property bool waxing: true
     Accessible.name: "Moon phase diagram, " + (fraction > 0 && fraction < 0.01
@@ -18,7 +20,7 @@ Canvas {
         ctx.beginPath()
         ctx.arc(x, y, r, 0, Math.PI * 2)
         ctx.fillStyle = "#172840"
-        ctx.strokeStyle = "#7588a7"
+        ctx.strokeStyle = App.Palette.muted
         ctx.lineWidth = 1.5
         ctx.fill()
         ctx.stroke()
@@ -52,13 +54,13 @@ Canvas {
         }
         ctx.closePath()
         const light = ctx.createRadialGradient(x - r * 0.2, y - r * 0.25, r * 0.1, x, y, r)
-        light.addColorStop(0, "#f2f7ff")
-        light.addColorStop(1, "#a3b5cf")
+        light.addColorStop(0, App.Palette.ink)
+        light.addColorStop(1, App.Palette.muted)
         ctx.fillStyle = light
         ctx.fill()
         ctx.save()
         ctx.clip()
-        surface("#899eb9")
+        surface(App.Palette.muted)
         ctx.restore()
     }
 }

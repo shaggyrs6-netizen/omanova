@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -7,14 +8,14 @@ Rectangle {
     property var observer: null
     property var selected: null
     property var sample: null
-    property color accent: "#70edeb"
+    property color accent: App.Palette.accent
     readonly property real inset: 11
     readonly property real plotHeight: Math.max(1, Math.min((width - inset * 2) / 2, height - inset * 2))
     readonly property real plotWidth: plotHeight * 2
     implicitHeight: Math.min(356, width / 2 + inset)
     radius: 8
-    color: "#0b1526"
-    border.color: "#2a3e58"
+    color: App.Palette.field
+    border.color: App.Palette.line
     Accessible.name: "Earth ground track, local observing point and selected sub-satellite position"
 
     function project(lon, lat) {
@@ -38,14 +39,15 @@ Rectangle {
 
     Canvas {
         id: base
+        Connections { target: App.Palette; function onResolvedChanged() { base.requestPaint() } function onFollowChanged() { base.requestPaint() } }
         anchors.fill: parent
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
         onPaint: {
             const ctx = getContext("2d")
             ctx.reset()
-            ctx.fillStyle = "#182c42"
-            ctx.strokeStyle = "#34516a"
+            ctx.fillStyle = App.Palette.surface
+            ctx.strokeStyle = App.Palette.border
             ctx.lineWidth = 0.7
             for (const feature of land.features) {
                 ctx.beginPath()
@@ -62,7 +64,7 @@ Rectangle {
                 ctx.fill()
                 ctx.stroke()
             }
-            ctx.strokeStyle = "#304258"
+            ctx.strokeStyle = App.Palette.line
             ctx.lineWidth = 0.65
             ctx.beginPath()
             for (let lon = -180; lon <= 180; lon += 30) {
@@ -79,6 +81,7 @@ Rectangle {
 
     Canvas {
         id: tracks
+        Connections { target: App.Palette; function onResolvedChanged() { tracks.requestPaint() } function onFollowChanged() { tracks.requestPaint() } }
         anchors.fill: parent
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -111,13 +114,14 @@ Rectangle {
                 }
                 ctx.stroke()
             }
-            path(map.selected.track, "#a7b7ce", 1.6, [4, 5])
+            path(map.selected.track, App.Palette.muted, 1.6, [4, 5])
             path(map.selected.pass.map(point => [point.lon, point.lat]), map.accent, 3, [])
         }
     }
 
     Canvas {
         id: positionLayer
+        Connections { target: App.Palette; function onResolvedChanged() { positionLayer.requestPaint() } function onFollowChanged() { positionLayer.requestPaint() } }
         anchors.fill: parent
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
@@ -134,15 +138,15 @@ Rectangle {
                 if (Math.abs(map.sample.lon - map.observer.lon) <= 180) {
                     ctx.lineTo(sub.x, sub.y)
                     ctx.setLineDash([2, 3])
-                    ctx.strokeStyle = "#d5cbff"
+                    ctx.strokeStyle = App.Palette.violet
                     ctx.stroke()
                 }
                 ctx.setLineDash([])
                 ctx.beginPath()
                 ctx.arc(sub.x, sub.y, 5, 0, Math.PI * 2)
-                ctx.fillStyle = "#a8a1ff"
+                ctx.fillStyle = App.Palette.violet
                 ctx.fill()
-                ctx.strokeStyle = "#070d1b"
+                ctx.strokeStyle = App.Palette.background
                 ctx.stroke()
             }
             ctx.beginPath()
@@ -151,9 +155,9 @@ Rectangle {
             ctx.lineTo(home.x, home.y + 7)
             ctx.lineTo(home.x - 7, home.y)
             ctx.closePath()
-            ctx.fillStyle = "#f2f7ff"
+            ctx.fillStyle = App.Palette.ink
             ctx.fill()
-            ctx.strokeStyle = "#070d1b"
+            ctx.strokeStyle = App.Palette.background
             ctx.stroke()
         }
     }

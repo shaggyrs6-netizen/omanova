@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -29,7 +30,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -42,8 +43,8 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 22
         Layout.rightMargin: 22
-        color: "#111e31"
-        border.color: "#2a3e58"
+        color: App.Palette.surface
+        border.color: App.Palette.line
         radius: 12
     }
 
@@ -52,20 +53,20 @@ ColumnLayout {
         implicitHeight: 42
         contentItem: Text {
             text: tab.text
-            color: tab.checked ? "#eef5ff" : "#a7b7ce"
+            color: tab.checked ? App.Palette.ink : App.Palette.muted
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pixelSize: 15
             font.bold: tab.checked
         }
         background: Rectangle {
-            color: tab.checked ? "#15253c" : tab.hovered ? "#111e31" : "#070d1b"
-            border.color: tab.visualFocus ? "#70edeb" : "#2a3e58"
+            color: tab.checked ? App.Palette.button : tab.hovered ? App.Palette.surface : App.Palette.background
+            border.color: tab.visualFocus ? App.Palette.accent : App.Palette.line
             Rectangle {
                 anchors.bottom: parent.bottom
                 width: parent.width
                 height: 2
-                color: tab.checked ? "#70edeb" : "transparent"
+                color: tab.checked ? App.Palette.accent : "transparent"
             }
         }
     }
@@ -99,13 +100,13 @@ ColumnLayout {
         spacing: 7
         Copy {
             text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW")
-            color: "#70edeb"
+            color: App.Palette.accent
             font.pixelSize: 12
             font.letterSpacing: 1.8
         }
         Heading { text: qsTr("Planets & conjunctions"); font.pixelSize: 32 }
         Copy {
-            color: "#a7b7ce"
+            color: App.Palette.muted
             text: page.dataSet?.fixture ? qsTr("Nashville test location · fixture")
                 : qsTr("Saved observing location · times on your desktop clock")
         }
@@ -120,7 +121,7 @@ ColumnLayout {
             page.section = currentIndex
             scroll.contentItem.contentY = 0
         }
-        background: Rectangle { color: "#070d1b" }
+        background: Rectangle { color: App.Palette.background }
         ViewTab { text: qsTr("Next 24 hours") }
         ViewTab { text: qsTr("Pairings · 30 days") }
     }
@@ -138,7 +139,7 @@ ColumnLayout {
             spacing: 12
             Copy {
                 Layout.margins: 22
-                color: "#a7b7ce"
+                color: App.Palette.muted
                 text: page.loadError || (!page.dataSet ? qsTr("Loading viewing windows…") :
                     page.section === 0
                     ? qsTr("The five naked-eye planets. Windows require the planet to be at least 10° up and the Sun at least 6° below the horizon. Clouds and obstructions can affect the view.")
@@ -160,7 +161,7 @@ ColumnLayout {
                         Copy {
                             visible: !planet.modelData.windows.length
                             text: qsTr("No suitable window in the next 24 hours.")
-                            color: "#a7b7ce"
+                            color: App.Palette.muted
                         }
                         Repeater {
                             model: planet.modelData.windows
@@ -170,7 +171,7 @@ ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 4
                                 Copy {
-                                    color: "#70edeb"
+                                    color: App.Palette.accent
                                     text: page.span(period.modelData.start, period.modelData.end)
                                 }
                                 Copy {
@@ -198,13 +199,13 @@ ColumnLayout {
                         spacing: 6
                         Heading { text: pairing.modelData.name }
                         Copy {
-                            color: "#a7b7ce"
+                            color: App.Palette.muted
                             text: qsTr("Closest approach · %1 · %2 apart")
                                 .arg(page.stamp(pairing.modelData.peak))
                                 .arg(page.degrees(pairing.modelData.separation))
                         }
                         Copy {
-                            color: pairing.viewing ? "#70edeb" : "#ffcc7b"
+                            color: pairing.viewing ? App.Palette.accent : App.Palette.warning
                             text: pairing.viewing
                                 ? qsTr("Local window · %1").arg(page.span(pairing.viewing.start, pairing.viewing.end))
                                 : qsTr("No suitable local viewing window near this pairing.")

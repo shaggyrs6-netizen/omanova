@@ -1,7 +1,9 @@
+import "./qml/Omanova" as App
 import QtQuick
 
 Canvas {
     id: root
+        Connections { target: App.Palette; function onResolvedChanged() { root.requestPaint() } function onFollowChanged() { root.requestPaint() } }
     property var points: []
     property bool highlightVisibility: true
     Accessible.name: "North-up sky compass. Concentric rings show elevation, with zenith at the centre."
@@ -9,8 +11,8 @@ Canvas {
     onHighlightVisibilityChanged: requestPaint()
     onWidthChanged: requestPaint()
     onHeightChanged: requestPaint()
-    property color ink: "#eef5ff"
-    property color accent: "#70edeb"
+    property color ink: App.Palette.ink
+    property color accent: App.Palette.accent
     onInkChanged: requestPaint()
     onAccentChanged: requestPaint()
 

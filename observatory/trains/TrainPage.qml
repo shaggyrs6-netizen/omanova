@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -33,7 +34,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -45,15 +46,15 @@ ColumnLayout {
         rightPadding: 12
         contentItem: Text {
             text: action.text
-            color: "#eef5ff"
+            color: App.Palette.ink
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pixelSize: 14
         }
         background: Rectangle {
             radius: 6
-            color: action.hovered ? "#1a3049" : "#15253c"
-            border.color: action.visualFocus ? "#70edeb" : "#36516d"
+            color: action.hovered ? App.Palette.hover : App.Palette.button
+            border.color: action.visualFocus ? App.Palette.accent : App.Palette.border
         }
     }
 
@@ -88,7 +89,7 @@ ColumnLayout {
         spacing: 8
         Copy {
             text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL") : qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL PREVIEW")
-            color: "#70edeb"
+            color: App.Palette.accent
             font.letterSpacing: 1.4
             font.pixelSize: 12
         }
@@ -96,11 +97,11 @@ ColumnLayout {
         Copy {
             text: page.catalog?.fixture ? qsTr("SIMULATED EXAMPLE · Nashville · no real train")
                 : qsTr("Saved observing location · times on your desktop clock")
-            color: page.catalog?.fixture ? "#ffcc7b" : "#a7b7ce"
+            color: page.catalog?.fixture ? App.Palette.warning : App.Palette.muted
         }
         Copy {
             text: qsTr("Next 24 hours. A candidate needs at least three individually tracked members of one recent launch, clustered and sunlit at least 15° up against a dark sky. Brightness and actual sightings can vary.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Action {
             visible: !!page.examplePath
@@ -108,7 +109,7 @@ ColumnLayout {
             onClicked: page.example = !page.example
         }
         Copy {
-            color: "#ffcc7b"
+            color: App.Palette.warning
             visible: !!text
             text: page.loadError || (!page.catalog ? qsTr("Checking launch-linked orbital data…")
                 : !page.catalog.recentAvailable ? qsTr("Recent launch data unavailable. Local visibility remains unconfirmed.")
@@ -118,7 +119,7 @@ ColumnLayout {
         Copy {
             visible: !!page.catalog
             text: page.catalog ? qsTr("Checked · %1 local").arg(page.stamp(page.catalog.computed)) : ""
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
     }
 
@@ -132,8 +133,8 @@ ColumnLayout {
             Layout.leftMargin: 22
             Layout.rightMargin: 22
             implicitHeight: details.implicitHeight + 34
-            color: "#111e31"
-            border.color: "#2a3e58"
+            color: App.Palette.surface
+            border.color: App.Palette.line
             radius: 12
 
             ColumnLayout {
@@ -147,24 +148,24 @@ ColumnLayout {
                     text: visible ? (card.modelData.upcoming ? qsTr("Tentative launch · %1 UTC")
                         : qsTr("Launched · %1 local")).arg(card.modelData.upcoming
                             ? card.modelData.net.slice(0, 10) : page.stamp(card.modelData.net)) : ""
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Copy {
                     text: card.windows.length ? qsTr("Potential train window")
                         : card.modelData.members < 3 ? qsTr("Local visibility unconfirmed")
                         : qsTr("No qualifying local window")
-                    color: card.windows.length ? "#70edeb" : "#ffcc7b"
+                    color: card.windows.length ? App.Palette.accent : App.Palette.warning
                     font.bold: true
                 }
                 Copy {
                     text: card.modelData.windows.length && !card.windows.length
                         ? qsTr("The sampled viewing interval has ended.") : card.modelData.reason
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Copy {
                     visible: !card.modelData.upcoming
                     text: qsTr("Individually tracked members used · %1").arg(card.modelData.members)
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Repeater {
                     model: card.windows
@@ -176,7 +177,7 @@ ColumnLayout {
                             text: qsTr("Sampled window · %1 – %2")
                                 .arg(page.stamp(viewing.modelData.start.time, "ddd d MMM · HH:mm:ss"))
                                 .arg(page.stamp(viewing.modelData.end.time, "HH:mm:ss"))
-                            color: "#70edeb"
+                            color: App.Palette.accent
                         }
                         Copy {
                             text: qsTr("Start %1 · finish %2")

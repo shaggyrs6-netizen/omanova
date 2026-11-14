@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -46,7 +47,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -81,7 +82,7 @@ ColumnLayout {
         spacing: 8
         Copy {
             text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW")
-            color: "#70edeb"
+            color: App.Palette.accent
             font.pixelSize: 12
             font.letterSpacing: 1.8
         }
@@ -89,26 +90,26 @@ ColumnLayout {
         Copy {
             text: page.catalog?.fixture ? qsTr("Nashville test location · fixture")
                 : qsTr("Saved observing location · times on your desktop clock")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             visible: page.available
             text: qsTr("Selected targets through %1. Windows require astronomical darkness and at least 20° elevation. Equipment estimates assume dark skies and use dated reports. A comet’s diffuse glow can be hard to see even with a telescope.")
                 .arg(page.catalog?.until ? page.stamp(page.catalog.until, "ddd d MMM · HH:mm") : "")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Copy {
             visible: page.available && !page.catalog.targets.some(
                 target => target.windows.length && ["eye", "binoculars"].includes(target.equipment))
             text: qsTr("No naked-eye or binocular candidates in this selection.")
-            color: "#ffcc7b"
+            color: App.Palette.warning
         }
         Copy {
             visible: !!page.loadError || !page.catalog || !page.available
             text: page.loadError || (page.catalog
                 ? qsTr("This dated comet snapshot has no current coverage. It needs updated ephemerides and brightness reports.")
                 : qsTr("Loading comet windows…"))
-            color: "#ffcc7b"
+            color: App.Palette.warning
         }
     }
 
@@ -121,8 +122,8 @@ ColumnLayout {
             Layout.leftMargin: 22
             Layout.rightMargin: 22
             implicitHeight: details.implicitHeight + 36
-            color: "#111e31"
-            border.color: "#2a3e58"
+            color: App.Palette.surface
+            border.color: App.Palette.line
             radius: 12
 
             ColumnLayout {
@@ -131,13 +132,13 @@ ColumnLayout {
                 anchors.margins: 18
                 spacing: 8
                 Copy { text: card.modelData.name; font.pixelSize: 23; font.bold: true }
-                Copy { text: page.optics(card.modelData.equipment); color: "#ffcc7b" }
+                Copy { text: page.optics(card.modelData.equipment); color: App.Palette.warning }
                 Copy {
                     text: qsTr("Reported magnitude %1 · %2 · %3 UTC")
                         .arg(card.modelData.magnitude.toLocaleString(Qt.locale(), "f", 1))
                         .arg(card.modelData.method === "visual" ? qsTr("visual") : qsTr("CCD"))
                         .arg(card.modelData.observed)
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Copy {
                     visible: !card.modelData.windows.length
@@ -150,10 +151,10 @@ ColumnLayout {
                         required property var modelData
                         Layout.fillWidth: true
                         spacing: 4
-                        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: "#2a3e58" }
+                        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: App.Palette.line }
                         Copy {
                             text: page.span(period.modelData.start, period.modelData.end)
-                            color: "#70edeb"
+                            color: App.Palette.accent
                         }
                         Copy {
                             text: qsTr("Look around %1 · %2 (%3°) · %4° up")
@@ -166,7 +167,7 @@ ColumnLayout {
                                 .arg(page.coordinates(period.modelData.raHours, period.modelData.decDegrees))
                                 .arg(period.modelData.moonDown ? qsTr("below horizon")
                                     : qsTr("%1% lit, above horizon").arg(period.modelData.moonPercent))
-                            color: "#a7b7ce"
+                            color: App.Palette.muted
                         }
                     }
                 }
@@ -181,6 +182,6 @@ ColumnLayout {
         visible: page.available
         Layout.margins: 22
         text: qsTr("Positions from JPL Horizons. Brightness from the Comet Observation Database (COBS).")
-        color: "#a7b7ce"
+        color: App.Palette.muted
     }
 }

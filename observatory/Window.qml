@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -14,7 +15,7 @@ ShellRoot {
         active: shell.settingsTrial && shell.compactOpen
         FloatingWindow {
             title: qsTr("OMANOVA · Compact panel preview")
-            color: "#070d1b"
+            color: App.Palette.background
             implicitWidth: 610
             implicitHeight: 490
             minimumSize: Qt.size(360, 360)
@@ -29,14 +30,15 @@ ShellRoot {
             IpcHandler {
                 target: "omasky-settings-compact-preview"
                 function tab(index: int): void { compact.tabIndex = index }
+                function capture():void {if(shell.settingsTrial)compact.grabToImage(r=>r.saveToFile(shell.stateModel.directory+"/compact-theme.png"))}
             }
         }
     }
 
     FloatingWindow {
         id: window
-        title: "OMANOVA Observatory · " + (shell.settingsTrial ? "Settings preview" : sky.fixture ? "Fixture preview" : "Live data test")
-        color: "#070d1b"
+        title: "OMANOVA Observatory · " + (shell.settingsTrial ? (Quickshell.env("OMANOVA_THEME_TRIAL")==="1" ? "Theme preview" : "Settings preview") : sky.fixture ? "Fixture preview" : "Live data test")
+        color: App.Palette.background
         implicitWidth: 1050
         implicitHeight: 700
         minimumSize: Qt.size(360, 400)
@@ -47,13 +49,13 @@ ShellRoot {
             anchors.fill: parent
             color: window.color
             readonly property var skyModel: sky
-            readonly property color surface: "#101c32"
-            readonly property color ink: "#f2f7ff"
-            readonly property color muted: "#a7b7ce"
-            readonly property color line: "#2a3e58"
-            readonly property color accent: "#70edeb"
-            readonly property color violet: "#a8a1ff"
-            readonly property color amber: "#ffcc7b"
+            readonly property color surface: App.Palette.surface
+            readonly property color ink: App.Palette.ink
+            readonly property color muted: App.Palette.muted
+            readonly property color line: App.Palette.line
+            readonly property color accent: App.Palette.accent
+            readonly property color violet: App.Palette.violet
+            readonly property color amber: App.Palette.warning
             readonly property string uiFont: "sans-serif"
             property string selectedEventId: ""
             readonly property var event: sky.events.find(row => row.id === selectedEventId) || sky.featured || null
@@ -64,7 +66,7 @@ ShellRoot {
             readonly property string verdict: !forecast ? "UNKNOWN" :
                 forecast.label === "Favourable" ? "GO" : forecast.label === "Poor" ? "NO GO" :
                 forecast.label === "Mixed" ? "CAUTION" : "UNKNOWN"
-            readonly property color verdictColor: verdict === "GO" ? accent : verdict === "UNKNOWN" ? muted : amber
+            readonly property color verdictColor: verdict === "GO" ? App.Palette.good : verdict === "UNKNOWN" ? muted : amber
             readonly property int gutter: width < 620 ? 16 : 30
             readonly property real contentHeight: scroll.contentHeight
             readonly property var screenItem: screenLoader.item
@@ -156,7 +158,7 @@ ShellRoot {
                 }
                 background: Rectangle {
                     radius: 6
-                    color: action.down ? "#20384e" : action.hovered ? "#172a42" : ui.surface
+                    color: action.down ? App.Palette.surface : action.hovered ? App.Palette.surface : ui.surface
                     border.color: action.visualFocus ? ui.accent : ui.line
                 }
             }
@@ -188,7 +190,7 @@ ShellRoot {
                     value: layer.amount ?? 0
                     Accessible.name: layer.caption + " cloud cover"
                     Accessible.description: layer.amount === null ? "Unavailable" : layer.amount + " percent"
-                    background: Rectangle { implicitHeight: 7; radius: 3; color: "#20354e" }
+                    background: Rectangle { implicitHeight: 7; radius: 3; color: App.Palette.line }
                     contentItem: Item {
                         Rectangle {
                             width: meter.visualPosition * parent.width
@@ -208,8 +210,8 @@ ShellRoot {
                 color: ui.surface
                 border.color: ui.line
                 gradient: Gradient {
-                    GradientStop { position: 0; color: "#14243c" }
-                    GradientStop { position: 1; color: "#0c1628" }
+                    GradientStop { position: 0; color: App.Palette.surface }
+                    GradientStop { position: 1; color: App.Palette.background }
                 }
                 implicitHeight: ui.width < 620 ? 320 : 395
                 ColumnLayout {
@@ -296,7 +298,7 @@ ShellRoot {
                                 verticalAlignment: Text.AlignVCenter
                             }
                             background: Rectangle {
-                                color: tab.selected ? "#15253c" : tab.hovered ? ui.surface : "transparent"
+                                color: tab.selected ? App.Palette.button : tab.hovered ? ui.surface : "transparent"
                                 border.color: tab.visualFocus ? ui.accent : "transparent"
                                 Rectangle {
                                     anchors.bottom: parent.bottom
@@ -641,6 +643,12 @@ ShellRoot {
 
         IpcHandler {
             target: "omasky-observatory-preview"
+            function theme(mode: string): string {
+                if(!shell.settingsTrial || Quickshell.env("OMANOVA_THEME_TRIAL")!=="1")return ""
+                if(["light","dark","desktop","file"].includes(mode))App.Palette.sample(mode)
+                if(mode==="toggle")App.Palette.toggle()
+                return JSON.stringify({follow:App.Palette.follow,themed:App.Palette.themed,missing:App.Palette.missing,background:String(App.Palette.background),ink:String(App.Palette.ink),error:App.Palette.error})
+            }
             function screen(index: int): void { ui.changeScreen(index) }
             function planets(section: int): string {
                 ui.changeScreen(7)

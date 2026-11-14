@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -8,7 +9,7 @@ ShellRoot {
     FloatingWindow {
         id: window
         title: qsTr("OMANOVA Observatory · Planets preview")
-        color: "#070d1b"
+        color: App.Palette.background
         implicitWidth: 850
         implicitHeight: 740
         minimumSize: Qt.size(380, 420)

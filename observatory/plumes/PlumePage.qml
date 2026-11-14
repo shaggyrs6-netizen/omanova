@@ -1,3 +1,4 @@
+import "./qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -45,7 +46,7 @@ ColumnLayout {
 
     component Copy: Text {
         Layout.fillWidth: true
-        color: "#eef5ff"
+        color: App.Palette.ink
         font.pixelSize: 15
         wrapMode: Text.Wrap
         textFormat: Text.PlainText
@@ -57,15 +58,15 @@ ColumnLayout {
         rightPadding: 12
         contentItem: Text {
             text: action.text
-            color: "#eef5ff"
+            color: App.Palette.ink
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             font.pixelSize: 14
         }
         background: Rectangle {
             radius: 6
-            color: action.hovered ? "#1a3049" : "#15253c"
-            border.color: action.visualFocus ? "#70edeb" : "#36516d"
+            color: action.hovered ? App.Palette.hover : App.Palette.button
+            border.color: action.visualFocus ? App.Palette.accent : App.Palette.border
         }
     }
 
@@ -100,7 +101,7 @@ ColumnLayout {
         spacing: 8
         Copy {
             text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL") : qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL PREVIEW")
-            color: "#70edeb"
+            color: App.Palette.accent
             font.pixelSize: 12
             font.letterSpacing: 1.6
         }
@@ -109,11 +110,11 @@ ColumnLayout {
             text: page.catalog?.fixture
                 ? qsTr("SIMULATED EXAMPLE · Nashville sample location · no real launch")
                 : qsTr("Saved observing location · times on your desktop clock")
-            color: page.catalog?.fixture ? "#ffcc7b" : "#a7b7ce"
+            color: page.catalog?.fixture ? App.Palette.warning : App.Palette.muted
         }
         Copy {
             text: qsTr("A potential window needs a timed exhaust track, sunlit exhaust at least 5° above your horizon, and the Sun at least 6° below it. Geometry alone can’t predict plume brightness, clouds or how long a plume will linger.")
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
         Action {
             visible: !!page.examplePath
@@ -121,7 +122,7 @@ ColumnLayout {
             onClicked: page.example = !page.example
         }
         Copy {
-            color: page.candidates ? "#70edeb" : "#ffcc7b"
+            color: page.candidates ? App.Palette.accent : App.Palette.warning
             text: page.loadError || (!page.catalog ? qsTr("Loading launch schedule…")
                 : !page.fresh ? qsTr("Schedule unavailable or stale. Visibility remains unconfirmed.")
                 : page.candidates ? qsTr("%n potential viewing window candidate(s)", "", page.candidates)
@@ -130,7 +131,7 @@ ColumnLayout {
         Copy {
             visible: !!page.catalog?.fetched
             text: visible ? qsTr("Schedule snapshot · %1 local").arg(page.stamp(page.catalog.fetched)) : ""
-            color: "#a7b7ce"
+            color: App.Palette.muted
         }
     }
 
@@ -144,8 +145,8 @@ ColumnLayout {
             Layout.leftMargin: 22
             Layout.rightMargin: 22
             implicitHeight: details.implicitHeight + 34
-            color: "#111e31"
-            border.color: "#2a3e58"
+            color: App.Palette.surface
+            border.color: App.Palette.line
             radius: 12
             ColumnLayout {
                 id: details
@@ -156,18 +157,18 @@ ColumnLayout {
                 Copy {
                     text: [card.modelData.site, card.modelData.region, card.modelData.status]
                         .filter(Boolean).join(" · ")
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Copy { text: page.launchTime(card.modelData) }
                 Copy {
                     visible: card.modelData.sunAltitude !== undefined
                     text: visible ? qsTr("Local Sun at scheduled liftoff · %1° elevation")
                         .arg(card.modelData.sunAltitude.toLocaleString(Qt.locale(), "f", 1)) : ""
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Copy {
                     text: card.possible ? qsTr("Potential plume window") : qsTr("Local visibility unconfirmed")
-                    color: card.possible ? "#70edeb" : "#ffcc7b"
+                    color: card.possible ? App.Palette.accent : App.Palette.warning
                     font.bold: true
                 }
                 Copy {
@@ -175,7 +176,7 @@ ColumnLayout {
                         : card.modelData.verdict === "possible" && !card.possible
                             ? qsTr("The sampled viewing interval has ended.")
                             : card.modelData.reason
-                    color: "#a7b7ce"
+                    color: App.Palette.muted
                 }
                 Repeater {
                     model: card.possible ? card.modelData.windows : []
@@ -187,7 +188,7 @@ ColumnLayout {
                             text: qsTr("Sampled interval · %1 – %2 local")
                                 .arg(page.stamp(row.modelData.start.time, "ddd d MMM · HH:mm:ss"))
                                 .arg(page.stamp(row.modelData.end.time, "HH:mm:ss"))
-                            color: "#70edeb"
+                            color: App.Palette.accent
                         }
                         Copy {
                             text: qsTr("Start %1 · highest %2 · finish %3")
@@ -196,7 +197,7 @@ ColumnLayout {
                         }
                         Copy {
                             text: qsTr("Times assume liftoff at the scheduled time. A slip changes the window.")
-                            color: "#a7b7ce"
+                            color: App.Palette.muted
                         }
                     }
                 }

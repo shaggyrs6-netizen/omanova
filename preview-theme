@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd -P -- "$(dirname -- "$0")"
+# This checkout's fixture session never reads or writes live observing data.
+export OMANOVA_THEME_TRIAL=1
+exec ./preview-observatory --settings-preview "$@"
