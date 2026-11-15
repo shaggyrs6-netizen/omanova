@@ -8,6 +8,7 @@ ColumnLayout {
     required property var sky
     required property var night
     signal inspect(var selected)
+    signal recordObservation(var selected)
     signal openEvents()
     signal openSettings()
     spacing: 18
@@ -94,6 +95,7 @@ ColumnLayout {
             Layout.leftMargin:24;Layout.rightMargin:24
             event:modelData;sky:page.sky;hero:index===0
             onInspect:function(selected){page.inspect(selected)}
+            onRecordObservation:function(selected){page.recordObservation(selected)}
         }
     }
     RowLayout {

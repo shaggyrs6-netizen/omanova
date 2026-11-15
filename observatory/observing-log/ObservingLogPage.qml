@@ -1,4 +1,5 @@
 import "./qml/Omanova" as App
+import "./qml/Omanova/ObservationDraft.js" as Draft
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -15,12 +16,48 @@ ColumnLayout {
     property bool failed: false
     property string pending: ""
     property bool ready: false
+    property var draftRequest: null
+    property var replacementDraft: null
+    property var exportReceipt: null
+    property string lastDraftToken: ""
+    property string draftContext: ""
+    property string preservedInstant: ""
+    property bool dirty: false
+    property bool filling: false
+    function markDirty() { if(!filling) dirty=true }
+    function receiveDraft() {
+        if(!draftRequest || String(draftRequest.token)===lastDraftToken) return
+        lastDraftToken=String(draftRequest.token)
+        if(dirty) replacementDraft=draftRequest
+        else applyDraft(draftRequest)
+    }
+    function applyDraft(draft) {
+        filling=true
+        seen.text=draft.seen || ""
+        where.text=draft.place || ""
+        notes.text=draft.notes || ""
+        const instant=new Date(draft.observed)
+        if(Number.isFinite(instant.getTime())) {
+            day.text=Qt.formatDateTime(instant,"yyyy-MM-dd")
+            time.text=Qt.formatDateTime(instant,"HH:mm")
+            preservedInstant=draft.observed
+        }
+        draftContext=draft.context || ""
+        filling=false
+        dirty=true
+        replacementDraft=null
+        message=qsTr("Draft only. Check what, where and when, then Save observation.")
+        failed=false
+        seen.forceActiveFocus()
+    }
+    onDraftRequestChanged: Qt.callLater(page.receiveDraft)
     readonly property bool embedded: Quickshell.env("OMASKY_LOG_EMBEDDED") === "1"
 
     function useNow() {
         const now = new Date()
         day.text = Qt.formatDateTime(now, "yyyy-MM-dd")
         time.text = Qt.formatDateTime(now, "HH:mm")
+        preservedInstant = Draft.localStamp(now)
     }
     function timestamp(date, time) {
         const entered = date.trim() + "T" + time.trim()
@@ -35,7 +72,7 @@ ColumnLayout {
     }
     function submit(object, location, detail, date, time) {
         if (!ready || save.running) return
-        const observed = timestamp(date, time)
+        const observed = preservedInstant || timestamp(date, time)
         if (!observed || !object.trim() || !location.trim()) {
             failed = true
             message = !object.trim() ? qsTr("Enter what you saw.")
@@ -52,6 +89,7 @@ ColumnLayout {
     Component.onCompleted: {
         useNow()
         if (embedded) initialise.running = true
+        Qt.callLater(page.receiveDraft)
     }
 
     component Copy: Text {
@@ -161,6 +199,8 @@ ColumnLayout {
             }
             seen.clear()
             notes.clear()
+            page.dirty = false
+            page.draftContext = ""
             page.message = qsTr("Observation saved.")
             history.reload()
         }
@@ -171,6 +211,23 @@ ColumnLayout {
                 page.message = qsTr("Could not start the local log writer.")
             }
         })
+    }
+
+    Process {
+        id: exportCsv
+        command: [page.tool+"/.venv/bin/python",page.tool+"/observatory/observing-log/observing_log.py",page.directory,"export-csv"]
+        environment: ({"OPENBLAS_NUM_THREADS":"1"})
+        stdout: StdioCollector {id: exportOutput}
+        stderr: StdioCollector {id: exportError}
+        onExited: function(code) {
+            page.failed=code!==0
+            if(code===0) {
+                try {
+                    page.exportReceipt=JSON.parse(exportOutput.text)
+                    page.message=qsTr("CSV saved locally · %1 entries. Your log is unchanged.").arg(page.exportReceipt.count)
+                } catch(e) {page.failed=true;page.message=qsTr("Could not read the export receipt. Check the local exports folder.")}
+            } else page.message=exportError.text.trim() || qsTr("Could not export the local log.")
+        }
     }
 
     ColumnLayout {
@@ -195,17 +252,25 @@ ColumnLayout {
             enabled: !save.running
 
             Copy { text: qsTr("New observation"); font.pixelSize: 22; font.bold: true }
+            Copy {visible:!!page.draftContext;text:page.draftContext;color:App.Palette.muted}
+            Copy {visible:!!page.replacementDraft;text:qsTr("You already have an unfinished entry. Keep it, or replace it with the selected event draft. Nothing has been saved.");color:App.Palette.warning}
+            Flow {
+                visible:!!page.replacementDraft;Layout.fillWidth:true;spacing:8
+                Action {text:qsTr("Keep current draft");onClicked:page.replacementDraft=null}
+                Action {text:qsTr("Use event draft");onClicked:page.applyDraft(page.replacementDraft)}
+            }
+            Copy {text:qsTr("Drafts stay while this Observatory window is open, including when switching pages. Save before closing the window.");color:App.Palette.muted;font.pixelSize:12}
             Copy { text: qsTr("What did you see?") }
-            Field { id: seen; maximumLength: 120; Accessible.name: qsTr("What did you see?"); placeholderText: qsTr("e.g. ISS pass") }
+            Field { id: seen; maximumLength: 120; Accessible.name: qsTr("What did you see?"); placeholderText: qsTr("e.g. ISS pass");onTextEdited:page.markDirty() }
             Copy { text: qsTr("Where were you?") }
-            Field { id: where; maximumLength: 120; Accessible.name: qsTr("Where were you?"); placeholderText: qsTr("e.g. Home or a park") }
+            Field { id: where; maximumLength: 120; Accessible.name: qsTr("Where were you?"); placeholderText: qsTr("e.g. Home or a park");onTextEdited:page.markDirty() }
             Copy { text: qsTr("When did you see it?") }
             GridLayout {
                 Layout.fillWidth: true
                 columns: width < 295 ? 1 : 3
-                Field { id: day; maximumLength: 10; Accessible.name: qsTr("Date, year month day"); placeholderText: "YYYY-MM-DD" }
-                Field { id: time; maximumLength: 5; Accessible.name: qsTr("Time, 24-hour clock"); placeholderText: "HH:MM" }
-                Action { text: qsTr("Use current time"); onClicked: page.useNow() }
+                Field { id: day; maximumLength: 10; Accessible.name: qsTr("Date, year month day"); placeholderText: "YYYY-MM-DD";onTextEdited:{page.preservedInstant="";page.markDirty()} }
+                Field { id: time; maximumLength: 5; Accessible.name: qsTr("Time, 24-hour clock"); placeholderText: "HH:MM";onTextEdited:{page.preservedInstant="";page.markDirty()} }
+                Action { text: qsTr("Use current time"); onClicked: {page.useNow();page.markDirty()} }
             }
             Copy { text: qsTr("Notes · optional") }
             ScrollView {
@@ -214,6 +279,7 @@ ColumnLayout {
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                 TextArea {
                     id: notes
+                    onTextChanged:page.markDirty()
                     color: App.Palette.ink
                     placeholderTextColor: App.Palette.muted
                     placeholderText: qsTr("What stood out? How was the view?")
@@ -236,6 +302,22 @@ ColumnLayout {
                 text: page.message
                 color: page.failed ? App.Palette.warning : App.Palette.accent
             }
+        }
+    }
+
+    Card {
+        implicitHeight:exportBody.implicitHeight+32
+        ColumnLayout {
+            id:exportBody;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:16;spacing:8
+            Copy {text:qsTr("Export your log");font.pixelSize:22;font.weight:Font.DemiBold}
+            Copy {text:qsTr("Export all saved entries to a local CSV, including places and notes. Unsaved drafts are excluded. Sharing is a separate action.");color:App.Palette.muted}
+            Flow {
+                Layout.fillWidth:true;spacing:8
+                Action {text:exportCsv.running?qsTr("Exporting…"):qsTr("Export saved entries to CSV");enabled:page.ready&&page.entries.length>0&&!save.running&&!exportCsv.running;onClicked:{page.exportReceipt=null;exportCsv.running=true}}
+                Action {text:qsTr("Open export folder");visible:!!page.exportReceipt;onClicked:Qt.openUrlExternally("file://"+page.directory.split("/").map(encodeURIComponent).join("/")+"/exports")}
+            }
+            Copy {visible:!!page.exportReceipt;text:page.exportReceipt?.path || "";color:App.Palette.accent;font.pixelSize:12}
+            Copy {text:qsTr("Spreadsheet formula-like text is escaped in CSV. The saved log stays unchanged. Files are private and never overwrite earlier exports.");color:App.Palette.muted;font.pixelSize:12}
         }
     }
 
@@ -270,6 +352,14 @@ ColumnLayout {
                 Copy { visible: !!entry.modelData.notes; text: entry.modelData.notes }
             }
         }
+    }
+    IpcHandler {
+        target:"omanova-log-actions"
+        function summary():string {return JSON.stringify({ready:page.ready,count:page.entries.length,dirty:page.dirty,replacement:!!page.replacementDraft,context:!!page.draftContext,exported:page.exportReceipt?.count??null,busy:save.running||exportCsv.running})}
+        function sampleFields():string {if(Quickshell.env("OMASKY_SETTINGS_PREVIEW")!=="1")return "";return JSON.stringify({seen:seen.text,place:where.text,day:day.text,time:time.text,observed:page.preservedInstant,notes:notes.text})}
+        function sampleSave():void {if(Quickshell.env("OMASKY_SETTINGS_PREVIEW")==="1")page.submit(seen.text,where.text,notes.text,day.text,time.text)}
+        function sampleExport():void {if(Quickshell.env("OMASKY_SETTINGS_PREVIEW")==="1"&&page.ready&&!exportCsv.running)exportCsv.running=true}
+        function sampleKeep():void {if(Quickshell.env("OMASKY_SETTINGS_PREVIEW")==="1")page.replacementDraft=null}
     }
     Item { implicitHeight: 12 }
 }

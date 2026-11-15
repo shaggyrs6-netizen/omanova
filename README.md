@@ -43,6 +43,34 @@ submission is authorised. Existing marketplace listing and closed #14863 stay
 separate. Existing saved locations, logs, horizons, favourites, exports and guides
 are preserved; this pass does not enable feeds, alerts or login startup.
 
+## Local observing-log actions — not published
+
+The `codex/observing-log-actions` branch adds **I saw it** to Overview and unified
+Events cards. It opens an editable observation draft with the object name,
+active observing-place name and actual click time (including its UTC offset).
+It never uses the predicted pass time as proof that you observed it. Check the
+fields, add notes and press **Save observation** explicitly. No coordinates or
+prediction verdict are automatically saved as a confirmed sighting.
+
+An unfinished draft survives switching Observatory pages while the window stays
+open. Another event asks whether to keep or replace it; it cannot silently
+replace your unfinished entry. Save before closing the Observatory window.
+
+In **Log → Observing Log**, **Export saved entries to CSV** creates a unique file
+under `~/.local/share/omasky/observing-log/exports/` (or the matching XDG data
+root). It exports all saved rows: identifier, observation timestamp with offset,
+object, place and notes. Unsaved drafts are excluded. CSV contains private place
+names/notes; export is local and sharing is a separate action. Files are UTF-8
+with a spreadsheet-friendly BOM, quoted CSV with multiline/Unicode support,
+private permissions and exclusive creation. Formula-like cells receive a leading
+apostrophe in the export; original log entries are unchanged. No older export is
+overwritten, and corrupt logs are retained rather than replaced.
+
+This uses the existing log format and storage. No account connection, upload,
+new download consent, worker alert or autostart change. The public v0.1.3 package
+and withdrawn marketplace request remain separate; all uploads/new submissions
+stay on hold.
+
 ## Features and options
 
 | Area | What it offers |

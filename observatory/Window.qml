@@ -1,5 +1,6 @@
 import "./qml/Omanova" as App
 import "./qml/Omanova/Navigation.js" as Navigation
+import "./qml/Omanova/ObservationDraft.js" as ObservationDraft
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -66,6 +67,8 @@ ShellRoot {
             readonly property color amber: App.Palette.warning
             readonly property string uiFont: "sans-serif"
             property string selectedEventId: ""
+            property var logDraftRequest: null
+            property int logDraftSequence: 0
             readonly property var event: sky.events.find(row => row.id === selectedEventId) || sky.featured || null
             readonly property bool staleOrbit: event?.confidence === "Stale orbit"
             readonly property var viewing: sky.bestWindow(event)
@@ -85,7 +88,7 @@ ShellRoot {
             readonly property string sectionId: Navigation.section(pageId)
             readonly property var sectionPages: Navigation.sectionPages(sectionId, extendedPages)
             readonly property bool showingPlanets: pageId === "planets"
-            readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "sites", "sky-finder"].includes(pageId)
+            readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "sites", "sky-finder", "log"].includes(pageId)
             NightContext { id: nightContext; skyModel: sky }
             property real scrub: -1
             readonly property real riseTime: event ? Date.parse(event.start) : 0
@@ -131,6 +134,12 @@ ShellRoot {
                 return true
             }
             function changeScreen(index) { return navigate(Navigation.fromLegacy(index)) }
+            function startObservation(selected) {
+                const draft = ObservationDraft.make(selected, sky.data?.place?.name || "", new Date(), ++logDraftSequence)
+                if (!draft) return false
+                logDraftRequest = draft
+                return navigate("log")
+            }
             function bearingName(direction) {
                 return ({N:"north", NNE:"north-northeast", NE:"northeast", ENE:"east-northeast",
                     E:"east", ESE:"east-southeast", SE:"southeast", SSE:"south-southeast",
@@ -378,7 +387,7 @@ ShellRoot {
                     Loader {
                         id: screenLoader
                         width: scroll.availableWidth
-                        sourceComponent: ui.ownScroll ? null : ({overview:overview, "sky-view":skyView, conditions:conditions, events:eventsView, orbit:orbitView, moon:moonView, meteors:meteorView, comets:cometView, eclipses:eclipseView, plumes:plumeView, watchlist:watchlistView, trains:trainView, aurora:auroraView, "regional-sites":darkSitesView, log:logView, settings:settingsView})[ui.pageId] || null
+                        sourceComponent: ui.ownScroll ? null : ({overview:overview, "sky-view":skyView, conditions:conditions, events:eventsView, orbit:orbitView, moon:moonView, meteors:meteorView, comets:cometView, eclipses:eclipseView, plumes:plumeView, watchlist:watchlistView, trains:trainView, aurora:auroraView, "regional-sites":darkSitesView, settings:settingsView})[ui.pageId] || null
                     }
                 }
                 Loader {
@@ -387,6 +396,27 @@ ShellRoot {
                     visible: ui.pageId === "trips"
                     active: visible
                     sourceComponent: Component { TripPage {} }
+                }
+                Loader {
+                    id: logLoader
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    visible: ui.pageId === "log"
+                    active: visible || !!item
+                    sourceComponent: Component {
+                        ScrollView {
+                            id: logScroll
+                            property alias logPage: observationLog
+                            contentWidth: availableWidth
+                            clip: true
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            ObservingLogPage {
+                                id: observationLog
+                                width: logScroll.availableWidth
+                                draftRequest: ui.logDraftRequest
+                            }
+                        }
+                    }
                 }
                 Loader {
                     id: followingLoader
@@ -424,11 +454,6 @@ ShellRoot {
                     active: visible
                     sourceComponent: Component { PlanetPage {} }
                 }
-            }
-
-            Component {
-                id: logView
-                ObservingLogPage {}
             }
 
             Component {
@@ -493,6 +518,7 @@ ShellRoot {
                 id: eventsView
                 UnifiedEventsPage {
                     sky: ui.skyModel
+                    onRecordObservation: selected => ui.startObservation(selected)
                     onInspect: function(selected) {
                         if (selected.station_id) ui.selectedEventId = selected.station_id
                         ui.changeScreen(selected.kind === "launch" ? 10 : selected.page)
@@ -505,6 +531,7 @@ ShellRoot {
                 TonightPage {
                     sky: ui.skyModel
                     night: nightContext
+                    onRecordObservation: selected => ui.startObservation(selected)
                     onInspect: function(selected) {
                         if (selected.station_id) ui.selectedEventId = selected.station_id
                         ui.changeScreen(selected.page)
@@ -670,6 +697,10 @@ ShellRoot {
             }
             function observingDisplay(mode:string):void {if(shell.settingsTrial)App.Palette.setObserving(mode)}
             function screen(index: int): void { ui.changeScreen(index) }
+            function sampleObservation(): bool {
+                if(!sky.fixture) return false
+                return ui.startObservation({name:"SIMULATED · ISS observation",assessment:"Sample exercise only",kind:"station"})
+            }
             function navigate(id: string): bool { return ui.navigate(id) }
             function freshness(): string {
                 return JSON.stringify({stale:sky.snapshotStale, planningStale:sky.plannerStale, next:sky.nextOpportunity?.id||null, verdict:ui.verdict, picks:ui.pageId==="overview"?(ui.screenItem?.picks?.length??0):null, mismatch:sky.runtimeMismatch})
@@ -698,7 +729,7 @@ ShellRoot {
             }
             function observingLog(): string {
                 ui.changeScreen(15)
-                const page = ui.screenItem
+                const page = logLoader.item?.logPage
                 return JSON.stringify({ ready: page?.ready, count: page?.entries.length, failed: page?.failed })
             }
             function darkSites(dropIn: bool): string {

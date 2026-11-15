@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased — local usability trial
+## Unreleased — local usability and observing-log trial
 
+- Add “I saw it” on Overview/unified Events cards to open an explicit-save draft with object, active place and actual current time. Retain the correct offset through repeated DST clock hours. No automatic sighting record or prediction confirmation.
+- Retain an unfinished log draft while switching pages; a new event requires an explicit keep/replace choice. Save before closing the window.
+- Add local CSV export of all saved observations, including places/notes; exclude unsaved drafts. Unique private UTF-8 files, multiline quoting, spreadsheet-formula escaping and no log mutation/overwrite. Existing log schema and storage retained.
 - Group all 24 pages into six sections using stable page keys, with narrow-window page selection. Keep existing event/IPC numeric adapters.
 - Replace the one-card Overview with a local night strip (Sun/Moon, sunset/sunrise, cached hourly cloud coverage and suggested-event markers) plus up to five eligible opportunities. No new downloads; missing/stale data stay unknown.
 - Move ranking arithmetic behind “Why this pick?”; retain immediate safety, stale and visibility labels. Show seconds for windows that begin/end within the same displayed minute.

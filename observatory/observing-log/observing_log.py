@@ -1,8 +1,9 @@
 """Append private observations to an atomic, locally locked log."""
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 from uuid import uuid4
+import csv
 import fcntl
 import json
 import os
@@ -72,6 +73,49 @@ def add_observation(directory, payload):
     return item
 
 
+
+def spreadsheet_cell(value):
+    # Quoting alone does not stop spreadsheet formula evaluation.
+    if value.startswith(("\t", "\r", "\n")) or value.lstrip().startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
+def export_csv(directory):
+    """Export a validated snapshot to a unique private file; never modify the log."""
+    with locked(directory) as path:
+        data = read_log(path)
+        rows = []
+        for entry in data['entries']:
+            if not isinstance(entry, dict):
+                raise ValueError("The saved log contains an invalid entry. No export was created.")
+            observed_time(entry.get('observed'))
+            for key, title, limit, required in [('id', 'Entry identifier', 128, True),
+                                                ('seen', 'What you saw', 120, True),
+                                                ('place', 'Where you were', 120, True),
+                                                ('notes', 'Notes', 4000, False)]:
+                field(entry, key, title, limit, required)
+            rows.append([entry['id'], entry['observed'], entry['seen'], entry['place'], entry.get('notes', '')])
+    exports = directory / 'exports'
+    if exports.is_symlink():
+        raise ValueError("The export folder is a symbolic link. Review it before exporting.")
+    exports.mkdir(mode=0o700, exist_ok=True)
+    filename = 'omanova-observations-' + datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ') + '-' + uuid4().hex[:12] + '.csv'
+    target = exports / filename
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
+    descriptor = os.open(target, flags, 0o600)
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8-sig', newline='') as stream:
+            writer = csv.writer(stream, quoting=csv.QUOTE_ALL, lineterminator='\r\n')
+            writer.writerow(['id', 'observed', 'seen', 'place', 'notes'])
+            writer.writerows([[spreadsheet_cell(value) for value in row] for row in rows])
+            stream.flush()
+            os.fsync(stream.fileno())
+    except BaseException:
+        target.unlink(missing_ok=True)  # Only the unique file created by this export.
+        raise
+    return {'path': str(target), 'count': len(rows), 'spreadsheetEscaping': True}
+
 def main():
     os.umask(0o077)
     directory = Path(sys.argv[1])
@@ -79,6 +123,8 @@ def main():
         with locked(directory) as path:
             if not path.exists():
                 write(path, read_log(path))
+    elif sys.argv[2] == "export-csv":
+        print(json.dumps(export_csv(directory)))
     elif sys.argv[2] == "add":
         line = sys.stdin.buffer.readline(32769)
         if len(line) > 32768 or not line.endswith(b"\n"):
