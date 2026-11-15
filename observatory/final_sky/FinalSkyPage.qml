@@ -37,7 +37,7 @@ Item {
   stdout:StdioCollector {id:output}
   stderr:StdioCollector {id:errors}
   onExited:function(code) {
-   if(code===0) {try{let d=JSON.parse(output.text);if(d.kind===root.section&&d.source===root.source){root.dataSet=d;root.result="Local calculation · no downloads"}else if(root.section!=="transits")Qt.callLater(root.request)}catch(e){root.dataSet=null;root.result="Could not read sky calculation."}}
+   if(code===0) {try{let d=JSON.parse(output.text);if(d.kind===root.section&&d.source===root.source){root.clock=Date.now();root.dataSet=d;root.result="Local calculation · no downloads"}else if(root.section!=="transits")Qt.callLater(root.request)}catch(e){root.dataSet=null;root.result="Could not read sky calculation."}}
    else {root.dataSet=null;root.result=errors.text.trim()||"Calculation unavailable. Existing saved data retained."}
   }
  }
