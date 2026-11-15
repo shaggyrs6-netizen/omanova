@@ -1,6 +1,29 @@
 # OMANOVA — release validation and maintenance
 
-## Current release: 0.1.3 — 14 November 2026
+## Current release: 0.1.4 — final sky tools
+
+The final four features, usability and local observation/CSV changes are
+included. See [complete release notes](docs/RELEASE-0.1.4.md),
+[ten new screenshots](docs/SCREENSHOTS-0.1.4.md) and CHANGELOG.md.
+GitHub publication is authorised after completion/testing. Marketplace stays
+on hold; closed #14863 and the existing listing are unchanged.
+
+207 Python and 11 JavaScript checks pass, including independent numerical
+solar/lunar alignment constructions, published SGP4 reference, dense contact
+scan, stale/future gates and source-identity recording. Native four-view,
+rapid-navigation, narrow/red and public-sample screenshot checks passed.
+Tracked-source archives include SOURCE-COMMIT.txt, separate data licensing,
+guided automatic setup and default-off optional autostart. Test the final
+archive/environment and upgrade preservation before publication.
+
+Transits are UNCONFIRMED engineering predictions: no observed-transit accuracy
+validation, calibrated corridor, or real-world millisecond timing guarantee.
+All previous ordinary-use and catalogue maintenance limits remain. Comet
+coverage ends 2026-12-12T00:00Z. No further feature work is commissioned.
+
+## Historical 0.1.3 validation record
+
+### Release: 0.1.3 — 14 November 2026
 
 The completed feature build is authorised for GitHub publication. See
 [0.1.3 release notes](docs/RELEASE-0.1.3.md), [CHANGELOG](CHANGELOG.md) and the

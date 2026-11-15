@@ -316,7 +316,7 @@ ColumnLayout {
                 Action {text:exportCsv.running?qsTr("Exporting…"):qsTr("Export saved entries to CSV");enabled:page.ready&&page.entries.length>0&&!save.running&&!exportCsv.running;onClicked:{page.exportReceipt=null;exportCsv.running=true}}
                 Action {text:qsTr("Open export folder");visible:!!page.exportReceipt;onClicked:Qt.openUrlExternally("file://"+page.directory.split("/").map(encodeURIComponent).join("/")+"/exports")}
             }
-            Copy {visible:!!page.exportReceipt;text:page.exportReceipt?.path || "";color:App.Palette.accent;font.pixelSize:12}
+            Copy {visible:!!page.exportReceipt;text:page.exportReceipt ? "exports/"+page.exportReceipt.path.split("/").pop() : "";color:App.Palette.accent;font.pixelSize:12}
             Copy {text:qsTr("Spreadsheet formula-like text is escaped in CSV. The saved log stays unchanged. Files are private and never overwrite earlier exports.");color:App.Palette.muted;font.pixelSize:12}
         }
     }

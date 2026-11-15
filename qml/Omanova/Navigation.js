@@ -6,6 +6,10 @@ var groups = [
     {id:"log", label:"Log"}, {id:"settings", label:"Settings"}
 ];
 var pages = [
+    {id:"star-chart",label:"Star Chart",group:"sky",legacy:24,extended:true},
+    {id:"live-orbit",label:"Live Orbit",group:"spaceflight",legacy:25,extended:true},
+    {id:"polar",label:"Polar Alignment",group:"sky",legacy:26,extended:true},
+    {id:"transits",label:"Station Transits",group:"spaceflight",legacy:27,extended:true},
     {id:"overview", label:"Overview", group:"tonight", legacy:0},
     {id:"conditions", label:"Conditions", group:"tonight", legacy:2},
     {id:"sky-view", label:"Sky View", group:"sky", legacy:1},

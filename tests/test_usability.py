@@ -19,7 +19,7 @@ class UsabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d);(p/'manifest.json').write_text('{"version":"0.1.3", "private":"not included"}')
             (p/'.omanova-build.json').write_text(json.dumps({'revision':'a'*40,'private':'not included'}))
-            self.assertEqual(identity(p),{'version':'0.1.3','build':'local usability','revision':'a'*40})
+            self.assertEqual(identity(p),{'version':'0.1.3','build':'release','revision':'a'*40})
             (p/'.omanova-build.json').write_text('{"revision":"invalid"}')
             self.assertEqual(identity(p)['revision'],'')
             (p/'manifest.json').write_text('[]');self.assertEqual(identity(p)['version'],'unknown')
@@ -27,7 +27,7 @@ class UsabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             state=Path(d)/'absent'
             result=subprocess.run([str(ROOT/'.venv/bin/python'),str(ROOT/'worker.py'),'--state',str(state),'runtime-info'],capture_output=True,text=True,check=True,timeout=10)
-            self.assertEqual(json.loads(result.stdout)['version'],'0.1.3');self.assertFalse(state.exists())
+            self.assertEqual(json.loads(result.stdout)['version'],json.loads((ROOT/'manifest.json').read_text())['version']);self.assertFalse(state.exists())
     def test_night_strip_is_network_free_dst_aware_and_omits_precise_place(self):
         now=datetime(2026,10,31,18,tzinfo=UTC)
         snapshot={'place':{'id':'sample','lat':40.7,'lon':-74.,'elevation':0,'name':'private sample'},'settings':{'weather':False}}

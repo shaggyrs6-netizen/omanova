@@ -6,14 +6,14 @@ OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.3:** desktop theme and dim/red modes, launch following, equipment filters, calendar export, offline night guides, destination sites and Sky Finder. Includes the guided setup, hidden worker, Trip Planner and terrain horizons from 0.1.2. Read the [complete changelog](CHANGELOG.md) and [release notes](https://github.com/shaggyrs6-netizen/omanova/releases/tag/v0.1.3).
+> **Version 0.1.4:** star charts, live calculated station positions, polar alignment and unconfirmed Sun/Moon transit candidates. Also includes grouped navigation, a night overview, clearer runtime status, “I saw it” drafts and private CSV export. All earlier features and guided setup remain. Read the [full release notes](docs/RELEASE-0.1.4.md), [changelog](CHANGELOG.md) and [new screenshots](docs/SCREENSHOTS-0.1.4.md).
 
 > **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
 
-## Local usability trial — not published
+## Navigation, Overview and runtime status (0.1.4)
 
-The `codex/usability-pass` branch is a local trial on top of 0.1.3. It groups
-all 24 views into Tonight, Sky, Satellites & launches, Plan, Log and Settings.
+The integrated Observatory groups
+all 28 views into Tonight, Sky, Satellites & launches, Plan, Log and Settings.
 Page keys are stable; existing event and IPC numeric references remain adapters.
 A narrow window uses a page selector rather than squeezing every tab into view.
 
@@ -38,14 +38,13 @@ metadata (`.omanova-build.json`), not an authenticity/security guarantee.
 `worker.py runtime-info` reports build identity without reading/writing observing
 settings or starting downloads. Missing identities remain “not reported”.
 
-These changes are not in the public 0.1.3 package. No upload or new marketplace
-submission is authorised. Existing marketplace listing and closed #14863 stay
-separate. Existing saved locations, logs, horizons, favourites, exports and guides
-are preserved; this pass does not enable feeds, alerts or login startup.
+Saved locations, logs, horizons, favourites, exports and guides are preserved.
+These features do not enable feeds, alerts or login startup. Marketplace updates
+remain a separate, currently held action.
 
-## Local observing-log actions — not published
+## I saw it and local CSV export (0.1.4)
 
-The `codex/observing-log-actions` branch adds **I saw it** to Overview and unified
+**I saw it** is available on Overview and unified
 Events cards. It opens an editable observation draft with the object name,
 active observing-place name and actual click time (including its UTC offset).
 It never uses the predicted pass time as proof that you observed it. Check the
@@ -67,9 +66,8 @@ apostrophe in the export; original log entries are unchanged. No older export is
 overwritten, and corrupt logs are retained rather than replaced.
 
 This uses the existing log format and storage. No account connection, upload,
-new download consent, worker alert or autostart change. The public v0.1.3 package
-and withdrawn marketplace request remain separate; all uploads/new submissions
-stay on hold.
+new download consent, worker alert or autostart change. Marketplace submissions
+remain on hold; GitHub releases are separate.
 
 ## Features and options
 
@@ -77,7 +75,10 @@ stay on hold.
 | --- | --- |
 | Overview, Sky View and Conditions | ISS and Tiangong countdown, pass compass and scrubber, viewing direction and elevation, forecast and source age. |
 | Events | Local station opportunities, all predicted passes, and a separate launch schedule with timing precision and webcast links when supplied. |
-| Orbit | ISS and Tiangong ground tracks, observer position, pass scrubber, bearing, elevation and range. |
+| Orbit / Live Orbit | Retained pass tracks and scrubbing plus current calculated ISS/Tiangong footprints, horizon/sunlight state, range and element ages. |
+| Star Chart | 920 bright catalogue stars, selected constellation lines and above-horizon Sun/Moon/five planets; choose time and active/Trip location, saved horizons, tap for bearings. |
+| Polar Alignment | True pole direction/altitude and Polaris or southern reference offset in an upright sky diagram; EQ mount/star-tracker orientation, not an optical reticle or automatic alignment. |
+| Station Transits | Fresh-element, exact-site Sun/Moon alignments over up to 24 h; separate close approaches and unconfirmed point-station disc crossings, timing and solar safety. No reliable ground corridor or sighting guarantee. |
 | Moon | Phase graphic, illumination, rise and set, named next full Moon, supermoon or micromoon class and local darker-sky windows. |
 | Meteor Showers | Peaks, local viewing times, radiant direction and Moon interference. |
 | Planets & Conjunctions | Naked-eye planet highlights, local times and directions, and close pairings. |
@@ -88,7 +89,7 @@ stay on hold.
 | Aurora | NOAA-based model sightlines and a separate global Kp outlook. Missing or stale data is uncertain. |
 | Dark-Sky Sites | Regional sample catalogue for Middle Tennessee and nearby states, with driving estimates, access and darkness evidence. |
 | Trip Planner & My Horizon | Destination/date comparison with Home, both time zones, manual obstruction profiles and observing height. Opt-in terrain estimates combine with manual obstructions; an isolated preview remains available. |
-| Observing Log | Local entries with what you saw, place, time and notes. |
+| Observing Log | Explicit-save I saw it drafts, local entries with object/place/time/notes and private CSV export. |
 | Appearance | Follow the desktop theme or use Observatory colours; readable normal/dim/red modes in both windows. |
 | Launch Following | Up to five favourites, opted-in delay/hold/explicit scrub alerts, change history and supplied webcast links. Monitoring requires the Observatory open. |
 | My Equipment and Sky | Naked eye, binoculars, telescope and camera preferences, manual sky quality, optional capabilities and explained filtering across Overview/calendar/cards. |
@@ -100,7 +101,7 @@ stay on hold.
 
 ## Screenshots
 
-[Browse the new 0.1.3 feature gallery](docs/SCREENSHOTS-0.1.3.md), including the new
+[Browse the 0.1.4 gallery](docs/SCREENSHOTS-0.1.4.md) for all four final views, usability and log export. The [0.1.3 feature gallery](docs/SCREENSHOTS-0.1.3.md) covers the earlier
 observing tools, display modes and terrain. The [0.1.2 gallery](docs/SCREENSHOTS.md) retains 21 actual app captures,
 including terrain estimation, observing height, Trip Planner, sky events,
 satellite tracking, settings and the local log. Screenshots use public sample
@@ -156,7 +157,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.3 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.4 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```
@@ -1105,6 +1106,69 @@ station forecast coverage remains unknown where not supplied; no GO is inferred.
 
 The existing guided installer, hidden worker and optional autostart are retained.
 No new background process or autostart setting is introduced by field tools.
-The 0.1.3 archive uses its matching version tag for the widget. Existing
+The current archive uses its matching version tag for the widget. Existing
 v0.1.2 assets/tag are retained. Marketplace approval of an older snapshot does
 not cover these additions; any marketplace update needs a separate request.
+
+
+## Final sky tools (0.1.4)
+
+Under **Sky**, open **Star Chart** or **Polar Alignment**. Under
+**Satellites & launches**, open **Live Orbit** or **Station Transits**.
+Choose Active location, Trip Home or Trip destination; use Trip Planner to
+set destinations and manual/terrain horizons. Nothing changes your active
+location merely by inspecting a destination. No new downloads or alerts.
+
+Star Chart / Polar Alignment accept an ISO date/time with timezone (the input
+hint uses UTC `Z`). Blank means now. The result shows the selected place's
+zone and UTC; a chart is frozen at that time until refreshed. Star charts use
+an equidistant projection looking up, north top/east left. They show geometric
+above-horizon objects, saved obstructions, a small selection of original
+constellation guide lines and catalogue proper motion. Tap a star/planet for
+true bearing/elevation. Daylight warnings are explicit; this is an orientation
+map, not telescope pointing, a weather assessment or a visibility promise.
+The adapted HYG v4.0 numerical subset is CC BY-SA 4.0, credited separately
+from MIT application code in [HYG attribution](observatory/final_sky/HYG-LICENSE.md).
+
+Polar Alignment shows true north/south, pole altitude equal to absolute
+latitude, the date-corrected pole-reference offset and an upright local sky
+diagram. Polaris is not exactly at the north pole; southern Sigma Octantis
+(Polaris Australis) is faint. Near-equatorial and optical rotation/inversion
+limits are explicit. This is for EQ tracking axes, not ordinary alt-az use.
+Use your mount manual for its reticle/alignment procedure; no mount driver,
+plate solving or hardware movement is provided.
+
+Live Orbit recomputes cached SGP4 positions every ten seconds while that view
+is open, including the surrounding orbit, bearing/elevation/slant range and
+sunlight/sky-brightness flags. Elements older than 48 h or more than 6 h in
+the future have their marker withheld; failed or old calculations are flagged.
+These are calculated positions, not telemetry. The ordinary Orbit view keeps
+its pass selection and scrubber. Saved obstructions/weather remain separate
+from Live Orbit's geometric horizon flag.
+
+Station Transits runs only when **Search next 24 hours locally** is pressed.
+It uses cached ISS/Tiangong elements no older than 24 h (at each candidate),
+rejects elements over 1 h in the future, and searches from now to the smaller
+of 24 h or the element-age cutoff. Each station's coverage is explicit.
+It searches exact-site above-horizon intervals, refines angular minima and
+reports close approaches within 2 degrees separately from model disc crossings.
+Crossings show point-station model ingress/egress/duration. Sun/Moon directions
+are apparent and topocentric; station light time is included. Saved horizons
+and a 5-degree elevation threshold apply. Output is numerically refined to
+2 ms but **does not have calibrated real-world timing or location accuracy**.
+Public GP elements can be wrong by kilometres. All crossings remain unconfirmed;
+there is no reliable ground corridor, observed-transit validation, silhouette
+model or solar-safe equipment inference. Recheck independent current transit
+predictions before travelling or observing; no result is not proof of absence
+elsewhere. Calculations older than five minutes are marked inspect-only.
+
+**Solar safety:** never look through unfiltered binoculars, a telescope or
+a camera at the Sun. Use appropriate purpose-made filters secured over the
+front of every optical instrument and follow manufacturer guidance. Eclipse
+glasses alone are unsafe through optics.
+
+Guided setup records the exact installed source commit before starting the
+worker. Release archives include `SOURCE-COMMIT.txt`; Settings compares
+installed/running versions and revisions. Upgrade with `./install`, then
+reload the shell/reopen the window as described above. New installs retain
+default-off optional autostart; upgrades preserve the existing choice.

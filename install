@@ -100,7 +100,7 @@ flock -n "$state/watch.lock" true || {
     printf 'A foreground worker is running. Stop it before installing, then retry.\n' >&2
     exit 1
 }
-./setup-runtime
+OMANOVA_SOURCE_REVISION=$(git -C "$stage/widget" rev-parse HEAD) ./setup-runtime
 
 # Omarchy owns plugin installation. Do not silently mix widget and runtime versions.
 if [[ ! -e "$plugin/manifest.json" ]]; then

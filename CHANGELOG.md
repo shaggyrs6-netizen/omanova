@@ -1,17 +1,27 @@
 # Changelog
 
-## Unreleased — local usability and observing-log trial
+## 0.1.4 — 15 November 2026
+
+GitHub feature release; marketplace remains on hold.
+
+- Add Star Chart: 920 bright catalogue stars, proper motion, selected constellation lines and Sun/Moon/five planets; selectable time and active/Trip location, saved horizon, tap-to-inspect bearings. Bundle separately attributed CC BY-SA 4.0 HYG subset.
+- Add Live Orbit: calculated ISS/Tiangong footprints and surrounding orbits refreshed locally every ten seconds while open, position/range/sunlight/sky state and epoch age. Withhold stale/future markers; retain ordinary pass Orbit and scrubber.
+- Add Polar Alignment: true pole bearing/altitude, Polaris or southern reference offset, upright sky diagram and hemisphere/equipment/optical limitations. No mount control or reticle claim.
+- Add Station Transits: exact-site Sun/Moon candidates over up to 24 h with fresh cached elements, close-approach/disc-crossing distinctions, model contacts/duration, explicit coverage and solar safety. All crossings unconfirmed; no reliable corridor or calibrated accuracy claimed.
+- Validate numerical station/transit geometry with a published Vallado SGP4 reference, independently constructed WGS84 solar/lunar intersections and a separate millisecond transit scan. These do not substitute for observed-transit validation.
+- Record exact source identity in guided setup and source archives; replace development build label with release identity. Preserve installer, worker restart, data and optional default-off autostart.
+- Add ten public-sample native feature/usability screenshots, including narrow and red layouts. Export receipts display a relative filename rather than a personal absolute path.
 
 - Add “I saw it” on Overview/unified Events cards to open an explicit-save draft with object, active place and actual current time. Retain the correct offset through repeated DST clock hours. No automatic sighting record or prediction confirmation.
 - Retain an unfinished log draft while switching pages; a new event requires an explicit keep/replace choice. Save before closing the window.
 - Add local CSV export of all saved observations, including places/notes; exclude unsaved drafts. Unique private UTF-8 files, multiline quoting, spreadsheet-formula escaping and no log mutation/overwrite. Existing log schema and storage retained.
-- Group all 24 pages into six sections using stable page keys, with narrow-window page selection. Keep existing event/IPC numeric adapters.
+- Group all 28 pages into six sections using stable page keys, with narrow-window page selection. Keep existing event/IPC numeric adapters.
 - Replace the one-card Overview with a local night strip (Sun/Moon, sunset/sunrise, cached hourly cloud coverage and suggested-event markers) plus up to five eligible opportunities. No new downloads; missing/stale data stay unknown.
 - Move ranking arithmetic behind “Why this pick?”; retain immediate safety, stale and visibility labels. Show seconds for windows that begin/end within the same displayed minute.
 - Share page heading/action/slider styling, pad compact content and offer one header display selector with Ctrl+D cycling. Keep Settings appearance controls.
 - Show installed versus running build identity and source/planning freshness in Settings. Add a read-only `runtime-info` worker command and additive snapshot metadata; detect clock mismatch and build differences conservatively.
 - Keep Sky Finder estimate detail expandable while stale/visibility warnings stay visible.
-- Preserve saved data, consent, existing bar behaviour and worker/autostart choice. Local branch/live trial only; no public or marketplace upload.
+- Preserve saved data, consent, existing bar behaviour and worker/autostart choice. GitHub release only; no marketplace update.
 
 ## 0.1.3 — 14 November 2026
 

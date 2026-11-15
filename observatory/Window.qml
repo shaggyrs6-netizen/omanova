@@ -88,7 +88,7 @@ ShellRoot {
             readonly property string sectionId: Navigation.section(pageId)
             readonly property var sectionPages: Navigation.sectionPages(sectionId, extendedPages)
             readonly property bool showingPlanets: pageId === "planets"
-            readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "sites", "sky-finder", "log"].includes(pageId)
+            readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "sites", "sky-finder", "log", "star-chart", "live-orbit", "polar", "transits"].includes(pageId)
             NightContext { id: nightContext; skyModel: sky }
             property real scrub: -1
             readonly property real riseTime: event ? Date.parse(event.start) : 0
@@ -446,6 +446,12 @@ ShellRoot {
                 }
                 Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {FieldPage {section:"sites";skyModel:sky}}}
                 Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky}}}
+                Loader {
+                    id: finalSkyLoader
+                    Layout.fillWidth:true;Layout.fillHeight:true
+                    visible:["star-chart","live-orbit","polar","transits"].includes(ui.pageId);active:visible
+                    sourceComponent:Component { FinalSkyPage {skyModel:sky;section:({"star-chart":"chart","live-orbit":"live",polar:"polar",transits:"transits"})[ui.pageId] || "chart"} }
+                }
                 Loader {
                     id: planetLoader
                     Layout.fillWidth: true

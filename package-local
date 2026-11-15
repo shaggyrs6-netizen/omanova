@@ -19,13 +19,24 @@ manifest=json.loads(git('show','HEAD:manifest.json'))
 version=manifest['version']
 if not all(c in '0123456789.' for c in version):raise SystemExit('Unexpected version')
 raw=git('archive','--format=tar',f'--prefix=omanova-{version}/','HEAD')
+buffer=io.BytesIO(raw)
+with tarfile.open(fileobj=buffer, mode='a') as archive:
+    payload=(commit+'\n').encode()
+    info=tarfile.TarInfo(f'omanova-{version}/SOURCE-COMMIT.txt')
+    info.size=len(payload);info.mode=0o644
+    info.mtime=int(git('show','-s','--format=%ct','HEAD'))
+    archive.addfile(info,io.BytesIO(payload))
+raw=buffer.getvalue()
 with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
     names=[m.name for m in archive.getmembers() if m.isfile()]
     required=['install','setup-runtime','systemd/omanova-worker.service','observatory/trips/terrain.py',
-              'observatory/trips/TripPage.qml','preview-terrain','RELEASE-READINESS.md','assets/terrain-attribution.txt']
+              'observatory/trips/TripPage.qml','preview-terrain','RELEASE-READINESS.md','assets/terrain-attribution.txt',
+              'observatory/final_sky/geometry.py','observatory/final_sky/stars.json',
+              'observatory/final_sky/FinalSkyPage.qml','observatory/final_sky/HYG-LICENSE.md',
+              'SOURCE-COMMIT.txt']
     if any(f'omanova-{version}/{f}' not in names for f in required):raise SystemExit('Missing required candidate file')
     if any('/.preview/' in n or '/.venv/' in n or n.endswith('.bsp') for n in names):raise SystemExit('Private/cache/runtime artifact in archive')
-out=root/'.preview/release-candidates'/f'v{version}-terrain-{commit[:8]}'
+out=root/'.preview/release-candidates'/f'v{version}-{commit[:8]}'
 out.mkdir(parents=True,exist_ok=False,mode=0o700)
 name=f'omanova-{version}-candidate.tar.gz'
 blob=gzip.compress(raw,mtime=0)

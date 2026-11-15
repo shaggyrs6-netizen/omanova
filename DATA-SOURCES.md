@@ -47,3 +47,22 @@ time is not the survey date. Regional source accuracy and vintage vary. Nominal
 Derived skyline profiles remain local. Provider data is not covered by OMANOVA's MIT licence.
 The complete provider attribution notice is included in `assets/terrain-attribution.txt`
 and the interface links to the provider's licence page.
+
+
+## 0.1.4 star chart, poles and station transits
+
+- HYG v4.0 bright-star numerical subset, David Nash / Astronexus, CC BY-SA
+  4.0, source revision c7f7f883fe678cc7680169a50ccd7dcc49b060ce. Original file
+  hash is in `observatory/final_sky/stars.json`; attribution/adaptation details
+  in `observatory/final_sky/HYG-LICENSE.md`. J2000 coordinates/proper motion;
+  original limited constellation lines, no imported artwork. No runtime fetch.
+- Existing JPL DE440s and SGP4/GP station data reused, no new feed opt-ins.
+  Skyfield apparent topocentric Sun/Moon/station rays; no calibrated transit
+  accuracy or ground corridor. Numerical validation is not an observed test.
+- Vallado et al., AIAA 2006-6753 SGP4 verification vector:
+  https://celestrak.org/publications/AIAA/2006-6753/ .
+- Coordinate/propagation methods: https://rhodesmill.org/skyfield/stars.html ,
+  https://rhodesmill.org/skyfield/earth-satellites.html .
+- Polar orientation guidance: https://www.celestron.com/pages/all-star-polar-alignment .
+  Diagram is upright sky, not an optical reticle.
+- Solar optical safety: https://science.nasa.gov/eclipses/safety/ .
