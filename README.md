@@ -1,6 +1,8 @@
 # OMANOVA
 
-![OMANOVA Observatory for Omarchy. Satellite passes and alerts, Moon, planets and sky events, launches, aurora and weather, dark-sky sites and observing log.](preview.png)
+![OMANOVA: your local Observatory for Omarchy. Sky charts, ISS and Tiangong passes, launches, trip planning and terrain, polar alignment, transit candidates, equipment, offline guides and observing-log CSV export.](preview.png)
+
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.4.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
