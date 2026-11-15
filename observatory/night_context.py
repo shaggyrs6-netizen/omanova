@@ -41,7 +41,7 @@ def build(state, snapshot, now=None):
     with closing(load_file(str(ROOT / 'assets/de440s.bsp'))) as eph:
         observer = eph['earth'] + wgs84.latlon(place['lat'], place['lon'], elevation_m=place['elevation'])
         sun_now = observer.at(ts.from_datetime(now)).observe(eph['sun']).apparent().altaz()[0].degrees
-        day = local.date() - timedelta(days=local.hour < 12 and sun_now < -6)
+        day = local.date() - timedelta(days=int(local.hour < 12 and sun_now < -6))
         start, end = night_bounds(day, zone)
         stamps = []
         at = start

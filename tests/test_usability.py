@@ -36,6 +36,14 @@ class UsabilityTests(unittest.TestCase):
             self.assertEqual(len(data['hours']),25)
             self.assertTrue(data['sunset']);self.assertTrue(data['sunrise'])
             self.assertNotIn('private sample',json.dumps(data));self.assertNotIn('lat',data);self.assertTrue(all(r['cloud'] is None for r in data['hours']))
+    def test_predawn_rollover_accepts_numpy_boolean_and_uses_previous_night(self):
+        now=datetime(2026,11,15,9,tzinfo=UTC)
+        snapshot={'place':{'id':'sample','lat':36.16,'lon':-86.78,'elevation':0},'settings':{'weather':False}}
+        with tempfile.TemporaryDirectory() as d, patch('observatory.night_context.system_zone',return_value='America/Chicago'), patch.object(socket,'socket',side_effect=AssertionError('No network')):
+            data=build(Path(d),snapshot,now)
+            self.assertEqual(data['night'],'2026-11-14')
+            self.assertEqual(len(data['hours']),24)
+
     def test_weather_opt_out_and_expiry_do_not_expose_cached_clouds(self):
         now=datetime(2026,11,15,18,tzinfo=UTC);place={'id':'sample','lat':36.,'lon':-86.,'elevation':0}
         with tempfile.TemporaryDirectory() as d:
