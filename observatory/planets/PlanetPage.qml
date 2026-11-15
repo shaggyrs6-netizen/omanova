@@ -98,13 +98,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 7
-        Copy {
-            text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW")
-            color: App.Palette.accent
-            font.pixelSize: 12
-            font.letterSpacing: 1.8
-        }
-        Heading { text: qsTr("Planets & conjunctions"); font.pixelSize: 32 }
+        App.PageHeader { eyebrow:"SKY"; title:qsTr("Planets & conjunctions") }
         Copy {
             color: App.Palette.muted
             text: page.dataSet?.fixture ? qsTr("Nashville test location · fixture")

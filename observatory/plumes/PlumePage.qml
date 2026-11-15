@@ -99,13 +99,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy {
-            text: page.tool ? qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL") : qsTr("OMANOVA OBSERVATORY  /  EXPERIMENTAL PREVIEW")
-            color: App.Palette.accent
-            font.pixelSize: 12
-            font.letterSpacing: 1.6
-        }
-        Copy { text: qsTr("Twilight launch plumes"); font.pixelSize: 34; font.bold: true }
+        App.PageHeader { eyebrow:"SATELLITES & LAUNCHES"; title:qsTr("Twilight launch plumes") }
         Copy {
             text: page.catalog?.fixture
                 ? qsTr("SIMULATED EXAMPLE · Nashville sample location · no real launch")

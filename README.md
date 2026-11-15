@@ -10,6 +10,39 @@ compact fallback. Set your observing location manually under **Settings**.
 
 > **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
 
+## Local usability trial — not published
+
+The `codex/usability-pass` branch is a local trial on top of 0.1.3. It groups
+all 24 views into Tonight, Sky, Satellites & launches, Plan, Log and Settings.
+Page keys are stable; existing event and IPC numeric references remain adapters.
+A narrow window uses a page selector rather than squeezing every tab into view.
+
+Overview now shows the selected observing night: cached Sun/Moon geometry,
+sunset/sunrise, hourly cloud coverage where a matching fresh forecast exists,
+and up to five equipment/interest-matching opportunities. Best-ranked first,
+then time order. The strip is context, not a visibility score; active-location
+horizons are not applied to the strip. Unknown/stale forecast gaps stay explicit.
+No extra network requests are made by this view. “Why this pick?” expands ranking
+explanations; safety and stale-data warnings remain visible.
+
+Shared page headings, themed pass sliders and padded compact content improve
+consistency. The display selector is always available; **Ctrl+D** cycles normal,
+dim and red inside the Observatory. Settings retains explicit appearance choices.
+Sky Finder estimate details can be expanded without hiding stale/visibility labels.
+
+Settings shows installed-file and running-snapshot build identities, timestamps,
+planning freshness and a refresh-status control. A current snapshot means it is
+less than three minutes old, not proof that a process is still running or every
+feed is fresh. Mismatched builds ask for a worker restart. Build records are local
+metadata (`.omanova-build.json`), not an authenticity/security guarantee.
+`worker.py runtime-info` reports build identity without reading/writing observing
+settings or starting downloads. Missing identities remain “not reported”.
+
+These changes are not in the public 0.1.3 package. No upload or new marketplace
+submission is authorised. Existing marketplace listing and closed #14863 stay
+separate. Existing saved locations, logs, horizons, favourites, exports and guides
+are preserved; this pass does not enable feeds, alerts or login startup.
+
 ## Features and options
 
 | Area | What it offers |

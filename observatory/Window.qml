@@ -1,4 +1,5 @@
 import "./qml/Omanova" as App
+import "./qml/Omanova/Navigation.js" as Navigation
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -37,12 +38,19 @@ ShellRoot {
 
     FloatingWindow {
         id: window
-        title: "OMANOVA Observatory · " + (shell.settingsTrial ? (Quickshell.env("OMANOVA_THEME_TRIAL")==="1" ? "Theme preview" : "Settings preview") : sky.fixture ? "Fixture preview" : "Live data test")
+        title: "OMANOVA Observatory · " + (shell.settingsTrial ? (Quickshell.env("OMANOVA_THEME_TRIAL")==="1" ? "Theme preview" : "Settings preview") : sky.fixture ? "Fixture preview" : "Live data")
         color: App.Palette.background
         implicitWidth: 1050
         implicitHeight: 700
         minimumSize: Qt.size(360, 400)
         onVisibleChanged: if (!visible) Qt.quit()
+        Shortcut {
+            sequence: "Ctrl+D"
+            onActivated: if(!App.Palette.save.running) {
+                const modes = ["normal", "dim", "red"]
+                App.Palette.setObserving(modes[(modes.indexOf(App.Palette.observingMode)+1)%3])
+            }
+        }
 
         Rectangle {
             id: ui
@@ -70,15 +78,21 @@ ShellRoot {
             readonly property int gutter: width < 620 ? 16 : 30
             readonly property real contentHeight: scroll.contentHeight
             readonly property var screenItem: screenLoader.item
-            readonly property var tabs: ["Overview", "Sky View", "Conditions", "Events", "Orbit", "Moon", qsTr("Meteor Showers"), qsTr("Planets"), qsTr("Comets"), qsTr("Eclipses"), qsTr("Launch Plumes"), qsTr("Watchlist"), qsTr("Starlink Trains"), qsTr("Aurora"), qsTr("Dark-Sky Sites"), qsTr("Observing Log")].concat(!sky.fixture || shell.settingsTrial ? [qsTr("Settings"), qsTr("Trip Planner"), qsTr("Launch Following"), qsTr("My Equipment and Sky"), qsTr("Calendar Export"), qsTr("Offline Cards"), qsTr("Destination Sites"), qsTr("Sky Finder")] : [])
-            property int screenIndex: shell.settingsTrial ? 16 : 0
-            readonly property bool showingPlanets: screenIndex === 7
+            readonly property bool extendedPages: !sky.fixture || shell.settingsTrial
+            readonly property var tabs: Navigation.available(extendedPages).sort((a,b) => a.legacy-b.legacy).map(p => p.label)
+            property string pageId: shell.settingsTrial ? "settings" : "overview"
+            readonly property int screenIndex: Navigation.page(pageId)?.legacy ?? 0
+            readonly property string sectionId: Navigation.section(pageId)
+            readonly property var sectionPages: Navigation.sectionPages(sectionId, extendedPages)
+            readonly property bool showingPlanets: pageId === "planets"
+            readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "sites", "sky-finder"].includes(pageId)
+            NightContext { id: nightContext; skyModel: sky }
             property real scrub: -1
             readonly property real riseTime: event ? Date.parse(event.start) : 0
             readonly property real passSeconds: event ? (Date.parse(event.end) - riseTime) / 1000 : 0
             readonly property real firstLook: viewing ? (Date.parse(viewing.start.time) - riseTime) / 1000 : 0
             readonly property real scrubTime: riseTime + (scrub < 0 ? firstLook : scrub) * 1000
-            readonly property var predicted: screenIndex === 1 ? positionAt(scrubTime) : null
+            readonly property var predicted: pageId === "sky-view" ? positionAt(scrubTime) : null
             readonly property string eventId: event ? event.id : ""
             readonly property bool snapshotStale: sky.snapshotStale
             onEventIdChanged: scrub = -1
@@ -108,12 +122,15 @@ ShellRoot {
             function metric(value, suffix) {
                 return value === null ? "Unavailable" : value + suffix
             }
-            function changeScreen(index) {
-                if (index >= 0 && index < tabs.length && index !== screenIndex) {
-                    screenIndex = index
+            function navigate(id) {
+                if (!Navigation.available(extendedPages).some(p => p.id === id)) return false
+                if (pageId !== id) {
+                    pageId = id
                     scroll.contentItem.contentY = 0
                 }
+                return true
             }
+            function changeScreen(index) { return navigate(Navigation.fromLegacy(index)) }
             function bearingName(direction) {
                 return ({N:"north", NNE:"north-northeast", NE:"northeast", ENE:"east-northeast",
                     E:"east", ESE:"east-southeast", SE:"southeast", SSE:"south-southeast",
@@ -135,7 +152,7 @@ ShellRoot {
                 font.letterSpacing: 1.1
             }
             component Title: Copy {
-                font.pixelSize: ui.width < 620 ? 30 : 43
+                font.pixelSize: ui.width < 500 ? 26 : 32
                 font.weight: Font.DemiBold
             }
             component Rule: Rectangle {
@@ -265,57 +282,94 @@ ShellRoot {
                     }
                     Item { Layout.fillWidth: true }
                     Tag {
-                        text: sky.fixture ? "OFFLINE FIXTURE" : !sky.data ? "WAITING FOR DATA" :
-                            ui.snapshotStale ? "SNAPSHOT STALE" : "LIVE DATA TEST"
+                        text: ui.width < 500 ? (sky.fixture ? "SAMPLE" : !sky.data ? "WAITING" : sky.snapshotStale ? "STALE" : "CURRENT") : sky.fixture ? "OFFLINE FIXTURE" : sky.runtimeStatus.toUpperCase()
                         color: ui.snapshotStale ? ui.amber : ui.accent
                     }
                 }
                 Rule {}
                 Flow {
                     Layout.fillWidth: true
-                    Layout.leftMargin: ui.gutter
-                    Layout.rightMargin: ui.gutter
-                    spacing: 0
+                    Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
+                    spacing: 4
                     Repeater {
-                        model: ui.tabs
-                        delegate: Button {
-                            id: tab
-                            required property string modelData
-                            required property int index
-                            text: modelData
-                            readonly property bool selected: index === ui.screenIndex
-                            Accessible.description: selected ? "Current screen" : ""
-                            onClicked: ui.changeScreen(index)
-                            focusPolicy: Qt.StrongFocus
-                            hoverEnabled: true
-                            leftPadding: ui.width < 500 ? 5 : 12
-                            rightPadding: ui.width < 500 ? 5 : 12
-                            implicitHeight: 43
-                            contentItem: Copy {
-                                text: tab.text
-                                color: tab.selected ? ui.ink : ui.muted
-                                font.pixelSize: 14
-                                verticalAlignment: Text.AlignVCenter
-                            }
+                        model: Navigation.groups.filter(g => Navigation.sectionPages(g.id, ui.extendedPages).length)
+                        App.ActionButton {
+                            required property var modelData
+                            text: modelData.label
+                            Accessible.description: ui.sectionId === modelData.id ? "Current section" : "Open section"
+                            onClicked: if (ui.sectionId !== modelData.id) ui.navigate(Navigation.sectionPages(modelData.id, ui.extendedPages)[0].id)
                             background: Rectangle {
-                                color: tab.selected ? App.Palette.button : tab.hovered ? ui.surface : "transparent"
-                                border.color: tab.visualFocus ? ui.accent : "transparent"
-                                Rectangle {
-                                    anchors.bottom: parent.bottom
-                                    width: parent.width; height: 2
-                                    color: tab.selected ? ui.accent : "transparent"
+                                radius: 6
+                                color: ui.sectionId === modelData.id ? App.Palette.button : "transparent"
+                                border.color: parent.visualFocus ? ui.accent : ui.sectionId === modelData.id ? ui.line : "transparent"
+                                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: ui.sectionId === modelData.id ? ui.accent : "transparent" }
+                            }
+                        }
+                    }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
+                    Layout.topMargin: 6; Layout.bottomMargin: 10
+                    Flow {
+                        visible: ui.width >= 720
+                        Layout.fillWidth: true
+                        spacing: 5
+                        Repeater {
+                            model: ui.sectionPages
+                            App.ActionButton {
+                                required property var modelData
+                                text: (ui.pageId === modelData.id ? "• " : "") + modelData.label
+                                Accessible.description: ui.pageId === modelData.id ? "Current page" : "Open page"
+                                onClicked: ui.navigate(modelData.id)
+                                background: Rectangle { radius: 6; color: ui.pageId === parent.modelData.id ? App.Palette.button : "transparent"; border.color: parent.visualFocus ? ui.accent : ui.pageId === parent.modelData.id ? ui.line : "transparent" }
+                            }
+                        }
+                    }
+                    ComboBox {
+                        id: pageChoice
+                        visible: ui.width < 720
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 100
+                        implicitHeight: 42
+                        model: ui.sectionPages
+                        textRole: "label"
+                        currentIndex: ui.sectionPages.findIndex(p => p.id === ui.pageId)
+                        Accessible.name: "Page in current section"
+                        onActivated: ui.navigate(ui.sectionPages[currentIndex].id)
+                        palette.base: App.Palette.field; palette.button: App.Palette.button
+                        palette.text: App.Palette.ink; palette.buttonText: App.Palette.ink
+                        palette.window: App.Palette.surface; palette.windowText: App.Palette.ink
+                        palette.highlight: App.Palette.hover; palette.highlightedText: App.Palette.ink
+                        background: Rectangle {radius:6;color:App.Palette.button;border.color:pageChoice.activeFocus?ui.accent:App.Palette.border}
+                    }
+                    App.ActionButton {
+                        id: displayChoice
+                        text: ui.width < 500 ? App.Palette.observingMode : qsTr("Display: %1").arg(App.Palette.observingMode)
+                        Accessible.description: "Choose normal, dim or red. Shortcut Ctrl+D cycles display mode."
+                        enabled: !App.Palette.save.running
+                        onClicked: displayMenu.open()
+                        Menu {
+                            id: displayMenu
+                            y: displayChoice.height
+                            background: Rectangle { color: App.Palette.surface; border.color: App.Palette.border; radius: 6 }
+                            Repeater {
+                                model: ["normal", "dim", "red"]
+                                MenuItem {
+                                    required property string modelData
+                                    text: modelData
+                                    onTriggered: App.Palette.setObserving(modelData)
+                                    contentItem: Copy { text: parent.text; padding: 10; color: App.Palette.ink }
+                                    background: Rectangle { color: parent.highlighted ? App.Palette.hover : App.Palette.surface }
                                 }
                             }
                         }
                     }
                 }
-                Flow {Layout.fillWidth:true;Layout.leftMargin:ui.gutter;spacing:6
-                    Repeater {model:["normal","dim","red"];Button {required property string modelData;text:modelData+" display";enabled:!App.Palette.save.running;palette.buttonText:App.Palette.ink;palette.button:App.Palette.button;onClicked:App.Palette.setObserving(modelData);background:Rectangle {radius:5;color:App.Palette.button;border.color:App.Palette.border}}}
-                }
                 Rule {}
                 ScrollView {
                     id: scroll
-                    visible: !ui.showingPlanets && ui.screenIndex !== 17 && ui.screenIndex !== 18 && ui.screenIndex !== 19 && ui.screenIndex !== 20 && ui.screenIndex !== 21 && ui.screenIndex !== 22 && ui.screenIndex !== 23
+                    visible: !ui.ownScroll
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
@@ -324,44 +378,44 @@ ShellRoot {
                     Loader {
                         id: screenLoader
                         width: scroll.availableWidth
-                        sourceComponent: ui.showingPlanets || ui.screenIndex === 17 || ui.screenIndex === 18 || ui.screenIndex === 19 || ui.screenIndex === 20 || ui.screenIndex === 21 || ui.screenIndex === 22 || ui.screenIndex === 23 ? null : [overview, skyView, conditions, eventsView, orbitView, moonView, meteorView, null, cometView, eclipseView, plumeView, watchlistView, trainView, auroraView, darkSitesView, logView, settingsView][ui.screenIndex]
+                        sourceComponent: ui.ownScroll ? null : ({overview:overview, "sky-view":skyView, conditions:conditions, events:eventsView, orbit:orbitView, moon:moonView, meteors:meteorView, comets:cometView, eclipses:eclipseView, plumes:plumeView, watchlist:watchlistView, trains:trainView, aurora:auroraView, "regional-sites":darkSitesView, log:logView, settings:settingsView})[ui.pageId] || null
                     }
                 }
                 Loader {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    visible: ui.screenIndex === 17
+                    visible: ui.pageId === "trips"
                     active: visible
                     sourceComponent: Component { TripPage {} }
                 }
                 Loader {
                     id: followingLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
-                    visible:ui.screenIndex===18
+                    visible:ui.pageId === "following"
                     // Retain monitoring when another Observatory tab is selected.
-                    active: !sky.fixture || ui.screenIndex===18 || !!item
+                    active: !sky.fixture || ui.pageId === "following" || !!item
                     sourceComponent:Component { FollowPage {} }
                 }
                 Loader {
                     id: equipmentLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
-                    visible:ui.screenIndex===19;active:visible
+                    visible:ui.pageId === "equipment";active:visible
                     sourceComponent:Component {EquipmentPage {}}
                 }
                 Loader {
                     id: calendarLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
-                    visible:ui.screenIndex===20;active:visible
+                    visible:ui.pageId === "calendar";active:visible
                     sourceComponent:Component {CalendarPage {}}
                 }
                 Loader {
                     id: offlineLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
-                    visible:ui.screenIndex===21;active:visible
+                    visible:ui.pageId === "offline";active:visible
                     sourceComponent:Component {OfflinePage {}}
                 }
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===22;active:visible;sourceComponent:Component {FieldPage {section:"sites";skyModel:sky}}}
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.screenIndex===23;active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {FieldPage {section:"sites";skyModel:sky}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky}}}
                 Loader {
                     id: planetLoader
                     Layout.fillWidth: true
@@ -448,80 +502,15 @@ ShellRoot {
 
             Component {
                 id: overview
-                ColumnLayout {
-                    spacing: 19
-                    readonly property bool narrow: width < 650
-                    OpportunityCard {
-                        visible: !!sky.nextOpportunity
-                        Layout.margins: ui.gutter
-                        event: sky.nextOpportunity || ({kind:"", name:"", start:"", end:"", look:{}, conditions:{}, score_parts:{}})
-                        sky: ui.skyModel; hero: true
-                        onInspect: function(selected) {
-                            if (selected.station_id) ui.selectedEventId = selected.station_id
-                            ui.changeScreen(selected.page)
-                        }
+                TonightPage {
+                    sky: ui.skyModel
+                    night: nightContext
+                    onInspect: function(selected) {
+                        if (selected.station_id) ui.selectedEventId = selected.station_id
+                        ui.changeScreen(selected.page)
                     }
-                    Copy {Layout.leftMargin:ui.gutter;Layout.rightMargin:ui.gutter;Layout.fillWidth:true;visible:!sky.nextOpportunity;text:"No ranked suggestion matches current data and equipment/sky preferences. Cached station geometry remains below for inspection; it is not a GO recommendation.";color:App.Palette.warning}
-                    GridLayout {
-                        visible: !sky.nextOpportunity
-                        columns: parent.narrow ? 1 : 2
-                        Layout.fillWidth: true
-                        Layout.margins: ui.gutter
-                        Layout.bottomMargin: 0
-                        rowSpacing: 20; columnSpacing: 24
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            Layout.preferredWidth: 340
-                            spacing: 10
-                            Tag { Layout.fillWidth: true; text: "STATION GEOMETRY · INSPECT ONLY"; color: ui.accent }
-                            Title { Layout.fillWidth: true; text: !ui.event ? "No viewing opportunity" :
-                                    ui.event.name === "ISS" ? "International Space Station" : ui.event.name }
-                            Copy {
-                                Layout.fillWidth: true
-                                text: ui.viewing ? sky.countdown(ui.viewing.start.time) : "—"
-                                color: ui.accent
-                                font.pixelSize: ui.width < 620 ? 44 : 67
-                                font.weight: Font.DemiBold
-                            }
-                            Copy { Layout.fillWidth: true; text: ui.viewing
-                                    ? ui.clock(ui.viewing.start.time) + "–" + ui.clock(ui.viewing.end.time) + "  ·  Local time"
-                                    : "No suitable pass in the current snapshot"; color: ui.muted }
-                            Rectangle {
-                                Layout.fillWidth: true
-                                implicitHeight: bearing.implicitHeight + 20
-                                color: ui.surface
-                                Rectangle { width: 2; height: parent.height; color: ui.accent }
-                                ColumnLayout {
-                                    id: bearing
-                                    width: parent.width - 24
-                                    x: 12; y: 10
-                                    spacing: 2
-                                    Copy {
-                                        Layout.fillWidth: true
-                                        text: ui.viewing ? "Look " + ui.bearingName(ui.viewing.start.direction)
-                                            : "Viewing direction unavailable"
-                                        font.weight: Font.DemiBold
-                                    }
-                                    Copy { Layout.fillWidth: true; color: ui.muted; font.pixelSize: 13; text: ui.viewing
-                                        ? Math.round(ui.viewing.start.az) + "° true · " + Math.round(ui.viewing.start.el) + "° above the horizon" : "—" }
-                                }
-                            }
-                            Action { text: "Explore the pass  ↗"; enabled: !!ui.event; onClicked: ui.changeScreen(1) }
-                        }
-                        Scope { Layout.fillWidth: true; Layout.preferredWidth: 460; label: "01 / LOCAL SKY" }
-                    }
-                    Rule { Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter }
-                    GridLayout {
-                        visible: !sky.nextOpportunity || sky.nextOpportunity.kind === "station"
-                        columns: width < 480 ? 1 : 3
-                        Layout.fillWidth: true
-                        Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter; Layout.bottomMargin: ui.gutter
-                        rowSpacing: 12; columnSpacing: 15
-                        Readout { Layout.fillWidth: true; caption: "STATION VIEWING PEAK"; value: ui.peakText() }
-                        Readout { Layout.fillWidth: true; caption: "FORECAST"; value: ui.forecast ? ui.forecast.label : "Unavailable"; tint: ui.verdictColor }
-                        Readout { Layout.fillWidth: true; caption: "ORBIT DATA"; value: ui.event
-                                ? ui.event.confidence + " · " + Math.round(ui.event.epoch_hours) + "h from epoch" : "Unavailable" }
-                    }
+                    onOpenEvents: ui.navigate("events")
+                    onOpenSettings: ui.navigate("settings")
                 }
             }
 
@@ -529,8 +518,7 @@ ShellRoot {
                 id: skyView
                 ColumnLayout {
                     spacing: 15
-                    Tag { Layout.fillWidth: true; Layout.leftMargin: ui.gutter; Layout.topMargin: ui.gutter; text: "02 / OBSERVER GEOMETRY" }
-                    Title { Layout.fillWidth: true; Layout.leftMargin: ui.gutter; text: "Sky View" }
+                    App.PageHeader { Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter; Layout.topMargin: ui.gutter; eyebrow: "SKY"; title: "Sky View" }
                     GridLayout {
                         columns: width < 600 ? 1 : 2
                         Layout.fillWidth: true
@@ -569,7 +557,7 @@ ShellRoot {
                         Layout.fillWidth: true
                         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter; Layout.bottomMargin: ui.gutter
                         Copy { text: "Scrub predicted pass" }
-                        Slider {
+                        App.PassSlider {
                             Layout.fillWidth: true
                             from: 0; to: Math.max(1, ui.passSeconds)
                             value: ui.scrub < 0 ? ui.firstLook : ui.scrub
@@ -589,8 +577,7 @@ ShellRoot {
                 id: conditions
                 ColumnLayout {
                     spacing: 18
-                    Tag { Layout.fillWidth: true; Layout.leftMargin: ui.gutter; Layout.topMargin: ui.gutter; text: "03 / OBSERVING CONDITIONS" }
-                    Title { Layout.fillWidth: true; Layout.leftMargin: ui.gutter; text: "Conditions" }
+                    App.PageHeader {Layout.leftMargin:ui.gutter;Layout.rightMargin:ui.gutter;Layout.topMargin:ui.gutter;eyebrow:"TONIGHT";title:"Conditions"}
                     ColumnLayout {
                         visible: !sky.fixture
                         Layout.fillWidth: true
@@ -683,6 +670,12 @@ ShellRoot {
             }
             function observingDisplay(mode:string):void {if(shell.settingsTrial)App.Palette.setObserving(mode)}
             function screen(index: int): void { ui.changeScreen(index) }
+            function navigate(id: string): bool { return ui.navigate(id) }
+            function freshness(): string {
+                return JSON.stringify({stale:sky.snapshotStale, planningStale:sky.plannerStale, next:sky.nextOpportunity?.id||null, verdict:ui.verdict, picks:ui.pageId==="overview"?(ui.screenItem?.picks?.length??0):null, mismatch:sky.runtimeMismatch})
+            }
+            function navigation(): string { return JSON.stringify({page:ui.pageId, section:ui.sectionId, pages:Navigation.available(ui.extendedPages), status:sky.runtimeStatus, installed:sky.installedRuntime, running:sky.data?.runtime, nightReady:!!nightContext.dataSet, nightError:nightContext.error}) }
+            function fixtureSize(width:int, height:int):void { if(sky.fixture){window.implicitWidth=Math.max(360,width);window.implicitHeight=Math.max(400,height)} }
             function planets(section: int): string {
                 ui.changeScreen(7)
                 const page = planetLoader.item

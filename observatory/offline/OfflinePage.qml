@@ -62,8 +62,7 @@ Item {
                     width:scroll.availableWidth;spacing:14
                     ColumnLayout {
                         Layout.fillWidth:true;Layout.margins:24;spacing:10
-                        Copy {text:root.deployed?"O M A N O V A   /   OFFLINE OBSERVING CARDS":"O M A N O V A   /   SEPARATE PREVIEW";font.pixelSize:12;color:App.Palette.accent}
-                        Heading {text:root.saved?"Your saved night guide":"A night’s viewing, ready to take with you"}
+                        App.PageHeader {eyebrow:"PLAN";title:root.saved?"Your saved night guide":"A night’s viewing, ready to take with you"}
                         Copy {text:root.saved?"This is a saved snapshot. Opening it reads only your saved guide and the device clock; predictions and forecasts are not refreshed. It belongs to the observing location used when saved, even if your active location has since changed.":"Choose a night, select cards and save a guide with times, directions and equipment. Live mode uses the active location’s existing predictions.";color:App.Palette.muted}
                         Flow {
                             Layout.fillWidth:true;spacing:10

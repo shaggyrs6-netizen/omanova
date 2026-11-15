@@ -16,7 +16,7 @@ ColumnLayout {
         && (horizon.currentIndex === 2 || Date.parse(row.start) <= sky.now + (horizon.currentIndex === 0 ? 1 : 7)*86400000)
         && (!localOnly.checked || row.visibility === "possible"))
     component Copy: Text { Layout.fillWidth: true; Layout.leftMargin: 22; Layout.rightMargin: 22; wrapMode: Text.Wrap; textFormat: Text.PlainText; color: App.Palette.ink; font.pixelSize: 15 }
-    Copy { Layout.topMargin: 22; text: qsTr("Your observing timeline"); font.pixelSize: 32; font.bold: true }
+    App.PageHeader {Layout.topMargin:22;Layout.leftMargin:22;Layout.rightMargin:22;eyebrow:"SATELLITES & LAUNCHES";title:qsTr("Events")}
     Copy { text: qsTr("Local viewing windows across the Observatory. Unconfirmed launches and stale geometry remain inspectable. Times use your system time zone."); color: App.Palette.muted }
     Flow {
         Layout.fillWidth: true; Layout.leftMargin: 22; Layout.rightMargin: 22; spacing: 8

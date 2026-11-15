@@ -57,8 +57,7 @@ Item {
                 anchors.fill:parent;spacing:0
                 ColumnLayout {
                     Layout.fillWidth:true;Layout.margins:22;spacing:8
-                    Copy {text:"O M A N O V A   /   LAUNCH FOLLOWING";color:App.Palette.accent;font.pixelSize:12}
-                    Heading {text:qsTr("Follow a launch")}
+                    App.PageHeader {eyebrow:"SATELLITES & LAUNCHES";title:qsTr("Follow a launch")}
                     Copy {text:qsTr("Favourite missions and follow schedule changes or webcasts. These alerts do not mean a launch is visible from your location.");color:App.Palette.muted}
                     RowLayout {
                         Layout.fillWidth:true

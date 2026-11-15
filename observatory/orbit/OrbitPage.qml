@@ -123,8 +123,7 @@ ColumnLayout {
         Layout.margins: ui.margin
         Layout.bottomMargin: 0
         spacing: 5
-        Tag { text: ui.orbitData?.fixture ? "OMANOVA  /  OFFLINE FIXTURE" : "OMANOVA  /  CACHED ORBITAL ELEMENTS"; color: ui.accent }
-        Copy { text: "Orbit"; font.pixelSize: 42; font.weight: Font.DemiBold }
+        App.PageHeader { eyebrow:"SKY"; title:"Orbit" }
         Copy { text: "Ground tracks and the view from your observing point"; color: ui.muted }
     }
     RowLayout {
@@ -168,7 +167,7 @@ ColumnLayout {
             color: ui.accent
             font.weight: Font.DemiBold
         }
-        Slider {
+        App.PassSlider {
             Layout.fillWidth: true
             from: 0
             to: ui.selected ? Math.max(1, ui.selected.pass.length - 1) : 1

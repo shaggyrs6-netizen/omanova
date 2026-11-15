@@ -62,8 +62,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: Quickshell.env("OMASKY_DARK_SITES_EMBEDDED") === "1" ? qsTr("OMANOVA OBSERVATORY  /  FIELD GUIDE") : qsTr("OMANOVA OBSERVATORY  /  PREVIEW"); color: App.Palette.accent; font.pixelSize: 12; font.letterSpacing: 1.6 }
-        Copy { text: qsTr("Dark-sky sites"); font.pixelSize: 34; font.bold: true }
+        App.PageHeader { eyebrow:"PLAN"; title:qsTr("Dark-sky sites") }
         Copy { text: qsTr("Near Mount Juliet, Tennessee"); color: App.Palette.muted }
         Copy {
             text: qsTr("Approximate road distances and drive times from central Mount Juliet. Routes use public map data without live traffic. Check the site’s access page before heading out.")

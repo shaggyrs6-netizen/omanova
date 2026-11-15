@@ -5,3 +5,5 @@ assets/*.bsp
 .preview/
 
 assets/.de440s.*
+
+.omanova-build.json

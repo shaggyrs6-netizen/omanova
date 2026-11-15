@@ -177,8 +177,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy { text: page.embedded ? qsTr("OMANOVA OBSERVATORY  /  FIELD NOTES") : qsTr("OMANOVA OBSERVATORY  /  PRIVATE PREVIEW"); color: App.Palette.accent; font.letterSpacing: 1.5; font.pixelSize: 12 }
-        Copy { text: qsTr("Observing log"); font.pixelSize: 34; font.bold: true }
+        App.PageHeader { eyebrow:"LOG"; title:qsTr("Observing log") }
         Copy {
             text: page.embedded ? qsTr("Entries stay on this computer. Times use your computer’s time zone.")
                 : qsTr("Entries stay on this computer in a separate preview log. Times use your computer’s time zone.")

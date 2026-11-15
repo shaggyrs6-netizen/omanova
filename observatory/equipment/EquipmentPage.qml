@@ -60,8 +60,7 @@ Item {
                     width:scroll.availableWidth;spacing:14
                     ColumnLayout {
                         Layout.fillWidth:true;Layout.margins:24;spacing:10
-                        Copy {text:root.deployed?"O M A N O V A   /   MY EQUIPMENT AND SKY":"O M A N O V A   /   SEPARATE PREVIEW";font.pixelSize:12;color:App.Palette.accent}
-                        Heading {text:"My Equipment and Sky"}
+                        App.PageHeader {eyebrow:"SETTINGS";title:"My Equipment and Sky"}
                         Copy {text:"Choose what you have and the sky you expect. Suggestions explain what fits, what is uncertain and what needs a different setup.";color:App.Palette.muted}
                         Flow {
                             Layout.fillWidth:true;spacing:10;visible:!root.deployed

@@ -141,8 +141,7 @@ Item {
                 anchors.fill:parent;spacing:0
                 ColumnLayout {
                     Layout.fillWidth:true;Layout.margins:20;spacing:6
-                    Copy {text:root.terrainPreview?"O M A N O V A   /   TERRAIN PREVIEW":"O M A N O V A   /   TRIP PLANNER";color:App.Palette.accent;font.pixelSize:12}
-                    Heading {text:qsTr("Trip Planner & My Horizon")}
+                    App.PageHeader {eyebrow:"PLAN";title:qsTr("Trip Planner & My Horizon")}
                     Copy {text:root.terrainPreview?qsTr("Separate terrain preview · live locations, horizons, alerts and bar are unchanged. Save & compare keeps this preview locally."):qsTr("Plan a trip without changing your active observing location or alerts. Trip and horizon settings are saved locally.");color:App.Palette.muted}
                     Flow {
                         Layout.fillWidth:true;spacing:8

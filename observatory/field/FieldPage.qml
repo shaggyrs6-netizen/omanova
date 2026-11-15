@@ -14,6 +14,7 @@ Item {
  property string result:""
  property string pending:""
  property bool nearby:true
+ property bool detailsOpen:false
  property double clock:Date.now()
  readonly property string state:Quickshell.env("OMANOVA_FIELD_STATE")
  readonly property string runtime:Quickshell.env("OMANOVA_FIELD_RUNTIME")
@@ -35,8 +36,7 @@ Item {
  ScrollView {id:scroll;anchors.fill:parent;clip:true;contentWidth:availableWidth
   ColumnLayout {width:scroll.availableWidth;spacing:14
    ColumnLayout {Layout.fillWidth:true;Layout.margins:24;spacing:10
-    Copy {text:"O M A N O V A   /   FIELD TOOLS";color:App.Palette.accent;font.pixelSize:12}
-    Copy {text:root.section==="sites"?"Destination dark-sky sites":"Small sky finder";font.pixelSize:28;font.bold:true}
+    App.PageHeader {eyebrow:root.section==="sites"?"PLAN":"SKY";title:root.section==="sites"?"Destination Sites":"Sky Finder"}
     Copy {text:root.section==="sites"?"A curated starting list near your active or Trip Planner location. Distance is straight-line, not driving distance or permission to access the site.":"Constellation landmarks and a starter set of clusters, nebulae and a galaxy. Local geometry with saved obstructions; brightness and weather stay unconfirmed.";color:App.Palette.muted}
     Flow {Layout.fillWidth:true;spacing:10
      Repeater {model:[{key:"active",label:"Active location"},{key:"trip-home",label:"Trip Home"},{key:"trip-destination",label:"Trip destination"}]
@@ -48,10 +48,11 @@ Item {
      Action {text:"Calculate this night locally";onClicked:root.request()}
     }
     Copy {visible:root.section==="finder"&&!!root.dataSet;text:(root.dataSet?.zone||"")+" · "+(root.dataSet?.night||"")+" · "+(root.dataSet?.darkness?.darkHours||0)+" h astronomical darkness · "+(root.dataSet?.darkness?.moonFreeHours||0)+" h Moon-free darkness";color:App.Palette.accent}
-    Copy {visible:root.section==="finder";text:root.dataSet?.darkness?.basis||"Darkness estimates use Sun/Moon geometry; background sky quality remains unknown.";color:App.Palette.muted}
+    Action {visible:!!root.dataSet;text:root.detailsOpen?"Hide estimate details":"How this is estimated";onClicked:root.detailsOpen=!root.detailsOpen}
+    Copy {visible:root.detailsOpen&&root.section==="finder";text:root.dataSet?.darkness?.basis||"Darkness estimates use Sun/Moon geometry; background sky quality remains unknown.";color:App.Palette.muted}
     Copy {visible:root.old;text:"These results are old or future-dated. Recalculate before relying on them.";color:App.Palette.warning;font.bold:true}
     Copy {text:root.result;color:App.Palette.muted}
-    Copy {text:root.dataSet?.limits||"";color:App.Palette.muted}
+    Copy {visible:root.detailsOpen;text:root.dataSet?.limits||"";color:App.Palette.muted}
    }
    Repeater {model:root.section==="sites"?(root.dataSet?.rows||[]).filter(r=>!root.nearby||r.distanceKm<=500):root.dataSet?.rows||[]
     Rectangle {id:card;required property var modelData;Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:App.Palette.line

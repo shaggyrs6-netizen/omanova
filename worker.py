@@ -22,6 +22,7 @@ from skyfield.api import load, load_file
 
 from astronomy import iso, predict, station_rows, utc
 from observing_preferences import preferences, validate as validate_preferences
+from runtime_identity import identity as runtime_identity
 from conditions import FIELDS, classify, opportunities, weather_hours
 from observatory.notifications.alerts import decision, deliver, sent_record
 
@@ -230,6 +231,7 @@ def build_snapshot(state, fixture=False):
         for window in event["windows"]:
             window["conditions"] = classify(window, hours, weather.get("fetched"), now, settings["weather"])
     snapshot = {"schema_version": 1, "generated": iso(now), "demo": fixture, "status": status,
+                "runtime": runtime_identity(),
                 "place": place, "settings": settings, "orbit_fetched": orbit.get("fetched"),
                 "weather_fetched": weather.get("fetched") if hours else None,
                 "weather_error": weather.get("error", "") if settings["weather"] else "",
@@ -343,7 +345,7 @@ def main():
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--fixture", action="store_true", help="Use frozen elements and never fetch")
     commands = parser.add_subparsers(dest="command", required=True)
-    for command in ("refresh", "watch", "demo", "resume-orbits"):
+    for command in ("refresh", "watch", "demo", "resume-orbits", "runtime-info"):
         commands.add_parser(command)
     for command in LOCATION_COMMANDS:
         commands.add_parser(command, help="Read location fields as one JSON line on standard input")
@@ -353,6 +355,9 @@ def main():
     commands.add_parser("preferences-stdin", help="Read observing preferences as JSON on standard input")
     commands.add_parser("distance-unit").add_argument("value", choices=("km", "mi"))
     args = parser.parse_args()
+    if args.command == "runtime-info":
+        print(json.dumps(runtime_identity()))
+        return 0
     if args.command == "demo" and not args.fixture:
         parser.error("demo requires --fixture and a separate preview state directory")
     if args.fixture and args.state.resolve() == DEFAULT_STATE.resolve():

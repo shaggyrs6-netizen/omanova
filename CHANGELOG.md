@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — local usability trial
+
+- Group all 24 pages into six sections using stable page keys, with narrow-window page selection. Keep existing event/IPC numeric adapters.
+- Replace the one-card Overview with a local night strip (Sun/Moon, sunset/sunrise, cached hourly cloud coverage and suggested-event markers) plus up to five eligible opportunities. No new downloads; missing/stale data stay unknown.
+- Move ranking arithmetic behind “Why this pick?”; retain immediate safety, stale and visibility labels. Show seconds for windows that begin/end within the same displayed minute.
+- Share page heading/action/slider styling, pad compact content and offer one header display selector with Ctrl+D cycling. Keep Settings appearance controls.
+- Show installed versus running build identity and source/planning freshness in Settings. Add a read-only `runtime-info` worker command and additive snapshot metadata; detect clock mismatch and build differences conservatively.
+- Keep Sky Finder estimate detail expandable while stale/visibility warnings stay visible.
+- Preserve saved data, consent, existing bar behaviour and worker/autostart choice. Local branch/live trial only; no public or marketplace upload.
+
 ## 0.1.3 — 14 November 2026
 
 This GitHub release brings the completed observing tools together. Marketplace

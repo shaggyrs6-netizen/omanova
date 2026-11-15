@@ -55,13 +55,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: 22
         spacing: 8
-        Copy {
-            text: qsTr("OMANOVA OBSERVATORY  /  NIGHT SKY")
-            color: App.Palette.accent
-            font.pixelSize: 12
-            font.letterSpacing: 1.8
-        }
-        Copy { text: qsTr("Meteor showers"); font.pixelSize: 34; font.bold: true }
+        App.PageHeader { eyebrow:"SKY"; title:qsTr("Meteor showers") }
         Copy {
             text: page.catalog?.fixture ? qsTr("Nashville test location · fixture")
                 : qsTr("Saved observing location · times on your desktop clock")

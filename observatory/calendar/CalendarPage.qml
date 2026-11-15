@@ -65,8 +65,7 @@ Item {
                     width:scroll.availableWidth;spacing:14
                     ColumnLayout {
                         Layout.fillWidth:true;Layout.margins:24;spacing:10
-                        Copy {text:root.deployed?"O M A N O V A   /   CALENDAR EXPORT":"O M A N O V A   /   SEPARATE PREVIEW";color:App.Palette.accent;font.pixelSize:12}
-                        Heading {text:"Take your observing plans with you"}
+                        App.PageHeader {eyebrow:"PLAN";title:"Take your observing plans with you"}
                         Copy {text:"Choose events and save an iCalendar (.ics) file. Import it into your calendar yourself. Nothing is sent to a calendar account.";color:App.Palette.muted}
                         Flow {
                             Layout.fillWidth:true;spacing:10

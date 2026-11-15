@@ -1,3 +1,4 @@
+import "./qml/Omanova/Tonight.js" as Tonight
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -53,7 +54,11 @@ QtObject {
     readonly property var featured: candidate ? events.find(event => event.id === candidate.id) : null
     readonly property bool useMiles: data?.settings?.distance_unit === "mi"
     readonly property bool snapshotStale: !fixture && !!data &&
-        (!Number.isFinite(Date.parse(data.generated)) || now - Date.parse(data.generated) > 180000)
+        (!Number.isFinite(Date.parse(data.generated)) || now - Date.parse(data.generated) > 180000 || now < Date.parse(data.generated))
+    readonly property string runtimeStatus: Tonight.runtimeStatus(data, now, fixture)
+    property var installedRuntime: null
+    readonly property var runningRuntime: data?.runtime || null
+    readonly property bool runtimeMismatch: Tonight.sameBuild(installedRuntime, runningRuntime) === false
     property string runtimeHelp: ""
     property string pendingInput: ""
 
@@ -120,9 +125,25 @@ QtObject {
         command: [root.runtime + "/.venv/bin/python", root.runtime + "/worker.py", "--help"]
         environment: ({ "OPENBLAS_NUM_THREADS": "1" })
         stdout: StdioCollector { id: helpOutput }
-        onExited: function(code) { root.runtimeHelp = code === 0 ? helpOutput.text : "" }
+        onExited: function(code) {
+            root.runtimeHelp = code === 0 ? helpOutput.text : ""
+            if(root.supports("runtime-info")) identityProbe.running=true
+        }
     }
 
+    function refreshRuntimeStatus() {
+        root.reload()
+        if(!capabilityProbe.running) capabilityProbe.running=true
+    }
+    property Process identityProbe: Process {
+        command: [root.runtime+"/.venv/bin/python", root.runtime+"/worker.py", "runtime-info"]
+        environment: ({"OPENBLAS_NUM_THREADS":"1"})
+        stdout: StdioCollector {id: identityOutput}
+        onExited: function(code) {
+            try {root.installedRuntime=code===0?JSON.parse(identityOutput.text):null}
+            catch(e){root.installedRuntime=null}
+        }
+    }
     property FileView snapshotFile: FileView {
         id: snapshot
         path: root.directory + "/snapshot.json"
@@ -133,8 +154,10 @@ QtObject {
             try {
                 const parsed = JSON.parse(text())
                 if (parsed && parsed.schema_version === 1 && Array.isArray(parsed.events) &&
-                    Array.isArray(parsed.candidates) && parsed.settings)
+                    Array.isArray(parsed.candidates) && parsed.settings) {
+                    root.wallTime = Date.now()
                     root.data = parsed
+                }
             } catch (error) {
                 // Keep the last valid snapshot.
             }

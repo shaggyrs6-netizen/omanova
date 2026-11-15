@@ -136,8 +136,7 @@ ColumnLayout {
         Layout.margins: page.gutter
         Layout.bottomMargin: 0
         spacing: 8
-        Tag { text: "04 / MISSION SCHEDULE"; color: page.accent }
-        Copy { text: "Events"; font.pixelSize: page.width < 620 ? 32 : 42; font.weight: Font.DemiBold }
+        App.PageHeader { eyebrow:"SATELLITES & LAUNCHES"; title:"Events" }
         Copy {
             text: "Local station passes and worldwide launches"
             color: page.muted
