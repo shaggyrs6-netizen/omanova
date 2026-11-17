@@ -327,7 +327,12 @@ def dispatch(action,state,fixture=False):
             preflight(state)
         write(state/'updates/result.json',{'status':'running','message':'Preparing update… Keep this session signed in. Installation runs independently of this window.'})
         log=(state/'updates/update.log').open('ab')
-        child=subprocess.Popen([sys.executable,str(ROOT/'update_manager.py'),'--state',str(state),'_restore' if action=='restore' else '_install'],stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,start_new_session=True,close_fds=True)
+        try:
+            child=subprocess.Popen([sys.executable,str(ROOT/'update_manager.py'),'--state',str(state),'_restore' if action=='restore' else '_install'],stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,start_new_session=True,close_fds=True)
+        except OSError:
+            log.close()
+            write(state/'updates/result.json',{'status':'error','message':'Could not start the update process. Installation unchanged; check again later.'})
+            raise
         write(state/'updates/job.json',{'pid':child.pid,'start':process_start(child.pid)})
         log.close();return status(state)
     if action=='_install':return install(state,read(state/'updates/ticket.json'))

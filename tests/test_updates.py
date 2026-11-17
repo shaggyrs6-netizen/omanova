@@ -143,3 +143,9 @@ class UpdateTests(unittest.TestCase):
   u.write(self.state/'updates/ticket.json',{'version':'0.1.5','checked':(datetime.now(UTC)+timedelta(hours=1)).isoformat()})
   with patch.object(u.subprocess,'Popen',side_effect=AssertionError('No launch')):
    with self.assertRaises(ValueError):u.dispatch('launch',self.state)
+
+ def test_failed_process_launch_is_not_left_as_permanently_running(self):
+  u.write(self.state/'updates/ticket.json',{'version':'0.1.5','checked':u.stamp()})
+  with patch.object(u.subprocess,'Popen',side_effect=OSError('SYNTHETIC process limit')):
+   with self.assertRaises(OSError):u.dispatch('launch',self.state)
+  self.assertEqual(u.status(self.state)['status'],'error');self.assertEqual((self.state/'runtime').resolve(),self.runtime)
