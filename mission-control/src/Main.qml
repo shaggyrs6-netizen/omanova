@@ -5,9 +5,10 @@ import MissionControl 1.0
 
 ApplicationWindow {
  id: win
- visible: true
+ property bool wallpaperMode: false
+ visible: !wallpaperMode
  width: 1440; height: 940
- minimumWidth: 760; minimumHeight: 740
+ minimumWidth: wallpaperMode?0:760; minimumHeight: wallpaperMode?0:740
  title: scene.live?qsTr("OMANOVA · Mission Control — live data preview"):qsTr("OMANOVA · Mission Control — separate sample preview")
  color: "#020811"
  property color ink: "#edf5fa"
@@ -35,7 +36,7 @@ ApplicationWindow {
  Shortcut { sequence: "Q"; onActivated: win.close() }
  Shortcut { sequence: "?"; onActivated: win.help=!win.help }
  ColumnLayout {
-  anchors.fill: parent; anchors.margins: win.width<1000?18:24; spacing: 12
+  anchors.fill: parent; anchors.margins: win.width<1000?18:24; anchors.topMargin:win.wallpaperMode?48:(win.width<1000?18:24);anchors.bottomMargin:win.wallpaperMode?34:(win.width<1000?18:24); spacing: 12
   RowLayout {
    Layout.fillWidth: true
    ColumnLayout { spacing: 2
@@ -56,6 +57,7 @@ ApplicationWindow {
    Row {anchors.right:parent.right;spacing:5;Repeater {model:9;Rectangle {width:10;height:2;color:index<3?win.accent:"#21495c"}}}
   }
   RowLayout {
+   visible:!win.wallpaperMode
    Layout.fillWidth: true; spacing: 8
    Action { objectName:"selectISS"; text: "ISS"; active: scene.selection===0; onClicked: scene.selection=0 }
    Action { objectName:"selectTiangong"; text: "Tiangong"; active: scene.selection===1; onClicked: scene.selection=1 }
@@ -101,7 +103,7 @@ ApplicationWindow {
      edge:"#2a6071";topFill:"#0b2231";bottomFill:"#030c17"
      InstrumentIcon {visible:index!==1;width:win.compact?36:44;height:width;anchors.left:parent.left;anchors.leftMargin:14;anchors.verticalCenter:parent.verticalCenter;kind:index;ink:index===2?"#edbc75":win.accent}
      HoverHandler {id:cardHover}
-     ToolTip {id:cardTip;visible:cardHover.hovered;delay:700;text:modelData.value+"\n"+modelData.detail;contentItem:Copy{text:cardTip.text;wrapMode:Text.WordWrap;font.pixelSize:14} background:Rectangle{color:"#0a2130";border.color:win.accent} width:Math.min(380,win.width-48)}
+     ToolTip {id:cardTip;visible:!win.wallpaperMode && cardHover.hovered;delay:700;text:modelData.value+"\n"+modelData.detail;contentItem:Copy{text:cardTip.text;wrapMode:Text.WordWrap;font.pixelSize:14} background:Rectangle{color:"#0a2130";border.color:win.accent} width:Math.min(380,win.width-48)}
      Rectangle {visible:!win.compact && index!==1;anchors.left:parent.left;anchors.leftMargin:68;anchors.top:parent.top;anchors.bottom:parent.bottom;anchors.topMargin:18;anchors.bottomMargin:18;width:1;color:"#25576a"}
      ColumnLayout {anchors.fill:parent;anchors.margins:16;anchors.leftMargin:index===1?16:(win.compact?60:80);spacing:5
       Copy {text:modelData.heading; Layout.fillWidth:true;wrapMode:Text.WordWrap;font.pixelSize:11;color:win.accent;font.letterSpacing:1}
@@ -119,6 +121,7 @@ ApplicationWindow {
    }
   }
   Flow {
+   visible:!win.wallpaperMode
    Layout.fillWidth: true; spacing:8; Layout.preferredHeight:childrenRect.height
    Action {objectName:"pauseButton";text:scene.paused?qsTr("Resume motion"):qsTr("Pause motion");active:scene.paused;onClicked:scene.paused=!scene.paused}
    Action {objectName:"reducedButton";text:scene.reduced?qsTr("Motion: reduced"):qsTr("Motion: subtle");active:scene.reduced;onClicked:scene.reduced=!scene.reduced}

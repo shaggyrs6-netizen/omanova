@@ -5,3 +5,7 @@ TEMPLATE = app
 SOURCES += src/main.cpp src/mission.cpp
 HEADERS += src/mission.h
 RESOURCES += src/resources.qrc
+
+# Already installed system library; used only for the optional wallpaper surface.
+INCLUDEPATH += /usr/include/LayerShellQt
+LIBS += -lLayerShellQtInterface

@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Temporary local trial. Never changes wallpaper/theme/autostart configuration."""
+import fcntl,json,os,signal,subprocess,sys,time
+from pathlib import Path
+os.umask(0o077)
+ROOT=Path(__file__).resolve().parents[1]
+RUN=Path(os.environ.get('XDG_RUNTIME_DIR','/run/user/'+str(os.getuid())))/'omanova-mission-control-trial'
+RUN.mkdir(mode=0o700,exist_ok=True)
+RECEIPT=RUN/'session.json'
+BINARY=ROOT/'build/omanova-mission-control-preview'
+
+def starttime(pid):
+ try:return (Path('/proc')/str(pid)/'stat').read_text().rsplit(')',1)[1].split()[19]
+ except (OSError,IndexError):return None
+
+def read():
+ try:return json.loads(RECEIPT.read_text())
+ except (OSError,ValueError):return {}
+
+def owned(r):
+ try:return r.get('start') is not None and starttime(r['pid'])==r['start'] and os.getpgid(r['pid'])==r['pid'] and os.readlink(f"/proc/{r['pid']}/exe").removesuffix(' (deleted)')==str(BINARY)
+ except (OSError,KeyError):return False
+
+def layers():
+ raw=json.loads(subprocess.check_output(['hyprctl','layers','-j'],text=True,timeout=5))
+ return [row for monitor in raw.values() for values in monitor.get('levels',{}).values() for row in values if row.get('namespace')=='omanova-mission-control-trial']
+
+def stop(r):
+ if owned(r):
+  os.killpg(r['pid'],signal.SIGTERM)
+  for _ in range(40):
+   if not owned(r) and not layers():break
+   time.sleep(.1)
+  if owned(r):raise RuntimeError('Trial is still closing; retry stop. No desktop configuration was changed.')
+ if layers():raise RuntimeError('A trial layer remains; inspect before retrying. No unrelated process was signalled.')
+ return {'status':'stopped','originalWallpaper':'retained underneath; no restore write required'}
+
+with (RUN/'control.lock').open('a') as lock:
+ fcntl.flock(lock,fcntl.LOCK_EX)
+ action=sys.argv[1] if len(sys.argv)>1 else 'start';r=read()
+ if action=='status':print(json.dumps({'running':owned(r),'layers':layers(),'autostart':False}));sys.exit(0)
+ if action=='stop':print(json.dumps(stop(r)));sys.exit(0)
+ if action!='start' or any(x not in ('--sample','--test-restore') for x in sys.argv[2:]):raise SystemExit('Use: wallpaper start [--sample] [--test-restore] | stop | status')
+ if owned(r):print(json.dumps({'status':'already running','pid':r['pid']}));sys.exit(0)
+ if layers():raise SystemExit('Existing unknown trial layer: inspect before starting another.')
+ if not BINARY.is_file():raise SystemExit('Build the local preview with mission-control/bin/build first.')
+ args=[str(BINARY),'--wallpaper']
+ if '--sample' not in sys.argv:args.append('--live')
+ if '--test-restore' in sys.argv:args.append('--wallpaper-self-test')
+ env={**os.environ,'QT_FORCE_STDERR_LOGGING':'1'}
+ with (RUN/'trial.log').open('ab') as log:
+  child=subprocess.Popen(args,stdin=subprocess.DEVNULL,stdout=log,stderr=log,env=env,start_new_session=True)
+ r={'pid':child.pid,'start':starttime(child.pid),'binary':str(BINARY),'autostart':False}
+ RECEIPT.write_text(json.dumps(r)+'\n')
+ for _ in range(80):
+  if child.poll() is not None:raise SystemExit('Wallpaper trial failed safely; your original desktop remains. See '+str(RUN/'trial.log'))
+  current=layers()
+  controls=json.loads(subprocess.check_output(['hyprctl','clients','-j'],text=True,timeout=5))
+  ready=any(c.get('pid')==child.pid and c.get('title')=='Mission Control trial — Restore desktop' and c.get('mapped') for c in controls)
+  if ready and any(x.get('pid')==child.pid for x in current):print(json.dumps({'status':'running','pid':child.pid,'autostart':False,'restore':'Close the control window, press Restore desktop, or run '+str(ROOT/'bin/wallpaper')+' stop'}));break
+  time.sleep(.1)
+ else:
+  stop(r);raise SystemExit('No background layer appeared; trial stopped, original desktop retained.')

@@ -11,17 +11,42 @@
 #include <QFileInfo>
 #include <QDebug>
 #include <QStandardPaths>
+#include <QQmlContext>
+#include <LayerShellQt/Window>
 #include <cstdlib>
 #include "mission.h"
 int main(int argc,char**argv){
  QGuiApplication app(argc,argv);app.setApplicationName("Mission Control Preview");app.setDesktopFileName("omanova-mission-control-preview");QQuickStyle::setStyle("Basic");
- qmlRegisterType<Mission>("MissionControl",1,0,"MissionScene");QQmlApplicationEngine engine;engine.load(QUrl("qrc:/Main.qml"));if(engine.rootObjects().isEmpty())return 1;
+ const bool wallpaper=app.arguments().contains("--wallpaper");
+ if(wallpaper && QGuiApplication::platformName()!="wayland"){qCritical("Wallpaper trial requires Wayland; no desktop changes made");return 12;}
+ qmlRegisterType<Mission>("MissionControl",1,0,"MissionScene");QQmlApplicationEngine engine;engine.setInitialProperties({{"wallpaperMode",wallpaper}});engine.load(QUrl("qrc:/Main.qml"));if(engine.rootObjects().isEmpty())return 1;
  auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(!window)return 2;
  auto args=app.arguments();auto mission=window->findChild<Mission*>("missionScene");
  if(args.contains("--live")){
   QString data=QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)+"/omasky";
   mission->startLive(QFileInfo(data+"/runtime").canonicalFilePath(),QCoreApplication::applicationDirPath()+"/../live_bridge.py",data);
  }
+
+ QQmlApplicationEngine controller;
+ if(wallpaper){
+  window->setFlags(Qt::FramelessWindowHint|Qt::WindowTransparentForInput|Qt::WindowDoesNotAcceptFocus);
+  auto layer=LayerShellQt::Window::get(window);if(!layer){qCritical("Layer shell unavailable; original desktop retained");return 13;}
+  layer->setScope("omanova-mission-control-trial");layer->setLayer(LayerShellQt::Window::LayerBottom);
+  layer->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop)|LayerShellQt::Window::AnchorBottom|LayerShellQt::Window::AnchorLeft|LayerShellQt::Window::AnchorRight);
+  layer->setExclusiveZone(-1);layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);layer->setActivateOnShow(false);layer->setScreen(QGuiApplication::primaryScreen());layer->setCloseOnDismissed(true);layer->setDesiredSize(QSize(0,0));
+  controller.rootContext()->setContextProperty("wallpaperScene",mission);controller.load(QUrl("qrc:/WallpaperControl.qml"));
+  if(controller.rootObjects().isEmpty())return 14;
+  QObject::connect(&controller,&QQmlEngine::quit,&app,&QCoreApplication::quit);
+  window->show();
+  if(args.contains("--wallpaper-self-test")){
+   QTimer::singleShot(2800,[=]{
+    QJsonObject proof{{"mouseTransparent",bool(window->flags()&Qt::WindowTransparentForInput)},{"keyboardNone",layer->keyboardInteractivity()==LayerShellQt::Window::KeyboardInteractivityNone},{"bottomLayer",layer->layer()==LayerShellQt::Window::LayerBottom},{"noReservedSpace",layer->exclusionZone()==-1},{"width",window->width()},{"height",window->height()},{"live",mission->live()},{"fresh",mission->feedFresh()}};
+    QFile out(QCoreApplication::applicationDirPath()+"/../evidence/wallpaper-native-proof.json");if(out.open(QIODevice::WriteOnly))out.write(QJsonDocument(proof).toJson());
+    window->grabWindow().save(QCoreApplication::applicationDirPath()+"/../evidence/private-wallpaper.png");
+   });
+   QTimer::singleShot(5000,[&controller]{auto button=controller.rootObjects().first()->findChild<QObject*>("restoreDesktopButton");if(!button||!QMetaObject::invokeMethod(button,"clicked")){qCritical("Restore-button check failed");QCoreApplication::exit(15);}else qInfo("Restore button invoked; wallpaper trial ending");});}
+ }
+
  int feed=args.indexOf("--feed");if(feed>=0&&feed+1<args.size()){QFile f(args[feed+1]);if(!f.open(QIODevice::ReadOnly))return 4;mission->applyFrame(QJsonDocument::fromJson(f.read(2097153)).object());}
 
 

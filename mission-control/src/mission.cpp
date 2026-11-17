@@ -21,7 +21,7 @@ static void diamond(QPainter*p,QPointF pos,QColor color,bool selected){
 Mission::Mission(QQuickItem*p):QQuickPaintedItem(p){
  setAntialiasing(true);setAcceptedMouseButtons(Qt::LeftButton);texture.load(":/assets/earth.jpg");
  QRandomGenerator rng(4261);for(int i=0;i<650;i++){stars<<QPointF(rng.generateDouble(),rng.generateDouble());sizes<<(.4+rng.generateDouble()*1.25);}
- connect(this,&QQuickItem::windowChanged,this,[this](QQuickWindow*w){if(!w)return;connect(w,&QWindow::visibilityChanged,this,[this](QWindow::Visibility v){if(v==QWindow::Minimized||v==QWindow::Hidden)timer.stop();else if(!m_paused){clock.restart();timer.start();}});});
+ connect(this,&QQuickItem::windowChanged,this,[this](QQuickWindow*w){if(!w)return;connect(w,&QWindow::visibilityChanged,this,[this](QWindow::Visibility v){if(v==QWindow::Minimized||v==QWindow::Hidden)timer.stop();else if(!m_paused){clock.restart();timer.start();if(m_live)QTimer::singleShot(0,this,&Mission::poll);}});});
  clock.start();timer.setInterval(50);connect(&timer,&QTimer::timeout,this,[this]{double dt=qMin(clock.restart()/1000.,.15);if(!m_paused&&isVisible()){m_elapsed+=dt*(m_reduced?.12:1.0);emit changed();update();}});timer.start();
 }
 void Mission::setPaused(bool v){if(v==m_paused)return;m_paused=v;clock.restart();if(v)timer.stop();else timer.start();emit changed();update();}
@@ -97,6 +97,7 @@ bool Mission::feedFresh()const{
 }
 QString Mission::feedStatus()const{
  if(m_paused)return "PAUSED · current satellite markers withheld";
+ if(frame.isEmpty())return "Waiting for first live calculation · markers withheld";
  if(frame.contains("error"))return frame["error"].toString();
  if(!feedFresh())return "Live calculation missing, stale or future-dated · markers withheld";
  int usable=frame["satellites"].toObject()["objects"].toArray().size();

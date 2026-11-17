@@ -163,3 +163,51 @@ The polished live window is left open for feedback. This is still a separate
 preview, not a main-app redesign or wallpaper installation. No uploads, release
 or marketplace changes. Private live evidence remains ignored under `evidence/`;
 the reference image above is explicitly offline sample data.
+
+## Temporary live wallpaper trial
+
+Branch `codex/mission-control-wallpaper` adds `bin/wallpaper start`, `stop` and
+`status`. This is a **session-only trial**, not a theme installation. It uses
+already-installed LayerShellQt alongside Qt; no package is installed by scripts.
+
+```sh
+mission-control/bin/wallpaper start
+mission-control/bin/wallpaper stop
+mission-control/bin/wallpaper status
+```
+
+The wallpaper sits on the primary monitor's **bottom layer**, above Omarchy's
+unchanged original background and below normal application windows/bar. It
+receives neither pointer input nor keyboard focus and reserves no workspace.
+The normal preview controls are hidden on the wallpaper. A separate ordinary
+control window has satellite/motion controls and a prominent **Restore desktop**
+button. Closing that control window or pressing Esc while it is focused also
+ends the whole trial. If it is minimised, bring it back through the usual app
+switcher. The stop command above is an independent fallback.
+
+Restoration removes only our layer: the original Omarchy background never stops
+running, and no theme/background selection is rewritten. If you deliberately
+change your normal wallpaper underneath the trial, that newer choice is what
+reappears. No shell restart, desktop shortcut, persistent window rule, startup
+entry or service is created. The existing OMANOVA worker/autostart choice is
+unchanged. Trial autostart is **off**, and the trial ends with the login session.
+
+The wrapper serialises starts and verifies PID + process-start identity,
+executable and process group before stopping its own trial. It requires both
+its layer and restore-control window before reporting ready, refuses duplicates,
+and stops a failed/unconfirmed start. Receipt/logs are local and private under
+`$XDG_RUNTIME_DIR/omanova-mission-control-trial/`. No other application is killed.
+Monitor disconnect closes the trial safely; multiple-monitor deployment and a
+new login-startup feature are not part of this trial.
+
+Validation: sample and live controller-button restoration removed the trial
+layer, leaving the original `omarchy-background` running. CLI stop and duplicate
+start checked. PID mismatch/recycled-start guards checked with an unrelated
+isolated test process. Protocol inspection confirmed bottom-layer placement,
+keyboard interactivity zero and an empty input region (the later region adds
+in that trace concern opaque rendering, not pointer input). Native proof was
+2752×1152 logical pixels, mouse-transparent and fresh live data. Original
+wallpaper selection and eleven protected saved/config hashes remained unchanged;
+worker PID/active/enabled state and installed 0.1.5 baseline matched. Existing
+sample/live freshness regressions passed. Actual live screenshot remains private
+under ignored `evidence/`; nothing uploaded or added to OMANOVA's release.

@@ -1,1 +1,1 @@
-<RCC><qresource prefix="/"><file>Main.qml</file><file>InstrumentFrame.qml</file><file>InstrumentIcon.qml</file><file alias="assets/earth.jpg">../assets/earth.jpg</file></qresource></RCC>
+<RCC><qresource prefix="/"><file>Main.qml</file><file>WallpaperControl.qml</file><file>InstrumentFrame.qml</file><file>InstrumentIcon.qml</file><file alias="assets/earth.jpg">../assets/earth.jpg</file></qresource></RCC>
