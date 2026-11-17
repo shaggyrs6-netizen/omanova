@@ -3,6 +3,6 @@ set -euo pipefail
 cd -- "$(dirname -- "$0")/.."
 bin/build
 mkdir -p evidence/offscreen
-QT_FORCE_STDERR_LOGGING=1 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software 
+QT_FORCE_STDERR_LOGGING=1 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software
 export QT_FORCE_STDERR_LOGGING QT_QPA_PLATFORM QT_QUICK_BACKEND
 exec build/omanova-mission-control-preview --qa "$PWD/evidence/offscreen"

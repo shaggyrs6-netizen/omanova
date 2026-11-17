@@ -1,5 +1,7 @@
 # Mission Control — local animated design preview
 
+![Native Mission Control sample preview](assets/preview.png)
+
 A separate native Qt Quick / C++ window exploring the approved OMANOVA Mission
 Control concept. **Not a wallpaper installation or OMANOVA release.** Branch:
 `codex/mission-control-preview`. No uploads authorised.
