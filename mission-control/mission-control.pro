@@ -9,3 +9,6 @@ RESOURCES += src/resources.qrc
 # Already installed system library; used only for the optional wallpaper surface.
 INCLUDEPATH += /usr/include/LayerShellQt
 LIBS += -lLayerShellQtInterface
+
+SOURCES += src/startupoptions.cpp
+HEADERS += src/startupoptions.h

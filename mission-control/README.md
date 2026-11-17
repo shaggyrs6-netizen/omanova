@@ -211,3 +211,55 @@ wallpaper selection and eleven protected saved/config hashes remained unchanged;
 worker PID/active/enabled state and installed 0.1.5 baseline matched. Existing
 sample/live freshness regressions passed. Actual live screenshot remains private
 under ignored `evidence/`; nothing uploaded or added to OMANOVA's release.
+
+## Optional login startup — local follow-up
+
+Branch `codex/mission-control-login` adds explicit startup controls to the
+wallpaper control window. **Off by default**, including Lee's current PC at
+handover; adding this option does not enable it. Earlier session-only/default-off
+statements describe the original trial. The new option is separate from the
+OMANOVA worker, app release and marketplace.
+
+- **Start at login: Off — turn on** enables only this wallpaper. Press it again
+  to disable future starts; the current wallpaper keeps running.
+- **Restore desktop — this session** (or closing the control window / Esc)
+  removes the wallpaper now and preserves the selected startup preference.
+- **Use normal desktop from now on** first verifies that wallpaper startup is
+  disabled, then restores the normal desktop. If disabling is refused, the
+  control shows the error and the independent restore-now button still works.
+- **Refresh startup setting** reads external changes. Restoration actions appear
+  first, and smaller control windows scroll rather than cutting off controls.
+
+CLI: `bin/wallpaper startup status|on|off`; `bin/wallpaper normal` disables future
+starts and stops the current wallpaper. `bin/wallpaper stop` only stops now.
+
+On the first explicit opt-in a new managed user entry is created at
+`$XDG_CONFIG_HOME/autostart/omanova-mission-control.desktop` (normally
+`~/.config/autostart/…`). It starts this checkout's `bin/wallpaper login` only in
+Hyprland. It is created disabled, then enabled through the installed
+`omarchy-control startup enable` planned/verified writer. Disabling uses that
+same native writer and keeps the entry disabled; no deletion or replacement of
+custom entries. Linked/unowned/changed entries are refused. No Hyprland config,
+wallpaper choice, OMANOVA worker unit, system service or package is changed.
+Native preference verification does not prove a future login has launched it.
+
+The login launcher checks that the preference is still enabled, waits up to
+60 seconds for compositor/background readiness, starts only one wallpaper with
+its restore controller, releases its control lock and waits for the child. This
+keeps the app in the generated XDG login service's lifetime. Normal wallpaper
+restoration exits without an automatic wallpaper restart. Session services own
+logout cleanup; no extra persistent daemon or restart policy is installed.
+This local preview directory must remain available while opted in.
+
+Validation: 13 Python tests (bridge plus startup), including real native
+Omarchy Control enable/disable against an isolated home, defaults-off/no entry,
+custom/modified entry and symlink refusal, and provider rejection remaining off.
+Actual native GUI buttons toggled on/off in a guarded temporary configuration;
+permanent-normal-desktop disabled the isolated entry and removed the layer.
+A simulated login initially saw the desktop not ready, waited, launched with
+fresh live data, kept its parent alive until the restore button ended it, and
+preserved the enabled preference for restore-now. Tests then disabled the
+isolated entry. A real disabled login command did not launch a wallpaper.
+Sample-motion and live freshness regressions passed. **No real logout/reboot
+was performed; next-login acceptance remains to be confirmed.** The current PC's
+real wallpaper-startup entry is still absent/off. No uploads authorised.

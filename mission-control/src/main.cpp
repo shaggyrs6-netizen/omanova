@@ -15,6 +15,7 @@
 #include <LayerShellQt/Window>
 #include <cstdlib>
 #include "mission.h"
+#include "startupoptions.h"
 int main(int argc,char**argv){
  QGuiApplication app(argc,argv);app.setApplicationName("Mission Control Preview");app.setDesktopFileName("omanova-mission-control-preview");QQuickStyle::setStyle("Basic");
  const bool wallpaper=app.arguments().contains("--wallpaper");
@@ -27,6 +28,7 @@ int main(int argc,char**argv){
   mission->startLive(QFileInfo(data+"/runtime").canonicalFilePath(),QCoreApplication::applicationDirPath()+"/../live_bridge.py",data);
  }
 
+ StartupOptions startup;
  QQmlApplicationEngine controller;
  if(wallpaper){
   window->setFlags(Qt::FramelessWindowHint|Qt::WindowTransparentForInput|Qt::WindowDoesNotAcceptFocus);
@@ -34,10 +36,26 @@ int main(int argc,char**argv){
   layer->setScope("omanova-mission-control-trial");layer->setLayer(LayerShellQt::Window::LayerBottom);
   layer->setAnchors(LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop)|LayerShellQt::Window::AnchorBottom|LayerShellQt::Window::AnchorLeft|LayerShellQt::Window::AnchorRight);
   layer->setExclusiveZone(-1);layer->setKeyboardInteractivity(LayerShellQt::Window::KeyboardInteractivityNone);layer->setActivateOnShow(false);layer->setScreen(QGuiApplication::primaryScreen());layer->setCloseOnDismissed(true);layer->setDesiredSize(QSize(0,0));
-  controller.rootContext()->setContextProperty("wallpaperScene",mission);controller.load(QUrl("qrc:/WallpaperControl.qml"));
+  controller.rootContext()->setContextProperty("wallpaperScene",mission);controller.rootContext()->setContextProperty("startupOptions",&startup);controller.load(QUrl("qrc:/WallpaperControl.qml"));
   if(controller.rootObjects().isEmpty())return 14;
   QObject::connect(&controller,&QQmlEngine::quit,&app,&QCoreApplication::quit);
   window->show();
+  if(args.contains("--startup-self-test")){
+   const auto config=qEnvironmentVariable("XDG_CONFIG_HOME");
+   if(!config.startsWith("/tmp/omanova-startup-")){qCritical("Startup GUI test requires isolated temporary config");return 17;}
+   auto step=new int(0);auto attempts=new int(0);auto check=new QTimer(&app);check->setInterval(100);
+   auto click=[&controller](const char*name){auto button=controller.rootObjects().first()->findChild<QObject*>(name);return button&&QMetaObject::invokeMethod(button,"clicked");};
+   QObject::connect(&startup,&StartupOptions::disabledForRestore,&app,[&startup]{if(startup.enabled())QCoreApplication::exit(18);QFile f(QCoreApplication::applicationDirPath()+"/../evidence/startup-native-check.json");if(f.open(QIODevice::WriteOnly))f.write("{\"nativeToggleOnOff\":true,\"disableAndRestore\":true,\"isolatedConfig\":true}\n");});
+   QObject::connect(check,&QTimer::timeout,&app,[=,&startup,&controller]{
+    if(++*attempts>300){qCritical("Isolated startup GUI test timed out");QCoreApplication::exit(19);return;}
+    if(startup.busy())return;
+    if(!startup.available()){qCritical("Isolated startup GUI control unavailable");QCoreApplication::exit(20);return;}
+    if(*step==0){if(startup.enabled()||!click("loginStartupButton")){QCoreApplication::exit(21);return;}*step=1;}
+    else if(*step==1){if(!startup.enabled()||!click("loginStartupButton")){QCoreApplication::exit(22);return;}*step=2;}
+    else if(*step==2){if(startup.enabled()){QCoreApplication::exit(23);return;}auto w=qobject_cast<QQuickWindow*>(controller.rootObjects().first());w->grabWindow().save(QCoreApplication::applicationDirPath()+"/../evidence/startup-controls.png");if(!click("loginStartupButton")){QCoreApplication::exit(24);return;}*step=3;}
+    else if(*step==3){if(!startup.enabled()||!click("normalDesktopButton")){QCoreApplication::exit(25);return;}*step=4;}
+   });check->start();
+  }
   if(args.contains("--wallpaper-self-test")){
    QTimer::singleShot(2800,[=]{
     QJsonObject proof{{"mouseTransparent",bool(window->flags()&Qt::WindowTransparentForInput)},{"keyboardNone",layer->keyboardInteractivity()==LayerShellQt::Window::KeyboardInteractivityNone},{"bottomLayer",layer->layer()==LayerShellQt::Window::LayerBottom},{"noReservedSpace",layer->exclusionZone()==-1},{"width",window->width()},{"height",window->height()},{"live",mission->live()},{"fresh",mission->feedFresh()}};
