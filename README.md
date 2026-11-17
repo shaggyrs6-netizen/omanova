@@ -2,13 +2,13 @@
 
 ![OMANOVA: your local Observatory for Omarchy. Sky charts, ISS and Tiangong passes, launches, trip planning and terrain, polar alignment, transit candidates, equipment, offline guides and observing-log CSV export.](preview.png)
 
-*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.4.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.5.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.4:** star charts, live calculated station positions, polar alignment and unconfirmed Sun/Moon transit candidates. Also includes grouped navigation, a night overview, clearer runtime status, “I saw it” drafts and private CSV export. All earlier features and guided setup remain. Read the [full release notes](docs/RELEASE-0.1.4.md), [changelog](CHANGELOG.md) and [new screenshots](docs/SCREENSHOTS-0.1.4.md).
+> **Version 0.1.5:** manual in-app release updates and a live satellite layer on the Star Chart, with trails, visibility filters and tap-to-inspect details. Includes all earlier Observatory features and guided setup. Read the [release notes](docs/RELEASE-0.1.5.md), [changelog](CHANGELOG.md) and [new screenshots](docs/SCREENSHOTS-0.1.5.md).
 
 > **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
 
@@ -78,7 +78,8 @@ remain on hold; GitHub releases are separate.
 | Overview, Sky View and Conditions | ISS and Tiangong countdown, pass compass and scrubber, viewing direction and elevation, forecast and source age. |
 | Events | Local station opportunities, all predicted passes, and a separate launch schedule with timing precision and webcast links when supplied. |
 | Orbit / Live Orbit | Retained pass tracks and scrubbing plus current calculated ISS/Tiangong footprints, horizon/sunlight state, range and element ages. |
-| Star Chart | 920 bright catalogue stars, selected constellation lines and above-horizon Sun/Moon/five planets; choose time and active/Trip location, saved horizons, tap for bearings. |
+| Star Chart | 920 bright stars and Sun/Moon/five planets; time/location/horizon controls, plus an opt-in current-time satellite layer with trails, filtering and details. |
+| In-app updates | Explicit stable-release checks, notes, verified download/install, saved-data/local-edit protection and previous-install recovery. |
 | Polar Alignment | True pole direction/altitude and Polaris or southern reference offset in an upright sky diagram; EQ mount/star-tracker orientation, not an optical reticle or automatic alignment. |
 | Station Transits | Fresh-element, exact-site Sun/Moon alignments over up to 24 h; separate close approaches and unconfirmed point-station disc crossings, timing and solar safety. No reliable ground corridor or sighting guarantee. |
 | Moon | Phase graphic, illumination, rise and set, named next full Moon, supermoon or micromoon class and local darker-sky windows. |
@@ -102,6 +103,8 @@ remain on hold; GitHub releases are separate.
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
 ## Screenshots
+
+[0.1.5 gallery: updater and live sky satellites](docs/SCREENSHOTS-0.1.5.md). The older galleries below retain all earlier features.
 
 [Browse the 0.1.4 gallery](docs/SCREENSHOTS-0.1.4.md) for all four final views, usability and log export. The [0.1.3 feature gallery](docs/SCREENSHOTS-0.1.3.md) covers the earlier
 observing tools, display modes and terrain. The [0.1.2 gallery](docs/SCREENSHOTS.md) retains 21 actual app captures,
@@ -159,7 +162,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.4 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.5 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```
@@ -1175,11 +1178,11 @@ installed/running versions and revisions. Upgrade with `./install`, then
 reload the shell/reopen the window as described above. New installs retain
 default-off optional autostart; upgrades preserve the existing choice.
 
-## Local development additions — not released
+## In-app updates and live satellite layer (0.1.5)
 
-The local development branch adds **Settings → OMANOVA updates** and a
-**Live satellites** layer inside Star Chart. These are queued for the next
-release; the published 0.1.4 package is unchanged. Marketplace remains on hold.
+Version 0.1.5 adds **Settings → OMANOVA updates** and a **Live satellites**
+layer inside Star Chart. Existing 0.1.4 assets are retained. Marketplace remains
+on hold. [Feature screenshot gallery](docs/SCREENSHOTS-0.1.5.md).
 
 **Updates:** checks are manual, use the official repository's latest stable
 GitHub release and are cached for five minutes. No startup/background update

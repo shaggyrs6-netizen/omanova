@@ -47,6 +47,7 @@ Rectangle {
   onExited:function(code){try{root.result=JSON.parse(output.text)}catch(e){root.result={status:"error",message:"Update check unavailable. Your installation has not been replaced."}}}
  }
  IpcHandler {target:"omanova-updates";function summary():string{return JSON.stringify({status:root.result?.status,busy:root.busy,canInstall:root.result?.canInstall,blocked:root.draftBlocked,accepted:root.accepted})}
+  function sampleAcknowledge():bool{if(!root.sky.fixture)return false;root.accepted=true;return true}
   function sampleCheck():bool{if(!root.sky.fixture)return false;root.run("check");return true}
   function sampleInstall():bool{if(!root.sky.fixture)return false;root.accepted=true;root.run("launch");return true}
  }

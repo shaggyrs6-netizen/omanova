@@ -1,12 +1,15 @@
 # Changelog
 
-## Unreleased — local update controls and sky satellite layer
+## 0.1.5 — 17 November 2026
 
 - Add explicit stable-GitHub release checking and download/install controls, expandable notes, checksums/tag validation, managed-file guards and draft protection. No automatic network checks or upgrades.
 - Stage runtime/widget separately, retain old copies, preserve saved data/bar identity/autostart, restart only an active worker and verify snapshot identity. Refuse foreground workers/custom units; roll back failures and offer interrupted/successful-update recovery.
 - Add an opt-in live satellite layer to Star Chart, using current time, cached ISS/Tiangong/selected-watchlist elements, true sky coordinates, short trails and inspectable range/age. No extra downloads.
 - Add potentially-visible/all-above-horizon filters, saved horizon masking, stale/future withholding, explicit empty states and refresh-stable selection. Calculations stop when off/closed.
-- Keep these changes local and unreleased; public 0.1.4, marketplace listing, saved data and previous physical startup/sleep evidence remain separate.
+- Publish the update/satellite features with a new native screenshot gallery and source-only 0.1.5 package. Existing 0.1.4 assets, marketplace listing, saved data and previous physical startup/sleep evidence remain separate.
+- Prevent a failed update-process launch from leaving the UI stuck as running; account for the Observatory’s private Quickshell config when locating the real widget.
+
+Validation: 231 Python tests and 11 JavaScript checks; isolated update/failure/recovery tests and native/live acceptance. See the release notes for validation limits. Marketplace remains on hold.
 
 ## 0.1.4 — 15 November 2026
 

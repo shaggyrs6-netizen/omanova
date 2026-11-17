@@ -111,6 +111,7 @@ Item {
  }
  IpcHandler {target:"omanova-final-sky";function summary():string{return JSON.stringify({section:root.section,busy:job.running,ready:!!root.dataSet,error:root.result,stars:root.dataSet?.stars?.length,objects:root.dataSet?.objects?.length,stations:root.dataSet?.stations?.length,events:root.dataSet?.events?.length,expired:root.expired,satellitesOn:root.satellitesOn,layerCurrent:root.layerCurrent,satelliteCount:root.dataSet?.satellites?.objects?.length,markers:(root.dataSet?.satellites?.objects||[]).filter(s=>s.el>=0&&(!root.visibleOnly||s.potential)).length,selection:root.fixture?skyChart.selection:""})}
   function sampleScroll(y:int):bool {if(!root.fixture)return false;scroll.contentItem.contentY=Math.max(0,Math.min(y,scroll.contentHeight-scroll.height));return true}
+  function sampleFilter(potential:bool):bool {if(!root.fixture)return false;root.visibleOnly=potential;return true}
   function sampleTime(at:string):bool {if(!root.fixture)return false;root.fixtureTime=at;return true}
   function sampleMarker():bool {if(!root.fixture)return false;let s=(root.dataSet?.satellites?.objects||[]).find(s=>s.el>=0);if(!s)return false;skyChart.selectedSatellite=s.id;return true}
   function satelliteSample(on:bool):bool {if(!root.fixture)return false;root.satellitesOn=on;instant.text="";root.request();return true}

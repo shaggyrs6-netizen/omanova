@@ -1,6 +1,26 @@
 # OMANOVA — release validation and maintenance
 
-## Current release: 0.1.4 — final sky tools
+## Current release: 0.1.5 — manual updates and live sky satellites
+
+Lee authorised GitHub publication, new feature screenshots and full change
+documentation on 17 November. Marketplace remains on hold; #14863 stays
+withdrawn and the existing listing is not modified. No X post is sent by Codex.
+
+231 Python and 11 JavaScript checks cover the feature build. Native tests
+cover the updater, draft guard, satellite marker/trail/details, toggling,
+440×700 and red display. Installer failures and recovery use isolated synthetic
+fixtures; actual ordinary-use observing accuracy is not established by them.
+Revalidate the release archive and its isolated runtime before uploading.
+
+The new gallery uses public sample data and explicitly simulated update
+availability; it does not claim an unreleased future version exists. Keep
+private state and local project setup records out of Git/package contents.
+Existing comet coverage ends 2026-12-12T00:00Z; all source-age and uncertainty
+safeguards remain. No new OS/platform support or marketplace release is included.
+
+## Historical 0.1.4 validation record
+
+### Release: 0.1.4 — final sky tools
 
 The final four features, usability and local observation/CSV changes are
 included. See [complete release notes](docs/RELEASE-0.1.4.md),
