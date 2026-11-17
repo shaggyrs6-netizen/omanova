@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+cd -- "$(dirname -- "$0")/.."
+[[ -x build/omanova-mission-control-preview ]] || bin/build
+exec build/omanova-mission-control-preview --live "$@"

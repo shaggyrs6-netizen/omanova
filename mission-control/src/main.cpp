@@ -6,15 +6,60 @@
 #include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QFile>
+#include <QFileInfo>
 #include <QDebug>
+#include <QStandardPaths>
 #include <cstdlib>
 #include "mission.h"
 int main(int argc,char**argv){
  QGuiApplication app(argc,argv);app.setApplicationName("Mission Control Preview");app.setDesktopFileName("omanova-mission-control-preview");QQuickStyle::setStyle("Basic");
  qmlRegisterType<Mission>("MissionControl",1,0,"MissionScene");QQmlApplicationEngine engine;engine.load(QUrl("qrc:/Main.qml"));if(engine.rootObjects().isEmpty())return 1;
  auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());if(!window)return 2;
- auto args=app.arguments();int qa=args.indexOf("--qa");if(qa>=0){
+ auto args=app.arguments();auto mission=window->findChild<Mission*>("missionScene");
+ if(args.contains("--live")){
+  QString data=QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)+"/omasky";
+  mission->startLive(QFileInfo(data+"/runtime").canonicalFilePath(),QCoreApplication::applicationDirPath()+"/../live_bridge.py",data);
+ }
+ int feed=args.indexOf("--feed");if(feed>=0&&feed+1<args.size()){QFile f(args[feed+1]);if(!f.open(QIODevice::ReadOnly))return 4;mission->applyFrame(QJsonDocument::fromJson(f.read(2097153)).object());}
+
+
+ int checkLive=args.indexOf("--live-check");if(checkLive>=0){
+  if(!args.contains("--live")){return 6;}
+  QString dir=args.value(checkLive+1);if(dir.isEmpty())return 6;QDir().mkpath(dir);
+  auto watcher=new QTimer(&app);watcher->setInterval(200);auto count=new int(0);auto first=new QString;
+  QObject::connect(watcher,&QTimer::timeout,&app,[=]{
+   if(++*count>75){qCritical("Live acceptance: timed out waiting for fresh local frames");std::exit(7);}
+   if(!mission->feedFresh())return;
+   QString generated=mission->liveData()["generated"].toString();
+   if(first->isEmpty()){*first=generated;if(!window->grabWindow().save(dir+"/private-live.png"))std::exit(8);return;}
+   if(generated==*first)return;
+   mission->setPaused(true);if(mission->feedFresh())std::exit(9);mission->setPaused(false);if(!mission->feedFresh())std::exit(10);
+   QFile out(dir+"/checks.json");if(!out.open(QIODevice::WriteOnly))std::exit(11);
+   out.write(QJsonDocument(QJsonObject{{"realHelperLoaded",true},{"twoFreshFrames",true},{"nativeLiveWindow",true},{"pauseWithholds",true},{"resumeCurrentFrame",true},{"firstGenerated",*first},{"latestGenerated",generated}}).toJson());QCoreApplication::quit();
+  });watcher->start();return app.exec();
+ }
+ int liveQa=args.indexOf("--qa-live");if(liveQa>=0){
+  QString dir=liveQa+1<args.size()?args[liveQa+1]:"evidence/live-test";QDir().mkpath(dir);
+  auto require=[](bool ok,const char*msg){if(!ok){qCritical("Live QA failed: %s",msg);std::exit(5);}};
+  QJsonObject sat{{"id",25544},{"az",280.},{"el",35.},{"rangeKm",800.},{"ageHours",1.},{"epoch",QDateTime::currentDateTimeUtc().addSecs(-3600).toString(Qt::ISODateWithMs)},{"potential",true},{"lat",20.},{"lon",-70.},{"altitudeKm",420.},{"path",QJsonArray{QJsonObject{{"az",270.},{"el",20.}},QJsonObject{{"az",280.},{"el",35.}}}},{"groundTrack",QJsonArray{QJsonArray{-80.,10.},QJsonArray{-70.,20.},QJsonArray{-60.,30.}}}};
+  auto second=sat;second["id"]=48274;second["az"]=45.;second["lon"]=-100.;
+  QJsonObject frame{{"mode","live"},{"testFixture",true},{"generated",QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},{"observer",QJsonObject{{"lat",36.1627},{"lon",-86.7816}}},{"satellites",QJsonObject{{"objects",QJsonArray{sat,second}}}},{"moon",QJsonObject{{"fraction",.68},{"angle",112.}}},{"chart",QJsonObject{{"stars",QJsonArray{QJsonObject{{"id",1},{"az",90.},{"el",45.},{"mag",1.},{"clear",true}},QJsonObject{{"id",2},{"az",70.},{"el",60.},{"mag",2.},{"clear",true}}}},{"lines",QJsonArray{QJsonObject{{"a",1},{"b",2}}}}}},{"zone","America/Chicago"},{"localClock","18:24:00"},{"utcClock","00:24:00"},{"cards",QJsonObject{{"passes",QJsonObject{{"25544",QJsonObject{{"value","ISS · fixture pass"},{"detail","Look NW · visibility unconfirmed"}}},{"48274",QJsonObject{{"value","Tiangong · fixture pass"},{"detail","Look NW · visibility unconfirmed"}}}}},{"weather",QJsonObject{{"value","Cloud 91%"},{"detail","Fixture forecast · visibility uncertain"}}},{"launch",QJsonObject{{"value","Fixture launch"},{"detail","Visibility unconfirmed"}}}}}};
+  mission->applyFrame(frame);require(mission->feedFresh(),"fresh frame accepted");require(mission->detail().contains("bearing"),"real direction fields used");
+  auto bad=frame;bad["generated"]=QDateTime::currentDateTimeUtc().addSecs(-16).toString(Qt::ISODateWithMs);mission->applyFrame(bad);require(!mission->feedFresh(),"stale frame withheld");
+  bad["generated"]=QDateTime::currentDateTimeUtc().addSecs(30).toString(Qt::ISODateWithMs);mission->applyFrame(bad);require(!mission->feedFresh(),"future frame withheld");
+  mission->applyFrame(QJsonObject{{"error","Test missing data"}});require(!mission->feedFresh(),"error withholds live data");
+  bad=frame;auto old=sat;old["epoch"]=QDateTime::currentDateTimeUtc().addSecs(-49*3600).toString(Qt::ISODateWithMs);bad["satellites"]=QJsonObject{{"objects",QJsonArray{old}}};mission->applyFrame(bad);require(mission->detail().contains("No usable"),"old epoch withheld");
+  old["epoch"]=QDateTime::currentDateTimeUtc().addSecs(7*3600).toString(Qt::ISODateWithMs);bad["satellites"]=QJsonObject{{"objects",QJsonArray{old}}};mission->applyFrame(bad);require(mission->detail().contains("No usable"),"future epoch withheld");
+  mission->applyFrame(frame);mission->setPaused(true);require(!mission->feedFresh(),"paused markers withheld");mission->setPaused(false);require(mission->feedFresh(),"resume current data");
+  bad=frame;sat["el"]=-10.;bad["satellites"]=QJsonObject{{"objects",QJsonArray{sat}}};mission->applyFrame(bad);require(mission->detail().contains("Below"),"below-horizon detail explicit");mission->applyFrame(frame);
+  QTimer::singleShot(800,[=]{require(window->grabWindow().save(dir+"/wide.png"),"wide capture");mission->setSelection(1);mission->setView(2);});
+  QTimer::singleShot(1500,[=]{require(window->grabWindow().save(dir+"/orbit.png"),"orbit capture");window->resize(780,850);mission->setView(0);});
+  QTimer::singleShot(2300,[=]{require(window->grabWindow().save(dir+"/narrow.png"),"narrow capture");QFile out(dir+"/checks.json");require(out.open(QIODevice::WriteOnly),"report");out.write(QJsonDocument(QJsonObject{{"freshFrame",true},{"staleFutureFramesWithheld",true},{"staleFutureElementsWithheld",true},{"pauseWithholdsPositions",true},{"belowHorizonExplicit",true},{"noSampleFallback",true}}).toJson());QCoreApplication::quit();});
+  return app.exec();
+ }
+ int qa=args.indexOf("--qa");if(qa>=0){
   QString dir=qa+1<args.size()?args[qa+1]:"evidence";QDir().mkpath(dir);
   auto scene=window->findChild<Mission*>("missionScene");if(!scene)return 2;
   auto require=[](bool ok,const char*msg){if(!ok){qCritical("Preview QA failed: %s",msg);std::exit(3);}};

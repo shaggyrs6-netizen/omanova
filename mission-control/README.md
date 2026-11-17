@@ -6,6 +6,12 @@ A separate native Qt Quick / C++ window exploring the approved OMANOVA Mission
 Control concept. **Not a wallpaper installation or OMANOVA release.** Branch:
 `codex/mission-control-preview`. No uploads authorised.
 
+## Current live trial
+
+Run `bin/live` for the new read-only connection to installed OMANOVA. Run
+`bin/preview` for the original sample-only design. See the live-connection section
+below for freshness, privacy and design limits. No app/desktop installation.
+
 ## Try it
 
 From this directory run `bin/preview` (builds with qmake6/make if needed).
@@ -74,3 +80,57 @@ This is historical composited imagery, not live cloud imagery. UI applies an
 illustrative spherical projection, shading and atmospheric glow locally.
 Original preview code is covered by the repository's MIT licence; NASA material
 retains its own attribution and usage terms. No NASA logo is used.
+
+## Read-only live connection — local follow-up
+
+Branch `codex/mission-control-live` adds `bin/live` to open a separate window
+using the installed OMANOVA runtime and existing active location. `bin/preview`
+still opens the offline design demonstration. Nothing is installed into the
+OMANOVA release or wallpaper. The original sample screenshot above is retained.
+
+The native app runs `live_bridge.py` with the installed pinned Python interpreter
+every five seconds while open/unpaused, with a 12-second timeout and bounded
+local response. It never runs the worker, downloads, notifications or settings
+commands. Coordinates remain in local files/stdout pipes, never process argv.
+`-B` and PYTHONDONTWRITEBYTECODE prevent writes to installed Python source.
+
+Live mode uses the existing HYG apparent-star calculation, current Sun/Moon/
+planet directions, manual/terrain horizon, local SGP4 sky directions and genuine
+station subpoints/ground tracks (±45 minutes). Sky looks up: **east left**.
+Only above-horizon stations have sky markers. The globe hides stations/tracks
+on the far hemisphere and marks the observing location. Ground tracks are
+projections on Earth, not a claimed perspective-accurate 3D orbit. Decorative
+Earth rotation/light and historical NASA cloud imagery are labelled; they are
+not a live cloud map or a physically computed solar terminator.
+
+Stars/positions come from local calculations, not telemetry. Frames older than
+15 seconds or future-dated are withheld. Missing/error data never falls back to
+samples. Element ages must remain between −6 and +48 hours; position failures
+are withheld. Pausing withholds live markers, rather than presenting frozen
+positions as current. Below-horizon / missing-element states remain explicit.
+
+Cards read the next geometric station pass from a matching active-place snapshot
+no more than three minutes old, compute current Moon illumination, and read
+existing opted-in weather/launch caches no more than six hours old. Forecast
+location keys must match. Future timestamps, demo snapshots and disabled feeds
+are withheld. Passes and launches keep visibility unconfirmed. No GO is inferred
+from the map. Saved locations, equipment, logs, bar, installer and worker service
+are not modified. Local/UTC timestamps and the location time zone are shown.
+
+Star catalogue credit: HYG v4.0, David Nash / Astronexus, CC BY-SA 4.0; see
+[the existing attribution](../observatory/final_sky/HYG-LICENSE.md). This preview
+reads the installed catalogue; it does not distribute a separate star dataset.
+
+Checks: seven Python bridge tests, including socket-blocked read-only geometry
+in an isolated data directory; original sample-motion checks; native live-path
+fixtures for stale/future frames and elements, missing data, paused withholding
+and below-horizon details. Actual live native acceptance observed two fresh
+frames five seconds apart through the production helper. Personal calculation
+output/screenshots stay under ignored `evidence/`, not public assets.
+
+**Design direction:** Lee wants the approved concept's richer Mission Control
+look to guide a future OMANOVA app redesign as well. The concept is a visual
+target, not the final executable interface or a promise of identical output.
+This task connects the preview to live data; it does not authorise replacing the
+main app, installing a desktop theme/background or publishing a new release.
+The original sample-only statements above describe the original `bin/preview`.
