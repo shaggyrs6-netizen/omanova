@@ -36,7 +36,7 @@ QPointF Mission::satellite(int i,double t,const QRectF&r)const{
 }
 void Mission::drawSky(QPainter*p,QRectF area){
  if(m_live){drawLiveSky(p,area);return;}
- const double r=qMax(25.,qMin(area.width()*.5-44,area.height()*.5-44));QRectF disc(area.center().x()-r,area.center().y()-r,2*r,2*r);skyRect=disc;
+ const double r=qMax(25.,qMin(area.width()*.5-38,area.height()*.5-38));QRectF disc(area.center().x()-r,area.center().y()-r,2*r,2*r);skyRect=disc;
  QRadialGradient bg(disc.center(),r);bg.setColorAt(0,QColor("#0c2437"));bg.setColorAt(1,QColor("#030d1c"));p->setBrush(bg);p->setPen(QPen(QColor("#235368"),1));p->drawEllipse(disc);
  for(int i=1;i<=4;i++){double rr=r*i/4.;p->setBrush(Qt::NoBrush);p->setPen(QPen(QColor(i==4?"#4996a5":"#193d51"),i==4?1.1:.65));p->drawEllipse(disc.center(),rr,rr);}
  for(int a=0;a<360;a+=5){double rad=qDegreesToRadians(double(a));QPointF d(sin(rad),-cos(rad));p->setPen(QPen(QColor(a%30==0?"#7ed4dd":"#2c5d71"),1));p->drawLine(disc.center()+d*(r+3),disc.center()+d*(r+(a%30==0?12:7)));}
@@ -64,7 +64,7 @@ void Mission::bakeGlobe(){
 }
 void Mission::drawEarth(QPainter*p,QRectF area){
  if(m_live){drawLiveEarth(p,area);return;}
- double r=qMin(area.width(),area.height())*.43;QPointF center=area.center();earthRect=QRectF(center-QPointF(r,r),QSizeF(r*2,r*2));
+ double r=qMin(area.width(),area.height())*.445;QPointF center=area.center();earthRect=QRectF(center-QPointF(r,r),QSizeF(r*2,r*2));
  QRadialGradient halo(center,r*1.12);halo.setColorAt(0,QColor(20,80,165,0));halo.setColorAt(.86,QColor(25,90,180,0));halo.setColorAt(.90,QColor(48,162,248,95));halo.setColorAt(1,Qt::transparent);p->setPen(Qt::NoPen);p->setBrush(halo);p->drawEllipse(center,r*1.12,r*1.12);
  // Keep the animated texture at five frames per second; markers use 20 fps.
  if(globe.isNull()||fabs(m_elapsed-m_textureTime)>.2){bakeGlobe();}
@@ -77,11 +77,14 @@ void Mission::drawEarth(QPainter*p,QRectF area){
 }
 void Mission::paint(QPainter*p){p->setRenderHint(QPainter::Antialiasing);hits.fill(QPointF(-10000,-10000),4);
  QLinearGradient bg(0,0,width(),height());bg.setColorAt(0,QColor("#040d1c"));bg.setColorAt(.5,QColor("#061729"));bg.setColorAt(1,QColor("#020812"));p->fillRect(boundingRect(),bg);
+ QRadialGradient nebula(QPointF(width()*.65,height()*.32),width()*.65);nebula.setColorAt(0,QColor(18,61,102,58));nebula.setColorAt(.45,QColor(10,39,76,20));nebula.setColorAt(1,Qt::transparent);p->fillRect(boundingRect(),nebula);
  for(int i=0;i<stars.size();i++){p->setPen(QColor(137,188,216,i%5==0?115:45));p->drawPoint(QPointF(stars[i].x()*width(),stars[i].y()*height()));}
  bool both=m_view==0;QRectF left=both?QRectF(0,0,width()*.5,height()):boundingRect(),right=both?QRectF(width()*.5,0,width()*.5,height()):boundingRect();
  if(m_view!=2){drawSky(p,left);}
  if(m_view!=1){drawEarth(p,right);}
- if(both){p->setPen(QPen(QColor("#1d5264"),1));p->drawLine(QPointF(width()*.5,40),QPointF(width()*.5,height()-30));}
+ if(both){p->setPen(QPen(QColor("#1d5264"),1));
+ p->setBrush(Qt::NoBrush);QPainterPath seam;seam.moveTo(width()*.5-24,10);seam.lineTo(width()*.5,34);seam.lineTo(width()*.5,height()-48);seam.lineTo(width()*.5+24,height()-24);p->drawPath(seam);
+ int i=m_selection;if(hits[i].x()>0&&hits[2+i].x()>0){p->setPen(QPen(QColor(93,231,239,95),.8));QPainterPath link;link.moveTo(hits[i]);link.lineTo(width()*.5-36,hits[i].y());link.lineTo(width()*.5+12,hits[2+i].y());link.lineTo(hits[2+i]);p->drawPath(link);}}
 }
 void Mission::mousePressEvent(QMouseEvent*e){for(int i=0;i<hits.size();i++){if((i<2&&m_view==2)||(i>=2&&m_view==1))continue;if(QLineF(e->position(),hits[i]).length()<30){setSelection(i%2);e->accept();return;}}e->ignore();}
 
@@ -130,7 +133,7 @@ QPointF Mission::globePoint(double lon,double lat,const QPointF&center,double r,
  return center+QPointF(x*r*scale,-y*r*scale);
 }
 void Mission::drawLiveSky(QPainter*p,QRectF area){
- double r=qMax(25.,qMin(area.width()*.5-44,area.height()*.5-44));QRectF disc(area.center()-QPointF(r,r),QSizeF(r*2,r*2));
+ double r=qMax(25.,qMin(area.width()*.5-38,area.height()*.5-38));QRectF disc(area.center()-QPointF(r,r),QSizeF(r*2,r*2));
  p->setBrush(QColor("#07182a"));p->setPen(QPen(QColor("#426f83"),1));p->drawEllipse(disc);
  for(int i=1;i<=4;i++){p->setBrush(Qt::NoBrush);p->setPen(QPen(QColor("#245066"),.7));p->drawEllipse(disc.center(),r*i/4.,r*i/4.);}
  for(int a=0;a<360;a+=5){double rad=qDegreesToRadians(double(a));QPointF d(sin(rad),-cos(rad));p->setPen(QPen(QColor("#4c8496"),.8));p->drawLine(disc.center()+d*(r+2),disc.center()+d*(r+(a%30?6:12)));}
@@ -139,7 +142,7 @@ void Mission::drawLiveSky(QPainter*p,QRectF area){
  auto chart=frame["chart"].toObject();QMap<int,QPointF> points;
  for(auto v:chart["stars"].toArray()){auto s=v.toObject();QPointF pt=skyPoint(s["az"].toDouble(),s["el"].toDouble(),disc);points.insert(s["id"].toInt(),pt);}
  p->setPen(QPen(QColor(95,169,197,100),.8));for(auto v:chart["lines"].toArray()){auto line=v.toObject();int a=line["a"].toInt(),b=line["b"].toInt();if(points.contains(a)&&points.contains(b))p->drawLine(points[a],points[b]);}
- for(auto v:chart["stars"].toArray()){auto s=v.toObject();double sz=qBound(.65,2.3-s["mag"].toDouble()*.3,2.4);p->setBrush(s["clear"].toBool()?QColor("#d4e9fa"):QColor("#42596c"));p->setPen(Qt::NoPen);p->drawEllipse(points[s["id"].toInt()],sz,sz);}
+ for(auto v:chart["stars"].toArray()){auto s=v.toObject();double sz=qBound(.5,2.0-s["mag"].toDouble()*.30,2.1);p->setBrush(s["clear"].toBool()?QColor("#d4e9fa"):QColor("#42596c"));p->setPen(Qt::NoPen);p->drawEllipse(points[s["id"].toInt()],sz,sz);}
  auto h=chart["horizon"].toArray();if(h.size()==360){QPainterPath mask;for(int a=0;a<360;a++){auto pt=skyPoint(a,h[a].toDouble(),disc);if(!a)mask.moveTo(pt);else mask.lineTo(pt);}mask.closeSubpath();p->setBrush(Qt::NoBrush);p->setPen(QPen(QColor(245,185,100,120),1,Qt::DotLine));p->drawPath(mask);}
  QVector<QRectF> occupied;
  for(auto v:chart["objects"].toArray()){
@@ -159,7 +162,7 @@ void Mission::drawLiveSky(QPainter*p,QRectF area){
  if(!above)label(p,QPointF(area.left()+16,area.bottom()-5),chart["sunAltitude"].toDouble()>0?"Daylight · no station above your horizon":"No current station above your horizon",11,muted);
 }
 void Mission::drawLiveEarth(QPainter*p,QRectF area){
- double r=qMin(area.width(),area.height())*.43;QPointF center=area.center();QRectF disc(center-QPointF(r,r),QSizeF(r*2,r*2));
+ double r=qMin(area.width(),area.height())*.445;QPointF center=area.center();QRectF disc(center-QPointF(r,r),QSizeF(r*2,r*2));
  QRadialGradient halo(center,r*1.12);halo.setColorAt(.86,Qt::transparent);halo.setColorAt(.90,QColor(48,162,248,90));halo.setColorAt(1,Qt::transparent);p->setPen(Qt::NoPen);p->setBrush(halo);p->drawEllipse(center,r*1.12,r*1.12);
  if(globe.isNull()||fabs(m_elapsed-m_textureTime)>.2){bakeGlobe();}
  p->drawImage(disc,globe);

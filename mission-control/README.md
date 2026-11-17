@@ -1,6 +1,6 @@
 # Mission Control — local animated design preview
 
-![Native Mission Control sample preview](assets/preview.png)
+![Polished Mission Control sample preview](assets/preview-polished.png)
 
 A separate native Qt Quick / C++ window exploring the approved OMANOVA Mission
 Control concept. **Not a wallpaper installation or OMANOVA release.** Branch:
@@ -134,3 +134,32 @@ target, not the final executable interface or a promise of identical output.
 This task connects the preview to live data; it does not authorise replacing the
 main app, installing a desktop theme/background or publishing a new release.
 The original sample-only statements above describe the original `bin/preview`.
+
+## Mission Control visual polish — 17 November 2026
+
+Local branch `codex/mission-control-polish` keeps the live read-only window and
+brings the approved concept into the actual interface: angled instrument frames,
+restrained cyan edge accents, orbital wordmark, linked selected-object display,
+larger map area, custom satellite/launch/weather icons and matching controls.
+The connection line only appears when the selected marker is actually drawn
+in both maps; it denotes selection, not a communications link. Sky markers,
+subpoints, horizon projection and freshness rules retain their existing meaning.
+
+Compact layouts keep readable card values and uncertainty text. Hover a card
+for its full value/details when text is elided. The pass card remains explicitly
+geometric; no visibility claim is created by the brighter styling. Reduced
+motion and keyboard controls are unchanged. Decorative Earth imagery/light
+still remains labelled, and no new downloaded assets or animation loops were
+added. Original `assets/preview.png` is retained as a historical comparison.
+
+Final sample-control regression, native live-path fixtures and smaller-window
+visual checks passed. Actual read-only native check received two fresh frames
+five seconds apart and verified pause/resume withholding. Eleven protected
+saved/config files matched after opening the new window; the existing worker
+PID and active/enabled preference were identical. Installed 0.1.5 managed source
+preflight passed. The live bridge and its geometry tests are unchanged.
+
+The polished live window is left open for feedback. This is still a separate
+preview, not a main-app redesign or wallpaper installation. No uploads, release
+or marketplace changes. Private live evidence remains ignored under `evidence/`;
+the reference image above is explicitly offline sample data.
