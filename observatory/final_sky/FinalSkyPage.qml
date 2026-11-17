@@ -14,6 +14,10 @@ Item {
  property string result: ""
  property double clock: Date.now()
  property int stationIndex: 0
+ property bool satellitesOn:false
+ property string fixtureTime:""
+ property bool visibleOnly:true
+ readonly property bool layerCurrent:!!dataSet && (fixture || (clock>=Date.parse(dataSet.generated) && clock-Date.parse(dataSet.generated)<=15000))
  readonly property bool fixture: skyModel.fixture
  readonly property string runtime: skyModel.runtime
  readonly property var station: dataSet?.stations?.[stationIndex] || null
@@ -21,14 +25,14 @@ Item {
  readonly property string title: ({chart:"Star Chart",live:"Live Orbit",polar:"Polar Alignment",transits:"Station Transits"})[section]
  function request() {
   if(job.running)return
-  pending=JSON.stringify({kind:section,source:source,time:instant.text})+"\n"
-  if(section!=="live")dataSet=null
+  pending=JSON.stringify({kind:section,source:source,time:instant.text,satellites:section==="chart"&&satellitesOn,fixtureNow:fixture?fixtureTime:""})+"\n"
+  if(section!=="live" && !(section==="chart"&&satellitesOn))dataSet=null
   result="Calculating locally…";job.stdinEnabled=true;job.running=true
  }
  Component.onCompleted: if(section!=="transits")request()
- onSectionChanged: {dataSet=null;instant.text="";if(section!=="transits")request()}
+ onSectionChanged: {satellitesOn=false;dataSet=null;instant.text="";if(section!=="transits")request()}
  Timer {interval:1000;running:true;repeat:true;onTriggered:root.clock=Date.now()}
- Timer {interval:10000;running:root.section==="live";repeat:true;onTriggered:root.request()}
+ Timer {interval:root.section==="chart"?5000:10000;running:root.section==="live"||(root.section==="chart"&&root.satellitesOn);repeat:true;onTriggered:root.request()}
  Process {
   id:job
   command:[root.runtime+"/.venv/bin/python",root.runtime+"/observatory/final_sky/geometry.py","--state",root.skyModel.directory].concat(root.fixture?["--fixture"]:[])
@@ -37,7 +41,7 @@ Item {
   stdout:StdioCollector {id:output}
   stderr:StdioCollector {id:errors}
   onExited:function(code) {
-   if(code===0) {try{let d=JSON.parse(output.text);if(d.kind===root.section&&d.source===root.source){root.clock=Date.now();root.dataSet=d;root.result="Local calculation · no downloads"}else if(root.section!=="transits")Qt.callLater(root.request)}catch(e){root.dataSet=null;root.result="Could not read sky calculation."}}
+   if(code===0) {try{let d=JSON.parse(output.text);if(d.kind===root.section&&d.source===root.source){root.clock=Date.now();root.dataSet=d;if(root.section==="chart"&&root.satellitesOn&&!d.satellites){Qt.callLater(root.request)}root.result="Local calculation · no downloads"}else if(root.section!=="transits")Qt.callLater(root.request)}catch(e){root.dataSet=null;root.result="Could not read sky calculation."}}
    else {root.dataSet=null;root.result=errors.text.trim()||"Calculation unavailable. Existing saved data retained."}
   }
  }
@@ -55,14 +59,21 @@ Item {
      }
     }
     Flow {Layout.fillWidth:true;spacing:10
-     TripField {id:instant;visible:root.section==="chart"||root.section==="polar";width:250;maximumLength:32;placeholderText:"UTC: 2026-11-15T02:00Z";Accessible.name:"Chart or pole time, ISO date with timezone";enabled:!job.running}
+     TripField {id:instant;visible:root.section==="chart"||root.section==="polar";width:250;maximumLength:32;placeholderText:"UTC: 2026-11-15T02:00Z";Accessible.name:"Chart or pole time, ISO date with timezone";enabled:!job.running&&!root.satellitesOn}
      Action {text:root.section==="transits"?"Search next 24 hours locally":"Refresh locally";onClicked:root.request()}
      Action {visible:root.section==="chart"||root.section==="polar";text:"Use current time";onClicked:{instant.text="";root.request()}}
     }
     Copy {text:root.result;color:App.Palette.muted}
     Copy {visible:!!root.dataSet;text:(root.fixture?"DEMONSTRATION · ":"")+(root.dataSet?.place||"")+" · "+(root.dataSet?.localTime||"")+" · "+(root.dataSet?.zone||"")+"\nUTC "+(root.dataSet?.time||"");color:App.Palette.accent}
     Copy {visible:root.expired;text:"Old calculation / clock changed · refresh before using. Positions and candidates below are inspect-only.";color:App.Palette.warning;font.bold:true}
-    SkyChart {Layout.fillWidth:true;Layout.preferredHeight:Math.min(520,width);visible:root.section==="chart"&&!!root.dataSet;dataSet:root.dataSet}
+    Flow {visible:root.section==="chart";Layout.fillWidth:true;spacing:8
+     Action {text:root.satellitesOn?"Live satellites · On":"Live satellites · Off";onClicked:{root.satellitesOn=!root.satellitesOn;instant.text="";root.request()}}
+     Action {visible:root.satellitesOn;text:root.visibleOnly?"Potentially visible only":"All above horizon";onClicked:root.visibleOnly=!root.visibleOnly}
+    }
+    Copy {visible:root.section==="chart"&&root.satellitesOn;text:"LIVE SKY · current time, refreshed every 5 seconds from cached elements. Toggle off to choose another chart time. Tap a satellite for details.";color:App.Palette.accent}
+    Copy {visible:root.section==="chart"&&root.satellitesOn&&root.layerCurrent;text:(root.dataSet?.satellites?.objects||[]).filter(s=>s.el>=0&&(!root.visibleOnly||s.potential)).length+" markers match · "+(root.dataSet?.satellites?.objects?.length||0)+" valid cached objects. Zero markers can mean none are above your horizon or match the filter.";color:App.Palette.muted}
+    Copy {visible:root.section==="chart"&&root.satellitesOn&&!root.layerCurrent;text:"Satellite positions unavailable or old; markers withheld.";color:App.Palette.warning}
+    SkyChart {id:skyChart;Layout.fillWidth:true;Layout.preferredHeight:Math.min(520,width);visible:root.section==="chart"&&!!root.dataSet;dataSet:root.dataSet;formatDistance:root.skyModel.formatDistance;satellites:root.satellitesOn&&root.layerCurrent?(root.dataSet?.satellites?.objects||[]).filter(s=>s.el>=0&&(!root.visibleOnly||s.potential)):[]}
     Copy {visible:root.section==="chart"&&!!root.dataSet;text:"920 bright catalogue stars + Sun, Moon and five planets (above the geometric horizon only). Dotted/dim stars are behind your saved horizon. Some constellation guide lines only. "+((root.dataSet?.sunAltitude??-90)>-6?"DAYLIGHT / BRIGHT TWILIGHT: chart objects may be invisible.":"Weather, glare and equipment still affect visibility.");color:App.Palette.muted}
     ColumnLayout {visible:root.section==="polar"&&!!root.dataSet;Layout.fillWidth:true;spacing:10
      Copy {text:"Aim true "+(root.dataSet?.north?"north":"south")+" · "+(root.dataSet?.bearing??0)+"° bearing · pole "+Number(root.dataSet?.poleAltitude??0).toFixed(1)+"° above level horizon";font.pixelSize:19;font.bold:true}
@@ -93,11 +104,16 @@ Item {
      }
     }
     Copy {visible:!!root.dataSet;text:root.dataSet?.basis||"";color:App.Palette.muted}
+    Copy {visible:root.section==="chart"&&root.satellitesOn;text:(root.dataSet?.satellites?.basis||"")+"\n"+(root.dataSet?.satellites?.withheld||[]).map(s=>s.name+": "+s.reason).join("\n");color:App.Palette.muted}
     Copy {visible:root.section==="chart";text:"Star data: HYG v4.0, David Nash / Astronexus · adapted subset CC BY-SA 4.0. See bundled data attribution.";color:App.Palette.muted;font.pixelSize:12}
    }
   }
  }
- IpcHandler {target:"omanova-final-sky";function summary():string{return JSON.stringify({section:root.section,busy:job.running,ready:!!root.dataSet,error:root.result,stars:root.dataSet?.stars?.length,objects:root.dataSet?.objects?.length,stations:root.dataSet?.stations?.length,events:root.dataSet?.events?.length,expired:root.expired})}
+ IpcHandler {target:"omanova-final-sky";function summary():string{return JSON.stringify({section:root.section,busy:job.running,ready:!!root.dataSet,error:root.result,stars:root.dataSet?.stars?.length,objects:root.dataSet?.objects?.length,stations:root.dataSet?.stations?.length,events:root.dataSet?.events?.length,expired:root.expired,satellitesOn:root.satellitesOn,layerCurrent:root.layerCurrent,satelliteCount:root.dataSet?.satellites?.objects?.length,markers:(root.dataSet?.satellites?.objects||[]).filter(s=>s.el>=0&&(!root.visibleOnly||s.potential)).length,selection:root.fixture?skyChart.selection:""})}
+  function sampleScroll(y:int):bool {if(!root.fixture)return false;scroll.contentItem.contentY=Math.max(0,Math.min(y,scroll.contentHeight-scroll.height));return true}
+  function sampleTime(at:string):bool {if(!root.fixture)return false;root.fixtureTime=at;return true}
+  function sampleMarker():bool {if(!root.fixture)return false;let s=(root.dataSet?.satellites?.objects||[]).find(s=>s.el>=0);if(!s)return false;skyChart.selectedSatellite=s.id;return true}
+  function satelliteSample(on:bool):bool {if(!root.fixture)return false;root.satellitesOn=on;instant.text="";root.request();return true}
   function search():bool {if(!root.fixture)return false;root.request();return true}
   function capture():void {if(root.fixture)root.grabToImage(r=>r.saveToFile(root.skyModel.directory+"/final-"+root.section+".png"))}
  }

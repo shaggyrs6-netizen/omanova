@@ -491,6 +491,7 @@ ShellRoot {
                 id: settingsView
                 SettingsPage {
                     sky: shell.stateModel
+                    updateDraftBlocked:logLoader.item?.logPage?.dirty || false
                     onOpenCompact: shell.compactOpen = true
                 }
             }

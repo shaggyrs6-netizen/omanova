@@ -9,6 +9,7 @@ ColumnLayout {
     id: page
     required property var sky
     property bool compact: false
+    property bool updateDraftBlocked:false
     readonly property bool trial: Quickshell.env("OMASKY_SETTINGS_PREVIEW") === "1" && sky.fixture
     readonly property var preferences: sky.data?.settings ?? ({ profiles: [], online: false, weather: false })
     readonly property bool busy: sky.settingsWorker.running
@@ -109,6 +110,8 @@ ColumnLayout {
             onClicked: page.openCompact()
         }
     }
+
+    UpdateCard {sky:page.sky;draftBlocked:page.updateDraftBlocked;visible:!page.compact;Layout.fillWidth:true;Layout.leftMargin:page.gutter;Layout.rightMargin:page.gutter}
 
     App.RuntimeStatus {
         sky: page.sky

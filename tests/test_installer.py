@@ -29,11 +29,12 @@ class InstallerTests(unittest.TestCase):
                         XDG_CONFIG_HOME=str(self.home / '.config'),
                         XDG_DATA_HOME=str(self.home / '.local/share'),
                         PATH=f'{self.bin}:/usr/bin:/bin', QA=str(self.root),
+                        OMANOVA_TEST_PYTHON=str(SOURCE / '.venv/bin/python'),
                         GIT_CONFIG_GLOBAL='/dev/null', GIT_CONFIG_NOSYSTEM='1')
         self.env.pop('BASH_ENV', None)
         self.env.pop('GIT_CONFIG_COUNT', None)
         for f in ['install', 'manifest.json', 'BarWidget.qml', 'SkyState.qml',
-                  'SkyPanel.qml', 'Compass.qml', 'SettingsPage.qml', 'ObservingPreferences.qml']:
+                  'SkyPanel.qml', 'Compass.qml', 'SettingsPage.qml', 'ObservingPreferences.qml', 'update_manager.py']:
             shutil.copy2(SOURCE / f, self.project / f)
         shutil.copytree(SOURCE / 'systemd', self.project / 'systemd')
         self.script(self.project / 'setup-runtime', '''#!/bin/bash
@@ -41,6 +42,8 @@ set -eu
 mkdir -p "$XDG_DATA_HOME/omasky"
 ln -s "$PWD" "$XDG_DATA_HOME/omasky/runtime" 2>/dev/null || true
 printf '{"generated":"2000-01-01T00:00:00Z"}' >"$XDG_DATA_HOME/omasky/snapshot.json"
+mkdir -p .venv/bin
+[[ -e .venv/bin/python ]] || ln -s "$OMANOVA_TEST_PYTHON" .venv/bin/python
 touch "$QA/setup-called"
 ''')
         self.script(self.bin / 'systemctl', '''#!/usr/bin/python

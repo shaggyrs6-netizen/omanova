@@ -5,11 +5,17 @@ Rectangle {
  property var dataSet:null
  property string selection:""
  property var hits:[]
+ property var satellites:[]
+ property int selectedSatellite:0
+ onSelectedSatelliteChanged:canvas.requestPaint()
+ property var formatDistance:km=>Math.round(km)+" km"
+ onSatellitesChanged:canvas.requestPaint()
  color:App.Palette.field;radius:8;border.color:App.Palette.border
  Accessible.name:"Whole sky chart, north up and east left. Tap a star or planet for bearing and elevation."
- function xy(az,el) {let a=az*Math.PI/180,r=(Math.min(width,height)-80)/2*(90-el)/90;return Qt.point(width/2-r*Math.sin(a),height/2-r*Math.cos(a))}
- onDataSetChanged:{selection="";canvas.requestPaint()}
- Canvas {id:canvas;anchors.fill:parent;onWidthChanged:requestPaint();onHeightChanged:requestPaint()
+ function describe(s){return s.name+" · "+s.az.toFixed(1)+"° true bearing · "+s.el.toFixed(1)+"° up"+(s.clear?"":" · saved horizon blocked")+(s.satellite||s.id===selectedSatellite?" · "+root.formatDistance(s.rangeKm,0)+" slant range · elements "+s.ageHours.toFixed(1)+" h old · "+s.status:"")}
+ function xy(az,el) {let a=az*Math.PI/180,r=(Math.min(width,canvas.height)-80)/2*(90-el)/90;return Qt.point(width/2-r*Math.sin(a),canvas.height/2-r*Math.cos(a))}
+ onDataSetChanged:{if(!selectedSatellite)selection="";canvas.requestPaint()}
+ Canvas {id:canvas;anchors.fill:parent;anchors.bottomMargin:selectionText.visible?selectionText.implicitHeight+18:0;onWidthChanged:requestPaint();onHeightChanged:requestPaint()
   Connections {target:App.Palette;function onResolvedChanged(){canvas.requestPaint()}function onObservingModeChanged(){canvas.requestPaint()}}
   onPaint:{
    let c=getContext("2d");c.reset();let r=(Math.min(width,height)-80)/2,x=width/2,y=height/2;
@@ -25,9 +31,17 @@ Rectangle {
    for(let s of stars){let p=root.xy(s.az,s.el);c.beginPath();c.arc(p.x,p.y,Math.max(1,3.6-s.mag*.48),0,Math.PI*2);c.fillStyle=s.clear?App.Palette.ink:App.Palette.muted;c.globalAlpha=s.clear?1:.35;c.fill();c.globalAlpha=1;hits.push(Object.assign({},s,{x:p.x,y:p.y}));if(s.mag<1.4&&s.clear){c.fillStyle=App.Palette.muted;c.font="11px sans-serif";c.fillText(s.name,p.x,p.y-8)}}
    c.font="13px sans-serif";
    for(let s of root.dataSet.objects){let p=root.xy(s.az,s.el);c.beginPath();c.arc(p.x,p.y,5,0,Math.PI*2);c.fillStyle=s.name==="Sun"?App.Palette.warning:App.Palette.accent;c.fill();c.fillText(s.name,p.x,p.y-10);hits.push(Object.assign({},s,{x:p.x,y:p.y}))}
+   for(let s of root.satellites){
+    c.strokeStyle=App.Palette.accent;c.globalAlpha=s.potential?1:.45;c.lineWidth=1.5;c.beginPath();let first=true;
+    for(let q of s.path){let p=root.xy(q.az,q.el);if(first){c.moveTo(p.x,p.y);first=false}else c.lineTo(p.x,p.y)}c.stroke();
+    let p=root.xy(s.az,s.el);c.fillStyle=App.Palette.accent;c.beginPath();c.moveTo(p.x,p.y-6);c.lineTo(p.x+6,p.y);c.lineTo(p.x,p.y+6);c.lineTo(p.x-6,p.y);c.closePath();c.fill();c.globalAlpha=1;c.font="12px sans-serif";c.fillText(s.name,p.x,p.y-10);
+    hits.push(Object.assign({},s,{x:p.x,y:p.y,satellite:true}));
+   }
    root.hits=hits;
+   if(root.selectedSatellite){let s=root.satellites.find(o=>o.id===root.selectedSatellite);root.selection=s?root.describe(s):"Selected satellite is below the horizon, filtered or unavailable"}
+
   }
  }
- MouseArea {anchors.fill:parent;onClicked:function(mouse){let nearest=null,d=18;for(let s of root.hits){let v=Math.hypot(s.x-mouse.x,s.y-mouse.y);if(v<d){d=v;nearest=s}}root.selection=nearest?nearest.name+" · "+nearest.az.toFixed(1)+"° true bearing · "+nearest.el.toFixed(1)+"° up"+(nearest.clear?"":" · saved horizon blocked"):"Tap closer to a star or planet"}}
- Text {anchors.bottom:parent.bottom;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottomMargin:8;width:parent.width-20;horizontalAlignment:Text.AlignHCenter;wrapMode:Text.Wrap;text:root.selection;textFormat:Text.PlainText;color:App.Palette.ink;font.pixelSize:13}
+ MouseArea {anchors.fill:parent;onClicked:function(mouse){let nearest=null,d=18;for(let s of root.hits.slice().reverse()){let v=Math.hypot(s.x-mouse.x,s.y-mouse.y);if(v<d){d=v;nearest=s}}root.selectedSatellite=nearest?.satellite?nearest.id:0;root.selection=nearest?root.describe(nearest):"Tap closer to a star or planet"}}
+ Text {id:selectionText;visible:!!root.selection;anchors.bottom:parent.bottom;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottomMargin:8;width:parent.width-20;horizontalAlignment:Text.AlignHCenter;wrapMode:Text.Wrap;text:root.selection;textFormat:Text.PlainText;color:App.Palette.ink;font.pixelSize:13}
 }

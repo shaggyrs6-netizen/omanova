@@ -190,13 +190,19 @@ def build(request,state,fixture=False):
     kind=request.get('kind','chart')
     if kind not in ('chart','polar','live','transits'):raise ValueError('Unknown view')
     p,terrain=point(request.get('source','active'),fixture)
-    now=utc('2026-11-09T00:00:00Z') if fixture else datetime.now(UTC)
+    now=utc(request.get('fixtureNow') or '2026-11-09T00:00:00Z') if fixture else datetime.now(UTC)
     when=utc(request['time']) if request.get('time') and kind in ('chart','polar') else now
     if not 2000<=when.year<=2050:raise ValueError('Choose a time from 2000 to 2050')
     rows=read(ROOT/'tests/fixtures/stations.json',[]) if fixture else read(state/'orbit.json',{}).get('data',[])
     ts=load.timescale(builtin=True)
     with closing(load_file(str(ROOT/'assets/de440s.bsp'))) as eph:
-        if kind=='chart':data=sky_chart(eph,ts,p,terrain,when)
+        if kind=='chart':
+            when=now if request.get('satellites') is True else when
+            data=sky_chart(eph,ts,p,terrain,when)
+            if request.get('satellites') is True:
+                from observatory.final_sky.satellite_layer import cached_rows,calculate
+                cached,catalog=cached_rows(state,fixture,ROOT)
+                data['satellites']=calculate(cached,catalog,ts,eph,p,terrain,when)
         elif kind=='polar':data=polar(eph,ts,p,when,terrain)
         elif not rows:data={'stations':[],'events':[],'basis':'No cached orbital elements. Opt into orbital downloads in Settings.'}
         elif kind=='live':data=live_positions(rows,ts,eph,p,when)

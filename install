@@ -154,6 +154,7 @@ fi
 if (( autostart )); then
     systemctl --user enable omanova-worker.service
 fi
+.venv/bin/python update_manager.py --state "$state" --plugin "$plugin" register
 printf 'OMANOVA is ready. Set your observing location and opt into feeds in Settings.\n'
 printf 'After an upgrade, run omarchy restart shell to reload the bar, then reopen OMANOVA.\n'
 if (( autostart )); then

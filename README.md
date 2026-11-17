@@ -1174,3 +1174,61 @@ worker. Release archives include `SOURCE-COMMIT.txt`; Settings compares
 installed/running versions and revisions. Upgrade with `./install`, then
 reload the shell/reopen the window as described above. New installs retain
 default-off optional autostart; upgrades preserve the existing choice.
+
+## Local development additions — not released
+
+The local development branch adds **Settings → OMANOVA updates** and a
+**Live satellites** layer inside Star Chart. These are queued for the next
+release; the published 0.1.4 package is unchanged. Marketplace remains on hold.
+
+**Updates:** checks are manual, use the official repository's latest stable
+GitHub release and are cached for five minutes. No startup/background update
+checks, prereleases or moving-branch installs. Review release notes, save any
+open forms, then explicitly choose **Download & install**. An unsaved observing
+log draft blocks install/recovery. The same or older public version cannot
+replace local development changes.
+
+The updater checks the asset SHA-256, archive version/source identity and every
+non-hidden source file against the official release tag; it prepares pinned
+Python dependencies and the checksum-bound kernel in a separate runtime. The
+managed source/widget baseline refuses later local edits. The old runtime and
+widget are retained, user data stays in place, the existing bar identity and
+login-startup preference are preserved, and only an already-active managed
+worker is restarted. A foreground worker or changed service unit requires
+review. No privilege elevation or automatic uv/package-manager install occurs.
+Checksums are integrity checks, not independent publisher signatures.
+
+Failures after activation restore the former alias/widget. An interrupted
+update offers **Restore previous installation**; a completed update can also be
+restored while the managed files remain unmodified. Update work survives closing
+the UI; keep the login session active. On success close/reopen Observatory and
+reload the shell to refresh the bar. Local receipts, logs and retained files are
+under `~/.local/share/omasky/updates/` (or the matching data root). There is no
+background cache/recovery cleanup. The guided installer records the initial
+managed baseline; older/unregistered/custom installations require review rather
+than being overwritten. The supported Omarchy configuration location remains
+`~/.config`, even though the Observatory has its own temporary Quickshell config.
+
+**Live satellites:** open Sky → Star Chart and switch **Live satellites · Off**
+to **On**. It uses current time, recalculating every five seconds while the chart
+is open. Switch between **Potentially visible only** and **All above horizon**.
+Tap a diamond for true bearing/elevation, slant range in your preferred units,
+element age and visibility caveats. A short trail covers 30 seconds before to
+90 seconds after the calculation. Selection survives the refresh. Turn it off
+to stop the layer calculations and choose a static chart time.
+
+ISS/Tiangong and selected watchlist entries use existing cached elements only;
+this layer never downloads data, enables a source, sends your location or
+changes saved observing settings. Use existing Settings/Watchlist controls to
+obtain missing data. Active, Trip Home and destination choices and their saved
+manual/terrain horizons apply. Elements beyond 48 h old or 6 h future are
+withheld, as are layer calculations older than 15 seconds. “Potential” means
+sunlit, at least 10° up, above saved obstructions and Sun at/below −6°;
+brightness/weather and actual visibility remain unconfirmed. Nothing can become
+GO from this layer. Zero markers is explained; nothing is invented when cached
+data are missing. The toggle is session-local and starts off on opening the view.
+
+Development testing uses isolated synthetic fixtures for updates and failures;
+normal acceptance uses the maintainer's live copy when authorised, preserving
+saved data, worker/autostart choices and the compact fallback. No fixture
+upgrade or synthetic observation is written into the real user data.
