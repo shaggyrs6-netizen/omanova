@@ -1,5 +1,5 @@
 {
-  "checked": "2026-11-14",
+  "checked": "2026-11-18",
   "coordinateBasis": "Rounded J2000/ICRS catalogue centres for a small orientation finder; not telescope pointing or photometric predictions.",
   "coordinateSource": "https://science.nasa.gov/wp-content/uploads/2023/09/Astrophotography_Guide.pdf",
   "targets": [
@@ -11,7 +11,8 @@
       "extent": 3.0,
       "type": "Galaxy",
       "hint": "Start in Andromeda; diffuse extended light, with a brighter core. Dark skies and a wide field help.",
-      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?M31"
+      "source": "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?M31",
+      "constellation": "Andromeda"
     },
     {
       "id": "M42",
@@ -20,7 +21,8 @@
       "dec": -5.45,
       "extent": 1.5,
       "type": "Nebula",
-      "hint": "Below Orion’s belt, in the sword. Optical detail depends on conditions and equipment."
+      "hint": "Below Orion’s belt, in the sword. Optical detail depends on conditions and equipment.",
+      "constellation": "Orion"
     },
     {
       "id": "M45",
@@ -29,7 +31,8 @@
       "dec": 24.1167,
       "extent": 2.0,
       "type": "Open cluster",
-      "hint": "A broad cluster in Taurus. Binoculars offer a wider overview than high magnification."
+      "hint": "A broad cluster in Taurus. Binoculars offer a wider overview than high magnification.",
+      "constellation": "Taurus"
     },
     {
       "id": "M13",
@@ -38,7 +41,8 @@
       "dec": 36.4667,
       "extent": 0.35,
       "type": "Globular cluster",
-      "hint": "In Hercules. Binoculars may show a patch; resolving individual stars needs suitable optics."
+      "hint": "In Hercules. Binoculars may show a patch; resolving individual stars needs suitable optics.",
+      "constellation": "Hercules"
     },
     {
       "id": "M57",
@@ -47,7 +51,208 @@
       "dec": 33.0333,
       "extent": 0.024,
       "type": "Planetary nebula",
-      "hint": "Between the southern stars of Lyra. Small target; a telescope and finder practice are useful."
+      "hint": "Between the southern stars of Lyra. Small target; a telescope and finder practice are useful.",
+      "constellation": "Lyra"
+    },
+    {
+      "id": "M1",
+      "name": "M1 · Crab Nebula",
+      "ra": 5.575,
+      "dec": 22.016667,
+      "extent": 0.1,
+      "type": "Supernova remnant",
+      "constellation": "Taurus",
+      "hint": "Start near Zeta Tauri, the tip of the Bull’s southern horn. A small telescope and dark sky help with the faint patch."
+    },
+    {
+      "id": "M3",
+      "name": "M3 · Globular Cluster",
+      "ra": 13.703333,
+      "dec": 28.383333,
+      "extent": 0.27,
+      "type": "Globular cluster",
+      "constellation": "Canes Venatici",
+      "hint": "Sweep roughly halfway from Arcturus toward Cor Caroli. Try binoculars for the glow and a small telescope for a closer look."
+    },
+    {
+      "id": "M4",
+      "name": "M4 · Globular Cluster",
+      "ra": 16.393333,
+      "dec": -26.533333,
+      "extent": 0.43833,
+      "type": "Globular cluster",
+      "constellation": "Scorpius",
+      "hint": "Look just west of Antares. Try binoculars under dark skies when this part of Scorpius is highest."
+    },
+    {
+      "id": "M5",
+      "name": "M5 · Globular Cluster",
+      "ra": 15.31,
+      "dec": 2.083333,
+      "extent": 0.29,
+      "type": "Globular cluster",
+      "constellation": "Serpens",
+      "hint": "Use 5 Serpentis as a nearby guide star. Binoculars can show a fuzzy spot under dark skies."
+    },
+    {
+      "id": "M8",
+      "name": "M8 · Lagoon Nebula",
+      "ra": 18.063333,
+      "dec": -24.383333,
+      "extent": 1.5,
+      "type": "Emission nebula",
+      "constellation": "Sagittarius",
+      "hint": "Sweep above the Sagittarius Teapot’s spout. Start with binoculars or a wide, low-power telescope view under dark skies."
+    },
+    {
+      "id": "M11",
+      "name": "M11 · Wild Duck Cluster",
+      "ra": 18.851667,
+      "dec": -6.266667,
+      "extent": 0.23333,
+      "type": "Open cluster",
+      "constellation": "Scutum",
+      "hint": "Follow the Milky Way down from the tail of Aquila into Scutum. Look for a compact patch in binoculars."
+    },
+    {
+      "id": "M15",
+      "name": "M15 · Pegasus Globular Cluster",
+      "ra": 21.5,
+      "dec": 12.166667,
+      "extent": 0.205,
+      "type": "Globular cluster",
+      "constellation": "Pegasus",
+      "hint": "Trace the horse’s head out from the Great Square and sweep beyond Enif. Try binoculars for a small fuzzy spot."
+    },
+    {
+      "id": "M22",
+      "name": "M22 · Globular Cluster",
+      "ra": 18.606667,
+      "dec": -23.9,
+      "extent": 0.4,
+      "type": "Globular cluster",
+      "constellation": "Sagittarius",
+      "hint": "Start just northeast of Kaus Borealis, the star at the top of the Teapot. Try binoculars near the cluster’s highest point."
+    },
+    {
+      "id": "M27",
+      "name": "M27 · Dumbbell Nebula",
+      "ra": 19.993333,
+      "dec": 22.716667,
+      "extent": 0.13333,
+      "type": "Planetary nebula",
+      "constellation": "Vulpecula",
+      "hint": "Start at the tip of Sagitta’s arrow and move north. A small telescope and dark skies help show the nebula’s shape."
+    },
+    {
+      "id": "M33",
+      "name": "M33 · Triangulum Galaxy",
+      "ra": 1.565,
+      "dec": 30.65,
+      "extent": 1.21667,
+      "type": "Galaxy",
+      "constellation": "Triangulum",
+      "hint": "Sweep northwest from Alpha Trianguli with wide binoculars on a dark, moonless night. Its diffuse glow fades easily under light pollution."
+    },
+    {
+      "id": "M34",
+      "name": "M34 · Open Cluster",
+      "ra": 2.7,
+      "dec": 42.783333,
+      "extent": 0.58333,
+      "type": "Open cluster",
+      "constellation": "Perseus",
+      "hint": "Sweep between Algol and Almach. Use binoculars to look for a loose group of stars."
+    },
+    {
+      "id": "M35",
+      "name": "M35 · Shoe Buckle Cluster",
+      "ra": 6.148333,
+      "dec": 24.333333,
+      "extent": 0.46667,
+      "type": "Open cluster",
+      "constellation": "Gemini",
+      "hint": "Start near the Twins’ feet, close to Eta Geminorum. Binoculars suit the broad cluster."
+    },
+    {
+      "id": "M36",
+      "name": "M36 · Pinwheel Cluster",
+      "ra": 5.601667,
+      "dec": 34.133333,
+      "extent": 0.2,
+      "type": "Open cluster",
+      "constellation": "Auriga",
+      "hint": "Sweep inside Auriga’s pentagon for the middle of the M36–M38 trio. Try binoculars or a low-power eyepiece."
+    },
+    {
+      "id": "M37",
+      "name": "M37 · Open Cluster",
+      "ra": 5.873333,
+      "dec": 32.55,
+      "extent": 0.4,
+      "type": "Open cluster",
+      "constellation": "Auriga",
+      "hint": "Look just outside the pentagon on the side facing Gemini. Try binoculars first, then low power for the dense star field."
+    },
+    {
+      "id": "M38",
+      "name": "M38 · Starfish Cluster",
+      "ra": 5.478333,
+      "dec": 35.833333,
+      "extent": 0.35,
+      "type": "Open cluster",
+      "constellation": "Auriga",
+      "hint": "From M36, sweep northwest inside Auriga. Wide binoculars help compare both clusters."
+    },
+    {
+      "id": "M41",
+      "name": "M41 · Little Beehive Cluster",
+      "ra": 6.783333,
+      "dec": -20.733333,
+      "extent": 0.63333,
+      "type": "Open cluster",
+      "constellation": "Canis Major",
+      "hint": "Sweep about four degrees south of Sirius. Try binoculars when Canis Major is high and clear of your horizon."
+    },
+    {
+      "id": "M44",
+      "name": "M44 · Beehive Cluster",
+      "ra": 8.668333,
+      "dec": 19.983333,
+      "extent": 1.58333,
+      "type": "Open cluster",
+      "constellation": "Cancer",
+      "hint": "Sweep the middle of Cancer between Gemini and Leo. Binoculars frame the broad cluster well."
+    },
+    {
+      "id": "M51",
+      "name": "M51 · Whirlpool Galaxy",
+      "ra": 13.5,
+      "dec": 47.183333,
+      "extent": 0.18333,
+      "type": "Galaxy",
+      "constellation": "Canes Venatici",
+      "hint": "Start near Alkaid at the end of the Big Dipper’s handle. Try a small telescope at a dark site for the cores."
+    },
+    {
+      "id": "M81",
+      "name": "M81 · Bode’s Galaxy",
+      "ra": 9.926667,
+      "dec": 69.066667,
+      "extent": 0.35,
+      "type": "Galaxy",
+      "constellation": "Ursa Major",
+      "hint": "Extend the line from Phecda through Dubhe. Look for M81 and M82 as a pair in a wide, low-power telescope view."
+    },
+    {
+      "id": "M82",
+      "name": "M82 · Cigar Galaxy",
+      "ra": 9.93,
+      "dec": 69.683333,
+      "extent": 0.15,
+      "type": "Galaxy",
+      "constellation": "Ursa Major",
+      "hint": "Find M81 first and look about half a degree north for the thin streak. Start with low power at a dark site."
     }
   ],
   "landmarks": [

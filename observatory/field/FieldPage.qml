@@ -17,6 +17,15 @@ Item {
  property string pending:""
  property bool nearby:true
  property bool detailsOpen:false
+ function finderMatches(row,query) {
+  const term=query.trim().toLowerCase().replace(/’/g,"'").replace(/\s+/g," ")
+  if(!term)return true
+  const messier=term.match(/^(?:m|messier)\s*0*(\d+)$/)
+  if(messier)return row.id===("M"+messier[1])
+  return [row.id,row.name,row.type,row.constellation||""].some(value=>value.toLowerCase().replace(/’/g,"'").includes(term))
+ }
+ readonly property var shownRows:(dataSet?.rows||[]).filter(row=>section==="sites" ? !nearby||row.distanceKm<=500 : finderMatches(row,search.text))
+
  property double clock:Date.now()
  readonly property string state:Quickshell.env("OMANOVA_FIELD_STATE")
  readonly property string runtime:Quickshell.env("OMANOVA_FIELD_RUNTIME")
@@ -39,7 +48,7 @@ Item {
   ColumnLayout {width:scroll.availableWidth;spacing:14
    ColumnLayout {Layout.fillWidth:true;Layout.margins:24;spacing:10
     App.PageHeader {eyebrow:root.section==="sites"?"PLAN":"SKY";title:root.section==="sites"?"Destination Sites":"Sky Finder"}
-    Copy {text:root.section==="sites"?"A curated starting list near your active or Trip Planner location. Distance is straight-line, not driving distance or permission to access the site.":"Constellation landmarks and a starter set of clusters, nebulae and a galaxy. Local geometry with saved obstructions; brightness and weather stay unconfirmed.";color:App.Palette.muted}
+    Copy {text:root.section==="sites"?"A curated starting list near your active or Trip Planner location. Distance is straight-line, not driving distance or permission to access the site.":"Find clusters, nebulae, galaxies and constellation landmarks. The finder uses your saved horizon to estimate viewing windows. Brightness and weather stay unconfirmed.";color:App.Palette.muted}
     Flow {Layout.fillWidth:true;spacing:10
      Repeater {model:[{key:"active",label:"Active location"},{key:"trip-home",label:"Trip Home"},{key:"trip-destination",label:"Trip destination"}]
       Action {required property var modelData;text:(root.source===modelData.key?"● ":"")+modelData.label;onClicked:{root.source=modelData.key;night.text="";root.request()}}}
@@ -49,6 +58,21 @@ Item {
      TextField {id:night;width:170;implicitHeight:40;placeholderText:"YYYY-MM-DD";maximumLength:10;color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;enabled:!job.running;background:Rectangle {radius:6;color:App.Palette.field;border.color:App.Palette.border}}
      Action {text:"Calculate this night locally";onClicked:root.request()}
     }
+    Flow {visible:root.section==="finder";Layout.fillWidth:true;spacing:10
+     TextField {
+      id:search;width:Math.min(330,scroll.availableWidth-62);implicitHeight:40;maximumLength:80
+      placeholderText:"Search name, Messier number or constellation"
+      Accessible.name:"Search Sky Finder targets"
+      color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true
+      background:Rectangle {radius:6;color:App.Palette.field;border.color:search.activeFocus?App.Palette.accent:App.Palette.border}
+     }
+     Action {visible:search.text.length>0;text:"Clear search";onClicked:{search.clear();search.forceActiveFocus()}}
+    }
+    Copy {visible:root.section==="finder"&&!!root.dataSet
+     text:!root.dataSet ? "" : search.text.trim()?root.shownRows.length+" of "+root.dataSet.rows.length+" matches":
+          root.dataSet.rows.filter(r=>r.kind==="deep-sky").length+" deep-sky targets · "+root.dataSet.rows.filter(r=>r.kind==="landmark").length+" landmarks"
+     color:App.Palette.accent}
+    Copy {visible:root.section==="finder"&&!!root.dataSet&&!root.shownRows.length;text:"No matches. Try a name such as Beehive or a number such as M44.";color:App.Palette.muted}
     Copy {visible:root.section==="finder"&&!!root.dataSet;text:(root.dataSet?.zone||"")+" · "+(root.dataSet?.night||"")+" · "+(root.dataSet?.darkness?.darkHours||0)+" h astronomical darkness · "+(root.dataSet?.darkness?.moonFreeHours||0)+" h Moon-free darkness";color:App.Palette.accent}
     Action {visible:!!root.dataSet;text:root.detailsOpen?"Hide estimate details":"How this is estimated";onClicked:root.detailsOpen=!root.detailsOpen}
     Copy {visible:root.detailsOpen&&root.section==="finder";text:root.dataSet?.darkness?.basis||"Darkness estimates use Sun/Moon geometry; background sky quality remains unknown.";color:App.Palette.muted}
@@ -56,7 +80,7 @@ Item {
     Copy {text:root.result;color:App.Palette.muted}
     Copy {visible:root.detailsOpen;text:root.dataSet?.limits||"";color:App.Palette.muted}
    }
-   Repeater {model:root.section==="sites"?(root.dataSet?.rows||[]).filter(r=>!root.nearby||r.distanceKm<=500):root.dataSet?.rows||[]
+   Repeater {model:root.shownRows
     Rectangle {id:card;required property var modelData;Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:App.Palette.line
      ColumnLayout {id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
       Copy {text:card.modelData.name;font.pixelSize:22;font.bold:true}
@@ -65,9 +89,9 @@ Item {
       Copy {visible:root.section==="sites";text:card.modelData.access||"";color:App.Palette.warning}
       Copy {visible:root.section==="sites";text:"Evidence checked: "+(card.modelData.checked||"")+(card.modelData.evidenceOld?" · older than 90 days; recheck":" · recheck access before travelling");color:App.Palette.muted}
       Action {visible:root.section==="sites";text:"Official site/access guidance";onClicked:Qt.openUrlExternally(card.modelData.source)}
-      Copy {visible:root.section==="finder";text:(card.modelData.type||"")+" · "+(card.modelData.status||"");color:App.Palette.warning}
+      Copy {visible:root.section==="finder";text:[card.modelData.type,card.modelData.constellation,card.modelData.status].filter(Boolean).join(" · ");color:App.Palette.warning}
       Copy {visible:root.section==="finder";text:card.modelData.hint||"";color:App.Palette.muted}
-      Action {visible:root.section==="finder"&&root.canAddToNight;text:"Add to My Night";onClicked:root.addToNight(card.modelData.id)}
+      Action {visible:root.section==="finder"&&root.canAddToNight;text:"Add to My Night";Accessible.name:"Add "+card.modelData.name+" to My Night";onClicked:root.addToNight(card.modelData.id)}
       Repeater {model:root.section==="finder"?card.modelData.windows||[]:[]
        ColumnLayout {required property var modelData;Layout.fillWidth:true;spacing:6
         Copy {text:(root.clock>Date.parse(modelData.event.end)?"Ended window · ":"")+(modelData.when||modelData.event.start+" — "+modelData.event.end);font.bold:true}
@@ -87,5 +111,22 @@ Item {
    Copy {Layout.margins:24;visible:root.section==="sites"&&!!root.dataSet&&!(root.dataSet.rows||[]).some(r=>!root.nearby||r.distanceKm<=500);text:"No curated sites within this range. Show all examples or use official local park guidance; absence is not a claim that no dark sites exist.";color:App.Palette.warning}
   }
  }
- IpcHandler {target:"omanova-field-"+root.section;function summary():string{return JSON.stringify({section:root.section,source:root.source,rows:root.dataSet?.rows?.length,busy:job.running,old:root.old,message:root.result})}}
+ IpcHandler {
+  target: "omanova-field-"+root.section
+  function summary():string {
+   return JSON.stringify({section:root.section,source:root.source,rows:root.dataSet?.rows?.length,
+    matches:root.shownRows.length,busy:job.running,old:root.old,message:root.result})
+  }
+  function sampleSearch(query:string):string {
+   if(root.section!=="finder"||Quickshell.env("OMASKY_FIXTURE")!=="1")return ""
+   search.text=query
+   return JSON.stringify(root.shownRows.map(row=>row.id))
+  }
+  function sampleAdd(key:string):bool {
+   if(Quickshell.env("OMASKY_FIXTURE")!=="1"||!root.canAddToNight||job.running||
+      !root.shownRows.some(row=>row.id===key))return false
+   root.addToNight(key)
+   return true
+  }
+ }
 }

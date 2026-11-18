@@ -17,7 +17,8 @@ Item {
     property string pending: ""
     property string action: ""
     property bool editing: false
-    readonly property bool busy: helper.running
+    property bool requestPending: false
+    readonly property bool busy: requestPending || helper.running
     readonly property var sources: [
         {id:"active",label:"Active location"},
         {id:"trip-home",label:"Trip Home"},
@@ -34,6 +35,7 @@ Item {
         problem=""
         notice=""
         pending=JSON.stringify(Object.assign({action:verb,selected:selected},args||{}))+"\n"
+        requestPending=true
         helper.stdinEnabled=true
         helper.running=true
         return true
@@ -57,6 +59,7 @@ Item {
         stdout:StdioCollector {id:response}
         onStarted:{write(page.pending);stdinEnabled=false}
         onExited: function(code) {
+            page.requestPending=false
             try {
                 const data=JSON.parse(response.text)
                 if (code!==0 || data.failure) {

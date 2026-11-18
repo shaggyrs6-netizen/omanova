@@ -35,7 +35,7 @@ class CompletionTests(unittest.TestCase):
   self.assertTrue(all(x['source'].startswith('https://') and x['access'] and x['checked'] for x in r['rows']))
  def test_small_finder_is_geometry_only_and_has_darkness_estimate(self):
   with patch('socket.socket',side_effect=AssertionError('No network')):r=finder({'night':'2026-11-14'},True,NOW)
-  self.assertEqual(len(r['rows']),10);self.assertLessEqual(r['darkness']['moonFreeHours'],r['darkness']['darkHours'])
+  self.assertEqual(sum(row['kind']=='deep-sky' for row in r['rows']),25);self.assertEqual(len({row['id'] for row in r['rows']}),30);self.assertLessEqual(r['darkness']['moonFreeHours'],r['darkness']['darkHours'])
   windows=[w for row in r['rows'] for w in row['windows']];self.assertTrue(windows)
   for w in windows:
    self.assertEqual(w['event']['visibility'],'unconfirmed');self.assertFalse(w['event']['recommended']);self.assertGreaterEqual(w['event']['look']['el'],20)

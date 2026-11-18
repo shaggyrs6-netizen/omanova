@@ -99,7 +99,7 @@ remain on hold; GitHub releases are separate.
 | Calendar Export | Local .ics snapshots from active or Trip locations, named-zone context and per-session optional reminders; manual import. |
 | Offline Cards | Private, immutable night guides with times, directions and equipment; self-contained HTML, print styling and stale-data warnings. |
 | Destination Sites | 12 curated examples across four countries, straight-line km/miles distances from active or Trip locations and dated official access evidence. |
-| Sky Finder | Five constellation landmarks and five starter deep-sky targets, local windows, compass, Sun/Moon context, equipment and saved-horizon guidance. |
+| Sky Finder | Five constellation landmarks and 25 searchable Messier targets, local windows, compass, Sun/Moon context, equipment and saved-horizon guidance. |
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
 ## Screenshots
@@ -1074,8 +1074,10 @@ day warnings remain visible. The original regional Dark-Sky Sites page remains.
 No coordinates are sent for distance calculation, and no routing API is used.
 
 **Sky Finder** includes Orion/Alnilam, Lyra/Vega, Ursa Minor/Polaris, Ursa Major/
-Dubhe and Carina/Canopus as constellation anchors, plus M31, M42, M45, M13 and
-M57. It calculates local windows at least 20° above the geometric/saved horizon,
+Dubhe and Carina/Canopus as constellation anchors, plus 25 Messier targets.
+Search by name, Messier number or constellation, then add any result to My Night.
+Finding hints suggest a starting point and equipment without predicting brightness. The finder calculates windows at least 20°
+up and above the saved horizon,
 using twilight for bright anchors and astronomical darkness for deep-sky targets.
 The compass depicts one target at its own suggested time, not a simultaneous
 whole-sky chart. No full constellation outlines, tracking/alignment solution,
