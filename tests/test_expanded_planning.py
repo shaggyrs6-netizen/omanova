@@ -120,8 +120,16 @@ class ExpandedPlanningTests(unittest.TestCase):
         with self.assertRaises(ValueError):magnitude({'signature':{'version':'1.5'},'objects':[]},NOW)
         root=Path(__file__).resolve().parents[1]
         catalog=json.loads((root/'observatory/comets/catalog.json').read_text())
-        self.assertEqual(catalog['until'],'2026-12-12T00:00:00Z')
-        self.assertTrue(all(len(row['positions'])==397 for row in catalog['targets']))
+        start=datetime.fromisoformat(catalog['from'])
+        stop=datetime.fromisoformat(catalog['until'])
+        refreshed=datetime.fromisoformat(catalog['refreshed'])
+        self.assertLessEqual(start,refreshed)
+        self.assertLess(refreshed,stop)
+        self.assertLessEqual(stop-start,timedelta(days=45))
+        self.assertEqual(catalog['stepSeconds'],7200)
+        expected=int((stop-start).total_seconds()//catalog['stepSeconds'])+1
+        self.assertTrue(catalog['targets'])
+        self.assertTrue(all(len(row['positions'])==expected for row in catalog['targets']))
 
     def test_lookup_encodes_only_supplied_query_and_validates_response(self):
         seen=[]
