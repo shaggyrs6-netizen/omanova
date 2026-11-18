@@ -7,11 +7,9 @@ from worker import read
 DATA=Path(os.environ.get('XDG_DATA_HOME') or Path.home()/'.local/share')
 
 def equipment_profile():
-    from observatory.equipment.equipment import profile
-    path=Path(os.environ.get('OMANOVA_EQUIPMENT_STATE') or DATA/'omanova-equipment')/'profile.json'
-    raw=read(path,None)
-    if raw is None and path.exists():raise ValueError('Equipment profile unreadable; retain it for inspection')
-    return profile(raw or {})
+    from observatory.equipment.equipment import load_profile
+    state=Path(os.environ.get('OMANOVA_EQUIPMENT_STATE') or DATA/'omanova-equipment')
+    return load_profile(state)
 
 def match(row,p,now=None,include_field=True):
     from observatory.equipment.equipment import active_field,active_setup,assess

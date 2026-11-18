@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 from astronomy import iso
 from worker import read,write
-from observatory.equipment.equipment import DEFAULT,profile,fixtures,assess,build,command,active_field
+from observatory.equipment.equipment import DEFAULT,profile,fixtures,assess,build,command,active_field,load_profile
 
 NOW=datetime(2026,11,14,18,tzinfo=timezone.utc)
 
@@ -32,7 +32,7 @@ class EquipmentTests(unittest.TestCase):
     def test_named_setups_switch_without_losing_an_existing_field(self):
         def perform(action, data):
             command(self.path, action, data, NOW)
-            return profile(read(self.path/'profile.json', {}))
+            return load_profile(self.path)
         wide = {'telescopeMm': 600, 'eyepieceMm': 30, 'apparentDeg': 70}
         tight = {'telescopeMm': 1200, 'eyepieceMm': 25, 'apparentDeg': 60}
         original = {'fieldOfViewDeg': 2, 'telescopeOptics': tight, 'gear': ['telescope']}
@@ -49,13 +49,13 @@ class EquipmentTests(unittest.TestCase):
         self.assertEqual(active_field(perform('remove_setup', {'name': 'Wide'})), 6)
         self.assertEqual(perform('select_setup', {'name': 'Tight'})['sky'], 'dark')
         self.assertEqual(active_field(perform('save_setup', {'name': 'Tight', 'optics': wide})), 3.5)
-        self.assertEqual(len(read(self.path/'profile.json', {})['opticalSetups']), 1)
+        self.assertEqual(len(load_profile(self.path)['opticalSetups']), 1)
         self.assertEqual(active_field(perform('remove_setup', {'name': 'Tight'})), 6)
 
     def test_camera_setup_saves_two_axes_and_preserves_telescope_and_manual_fields(self):
         def perform(action, data):
             command(self.path, action, data, NOW)
-            return profile(read(self.path/'profile.json', {}))
+            return load_profile(self.path)
         camera = {'sensorWidthMm': 36, 'sensorHeightMm': 24, 'focalLengthMm': 600}
         optics = {'telescopeMm': 1200, 'eyepieceMm': 25, 'apparentDeg': 60}
         perform('save', {'fieldOfViewDeg': 6})
@@ -71,9 +71,29 @@ class EquipmentTests(unittest.TestCase):
                         {'name': 'Mixed', 'camera': camera, 'optics': optics}):
             with self.assertRaises(ValueError):
                 perform('save_setup', invalid)
-            self.assertEqual(profile(read(self.path/'profile.json', {})), saved)
+            self.assertEqual(load_profile(self.path), saved)
         self.assertEqual(active_field(perform('select_setup', {'name': 'Visual'})), 1.25)
         self.assertEqual(active_field(perform('select_setup', {'name': None})), 6)
+
+    def test_legacy_profile_remains_readable_and_inline_data_is_migrated(self):
+        camera = {'sensorWidthMm': 36, 'sensorHeightMm': 24, 'focalLengthMm': 600}
+        optics = {'telescopeMm': 1200, 'eyepieceMm': 25, 'apparentDeg': 60}
+        raw = {'gear': ['camera'], 'fieldOfViewDeg': .06, 'telescopeOptics': optics,
+               'opticalSetups': [{'name': 'Imaging', 'camera': camera}], 'activeOpticalSetup': 'Imaging'}
+        base = self.path/'profile.json'
+        write(base, raw)
+        command(self.path, 'init', {}, NOW)
+        projected = read(base,{})
+        self.assertEqual(set(projected), set(DEFAULT))
+        self.assertIsNone(projected['fieldOfViewDeg'])
+        self.assertEqual(load_profile(self.path), profile(raw))
+        # An older build can edit its original settings without erasing new setups.
+        write(base, {**projected, 'sky': 'dark', 'fieldOfViewDeg': .5})
+        command(self.path, 'select_setup', {'name': None}, NOW)
+        updated = load_profile(self.path)
+        self.assertEqual(active_field(updated), .5)
+        self.assertEqual(updated['sky'], 'dark')
+        self.assertEqual(updated['opticalSetups'][0]['camera'], camera)
 
     def test_bad_named_setup_commands_leave_the_profile_untouched(self):
         command(self.path, 'save', {'fieldOfViewDeg': 2}, NOW)
@@ -162,6 +182,10 @@ class EquipmentTests(unittest.TestCase):
         self.assertEqual(a['visibility'],'stale');self.assertFalse(a['eligible'])
     def test_invalid_profile_preserved_without_silent_reset(self):
         path=self.path/'profile.json';path.write_text('{broken')
+        with self.assertRaises(ValueError):command(self.path,'init',{},NOW)
+        self.assertEqual(path.read_text(),'{broken')
+    def test_invalid_framing_is_preserved(self):
+        path=self.path/'framing.json';path.write_text('{broken')
         with self.assertRaises(ValueError):command(self.path,'init',{},NOW)
         self.assertEqual(path.read_text(),'{broken')
     def test_live_state_is_exact_and_never_uses_fixtures(self):

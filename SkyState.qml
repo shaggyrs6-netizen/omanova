@@ -11,15 +11,33 @@ QtObject {
     readonly property string directory: overridePath || (dataHome + "/omasky")
     readonly property string runtime: Quickshell.env("OMASKY_RUNTIME") || (directory + "/runtime")
     property bool applyEquipmentProfile:false
-    property var equipmentProfile: null
-    property bool equipmentInvalid: false
-    property FileView equipmentFile: FileView {
-        path:(Quickshell.env("OMANOVA_EQUIPMENT_STATE") || root.dataHome+"/omanova-equipment")+"/profile.json";watchChanges:true;printErrors:false
-        onFileChanged:reload()
-        onLoaded:{try{root.equipmentProfile=JSON.parse(text());root.equipmentInvalid=!Equipment.validProfile(root.equipmentProfile)}catch(e){root.equipmentInvalid=true}}
-        onLoadFailed:root.equipmentProfile=null
-    }
+    property var equipmentBase: null
+    property var equipmentFraming: null
+    property bool equipmentBaseInvalid: false
+    property bool equipmentFramingInvalid: false
+    readonly property var equipmentProfile: Equipment.withFraming(equipmentBase, equipmentFraming)
+    readonly property bool equipmentInvalid: equipmentBaseInvalid || equipmentFramingInvalid ||
+        (!!equipmentProfile && !Equipment.validProfile(equipmentProfile))
     readonly property string equipmentState: Quickshell.env("OMANOVA_EQUIPMENT_STATE")
+    readonly property string equipmentDirectory: equipmentState || dataHome+"/omanova-equipment"
+    property FileView equipmentFile: FileView {
+        path: root.equipmentDirectory + "/profile.json"; watchChanges: true; printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try {root.equipmentBase=JSON.parse(text());root.equipmentBaseInvalid=false}
+            catch(e) {root.equipmentBaseInvalid=true}
+        }
+        onLoadFailed: {root.equipmentBase=null;root.equipmentBaseInvalid=false}
+    }
+    property FileView framingFile: FileView {
+        path: root.equipmentDirectory + "/framing.json"; watchChanges: true; printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try {root.equipmentFraming=JSON.parse(text());root.equipmentFramingInvalid=false}
+            catch(e) {root.equipmentFramingInvalid=true}
+        }
+        onLoadFailed: {root.equipmentFraming=null;root.equipmentFramingInvalid=false}
+    }
     readonly property string equipmentRuntime: Quickshell.env("OMANOVA_EQUIPMENT_RUNTIME")
     readonly property bool changingSetup: setupWriter.running
     property string setupError: ""
@@ -44,6 +62,7 @@ QtObject {
         onStarted: { write(root.setupPayload); stdinEnabled = false }
         onExited: function(code) {
             root.equipmentFile.reload()
+            root.framingFile.reload()
             if (code !== 0) root.setupError = "Could not switch observing setup. Try again."
         }
     }

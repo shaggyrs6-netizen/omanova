@@ -103,6 +103,55 @@ def profile(raw):
     return out
 
 
+FRAMING_KEYS = SETUP_KEYS | {'telescopeOptics', 'narrowFieldDeg'}
+
+
+def load_profile(state):
+    base = state/'profile.json'
+    framing = state/'framing.json'
+    saved = read(base, None)
+    extra = read(framing, None)
+    if (saved is None and base.exists()) or (extra is None and framing.exists()):
+        raise ValueError('Keep unreadable equipment files for inspection')
+    saved = {} if saved is None else saved
+    extra = {} if extra is None else extra
+    if not isinstance(saved, dict) or not isinstance(extra, dict) or set(extra)-FRAMING_KEYS:
+        raise ValueError('Invalid saved equipment files')
+    optics = {**saved, **{key:value for key,value in extra.items() if key != 'narrowFieldDeg'}}
+    narrow = extra.get('narrowFieldDeg')
+    if narrow is not None:
+        if type(narrow) not in (int,float) or not .01 <= narrow < .1:
+            raise ValueError('Invalid saved narrow field')
+        if saved.get('fieldOfViewDeg') is None:
+            optics['fieldOfViewDeg'] = narrow
+    return profile(optics)
+
+
+def save_profile(state, normalized):
+    base = {key:normalized[key] for key in DEFAULT}
+    extra = {key:normalized[key] for key in FRAMING_KEYS if key in normalized}
+    field = normalized['fieldOfViewDeg']
+    if field is not None and field < .1:
+        base['fieldOfViewDeg'] = None
+        extra['narrowFieldDeg'] = field
+    base_path = state/'profile.json'
+    extra_path = state/'framing.json'
+    previous = read(base_path, {})
+    # Save extensions first when moving data out of an inline local-build profile.
+    # On other changes write the older profile first when it carries the new field.
+    preserve_extra_first = bool(set(previous)-DEFAULT.keys()) or ('narrowFieldDeg' in extra) or (
+        previous.get('fieldOfViewDeg') is not None and previous['fieldOfViewDeg'] < .1)
+    def save_base():
+        if base != previous:
+            write(base_path, base)
+    def save_extra():
+        if extra != read(extra_path, {}):
+            write(extra_path, extra)
+    writes = (save_extra, save_base) if preserve_extra_first else (save_base, save_extra)
+    for persist in writes:
+        persist()
+
+
 def rule(row,sample=False):
     """Conservative guidance, not telescope limiting-magnitude or exposure predictions."""
     kind=row['kind'];name=row['name'].casefold();reason=row.get('reason','')
@@ -288,14 +337,17 @@ def update_profile(current, action, payload):
 def command(state,action,payload,now=None):
     now=now or datetime.now(UTC)
     with lock(state):
-        stored=read(state/'profile.json',None)
-        if stored is None and (state/'profile.json').exists():raise ValueError('Keep unreadable profile for inspection')
-        p=profile(stored or {});source=read(state/'source.json',{'source':'sample'}).get('source','sample')
+        p=load_profile(state);source=read(state/'source.json',{'source':'sample'}).get('source','sample')
         if state.resolve()==LIVE_STATE.resolve():source='live'
         if source not in ('sample','live'):raise ValueError('Invalid saved source selection')
         if action in PROFILE_ACTIONS:
             p = update_profile(p, action, payload)
-            write(state/'profile.json', p)
+            save_profile(state, p)
+        elif action == 'init':
+            stored=read(state/'profile.json',{})
+            field=stored.get('fieldOfViewDeg')
+            if set(stored)-DEFAULT.keys() or (field is not None and field < .1):
+                save_profile(state, p)
         elif action=='source':
             source=payload.get('source')
             if source not in ('sample','live') or (state.resolve()==LIVE_STATE.resolve() and source!='live'):raise ValueError('Choose sample or read-only live suggestions')

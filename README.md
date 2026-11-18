@@ -2,13 +2,13 @@
 
 ![OMANOVA: your local Observatory for Omarchy. Sky charts, ISS and Tiangong passes, launches, trip planning and terrain, polar alignment, transit candidates, equipment, offline guides and observing-log CSV export.](preview.png)
 
-*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.5.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.6.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.5:** manual in-app release updates and a live satellite layer on the Star Chart, with trails, visibility filters and tap-to-inspect details. Includes all earlier Observatory features and guided setup. Read the [release notes](docs/RELEASE-0.1.5.md), [changelog](CHANGELOG.md) and [new screenshots](docs/SCREENSHOTS-0.1.5.md).
+> **Version 0.1.6:** My Night, observing timing charts, 25 deep-sky targets in Sky Finder, named telescope and camera setups, and a rotatable camera frame on Star Chart. Read the [release notes](docs/RELEASE-0.1.6.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.6.md).
 
 > **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
 
@@ -104,6 +104,7 @@ remain on hold; GitHub releases are separate.
 
 ## Screenshots
 
+[0.1.6 gallery: My Night, Sky Finder and camera framing](docs/SCREENSHOTS-0.1.6.md).
 [0.1.5 gallery: updater and live sky satellites](docs/SCREENSHOTS-0.1.5.md). The older galleries below retain all earlier features.
 
 [Browse the 0.1.4 gallery](docs/SCREENSHOTS-0.1.4.md) for all four final views, usability and log export. The [0.1.3 feature gallery](docs/SCREENSHOTS-0.1.3.md) covers the earlier
@@ -162,7 +163,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.5 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.6 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```
@@ -1090,7 +1091,7 @@ SIMBAD (named-star and M31 coordinates); only a small numerical subset is bundle
 Darkness estimates report Sun-below-minus-18-degree hours and Moon-free hours.
 They are not an address-derived Bortle/SQM measurement or cloud assessment.
 Equipment sky description remains manual. Optional equipment details accept
-aperture 20–600 mm, field of view 0.1–180 degrees, binocular power 2–30x and
+aperture 20–600 mm, field of view 0.01–180 degrees, binocular power 2–30x and
 unknown/wide-field/tracked camera context. Field size can be compared with a
 finder target's extent; aperture/power do not invent a sensitivity threshold.
 
@@ -1258,7 +1259,7 @@ equipment filters, in the Offline Cards library. **I saw it** opens a log
 draft for the saved observing location. Review the place and actual sighting
 time before saving. No new downloads or worker changes are needed.
 
-### Field-of-view overlays (local development)
+### Field-of-view overlays
 
 On a deep-sky target in **Sky Finder** or **My Night**, choose **Show
 field-of-view overlay**. The solid ring uses the true field of view from

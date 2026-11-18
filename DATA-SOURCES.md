@@ -27,8 +27,8 @@ watchlist or Starlink views, close the Observatory, back up the affected
 cache file under `.preview/satellites/cache` or `.preview/trains/cache`,
 and move it out of the cache directory before reopening the view.
 
-The 12 November comet refresh used Horizons API v1.3 geocentric observer
-tables (quantities 1 and 2), through 12 December 2026 UTC, and qualified COBS
+The 18 November comet refresh used Horizons geocentric observer
+tables (quantities 1 and 2), through 2 January 2027 at 00:00 UTC, and qualified COBS
 API observations. `observatory/comets/refresh_catalog.py` is an explicit
 maintainer staging command, not an automatic user download. It validates
 timestamps, coverage, response bounds and coordinates before writing a new

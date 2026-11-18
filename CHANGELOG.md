@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6 — plan a night and frame the sky
+
+- Add My Night with up to 24 targets or timed events, planning by date and saved location, offline export and pre-filled observation drafts.
+- Add the Begin / Best / End chart with sampled altitude, saved obstructions, darkness and cached cloud context.
+- Expand Sky Finder to 25 Messier targets plus five landmarks, with search, finding hints and My Night shortcuts.
+- Add circular field comparisons, a telescope and eyepiece calculator, manual entry, and named telescope and camera setups.
+- Add rectangular camera framing from active sensor dimensions and focal length, with rotation on Star Chart and a magnified camera view.
+- Refresh four comet position tables through 2 January 2027 at 00:00 UTC with dated COBS estimates.
+- Preserve the legacy equipment profile during rollback and retain new framing data separately.
+
+See [full release notes](docs/RELEASE-0.1.6.md) and [native screenshots](docs/SCREENSHOTS-0.1.6.md).
+
 ## 0.1.5 — 17 November 2026
 
 - Add explicit stable-GitHub release checking and download/install controls, expandable notes, checksums/tag validation, managed-file guards and draft protection. No automatic network checks or upgrades.

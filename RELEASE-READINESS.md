@@ -1,6 +1,16 @@
 # OMANOVA — release validation and maintenance
 
-## Current release: 0.1.5 — manual updates and live sky satellites
+## Local candidate: 0.1.6 — observing plans and camera framing
+
+See [release notes](docs/RELEASE-0.1.6.md) and the
+[sample screenshot gallery](docs/SCREENSHOTS-0.1.6.md). The comet catalogue
+expires on 2 January 2027 at 00:00 UTC. The candidate archive carries the
+source identity and excludes local state. Test the actual archive, including
+clean install, the public 0.1.5 update path and restore. Prior physical
+login/reboot tests cover earlier releases. Mission Control remains a separate
+project branch. GitHub uploads and marketplace are on hold.
+
+## Public release: 0.1.5 — manual updates and live sky satellites
 
 Lee authorised GitHub publication, new feature screenshots and full change
 documentation on 17 November. Marketplace remains on hold; #14863 stays

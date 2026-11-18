@@ -34,7 +34,9 @@ with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
               'observatory/final_sky/geometry.py','observatory/final_sky/stars.json',
               'observatory/final_sky/FinalSkyPage.qml','observatory/final_sky/HYG-LICENSE.md',
               'SOURCE-COMMIT.txt','UpdateCard.qml','update_manager.py',
-              'observatory/final_sky/satellite_layer.py']
+              'observatory/final_sky/satellite_layer.py','observatory/my_night/plan.py',
+              'observatory/final_sky/CameraChart.qml','observatory/final_sky/CameraProjection.js',
+              'observatory/comets/catalog.json']
     if any(f'omanova-{version}/{f}' not in names for f in required):raise SystemExit('Missing required candidate file')
     if any('/.preview/' in n or '/.venv/' in n or n.endswith('.bsp') for n in names):raise SystemExit('Private/cache/runtime artifact in archive')
 out=root/'.preview/release-candidates'/f'v{version}-{commit[:8]}'

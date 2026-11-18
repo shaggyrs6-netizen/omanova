@@ -20,3 +20,16 @@ function validProfile(p){
  for(const [k,lo,hi] of [['apertureMm',20,600],['fieldOfViewDeg',.01,180],['binocularMagnification',2,30]])if(p[k]!==undefined&&p[k]!==null&&(typeof p[k]!=='number'||!Number.isFinite(p[k])||p[k]<lo||p[k]>hi))return false;
  return p.cameraMode===undefined||['unknown','widefield','tracked'].includes(p.cameraMode);
 }
+
+function withFraming(base, extra) {
+    if (!base) return null
+    if (!extra) return base
+    const combined = Object.assign({}, base)
+    for (const key of ["telescopeOptics", "opticalSetups", "activeOpticalSetup"]) {
+        if (Object.prototype.hasOwnProperty.call(extra, key))
+            combined[key] = extra[key]
+    }
+    if (base.fieldOfViewDeg == null && Number.isFinite(extra.narrowFieldDeg))
+        combined.fieldOfViewDeg = extra.narrowFieldDeg
+    return combined
+}
