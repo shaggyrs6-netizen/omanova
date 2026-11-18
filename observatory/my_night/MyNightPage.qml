@@ -193,8 +193,8 @@ Item {
                             Layout.fillWidth:true;spacing:8
                             App.ActionButton {text:card.expanded?"Refresh timing chart":"Show timing chart";enabled:!page.busy&&!page.editing;onClicked:page.showPick(card.modelData.id)}
                             App.ActionButton {
-                                text:"I saw it";enabled:!page.busy&&!page.editing
-                                onClicked:page.recordObservation({name:card.modelData.name,place:page.result?.place||"",assessment:"From My Night"})
+                                text:"I saw it";enabled:!page.busy&&!page.editing&&!!card.modelData.logPlace
+                                onClicked:page.recordObservation({name:card.modelData.name,place:card.modelData.logPlace,assessment:"From My Night"})
                             }
                             App.ActionButton {text:"Remove";enabled:!page.busy;Accessible.name:"Remove "+card.modelData.name;onClicked:page.request("remove",{selected:card.modelData.id})}
                         }

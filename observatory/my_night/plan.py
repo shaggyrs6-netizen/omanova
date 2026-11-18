@@ -232,7 +232,8 @@ def build(plan, context, data, fixture, now, selected):
                     note = 'Window has ended or is too short to use from now. '+note
             else:
                 samples,row,note,eligible=event_chart(pick,context,place,start,end,now,fixture,terrain,eph,ts,site)
-            summary.update(note=note, eligible=eligible, begin='', best='', end='', weather='Cloud cover unknown.')
+            summary.update(logPlace=place['name'] if pick['kind']=='target' or place_key(place)==pick['site'] else '',
+                           note=note, eligible=eligible, begin='', best='', end='', weather='Cloud cover unknown.')
             if row:
                 if utc(row['end'])<=now and pick['kind']=='event':
                     summary['note'] = 'Ended window · inspect only. '+summary['note']
