@@ -1,4 +1,5 @@
 import "./qml/Omanova" as App
+import "./qml/Omanova/Framing.js" as Framing
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -12,12 +13,43 @@ Item {
     readonly property color backgroundColour:App.Palette.background
     Component.onCompleted:if(deployed)request("tick")
     property bool capabilitiesOpen:false
+    property bool calculatorOpen:false
+    property string fieldNotice:""
+    readonly property var scopeSpec: dataSet?.profile?.telescopeOptics?.telescopeMm ?? null
+    readonly property var ocularSpec: dataSet?.profile?.telescopeOptics?.eyepieceMm ?? null
+    readonly property var apparentSpec: dataSet?.profile?.telescopeOptics?.apparentDeg ?? null
+    readonly property var savedField: dataSet?.profile?.fieldOfViewDeg ?? null
+    readonly property var estimate: Framing.estimate(Framing.decimal(telescope.text),
+                                                     Framing.decimal(eyepiece.text),
+                                                     Framing.decimal(apparent.text))
+    function saveEstimate() {
+        if (!root.estimate) return
+        let p=JSON.parse(JSON.stringify(root.dataSet.profile))
+        p.fieldOfViewDeg=root.estimate.field
+        p.telescopeOptics={telescopeMm:Framing.decimal(telescope.text),
+                          eyepieceMm:Framing.decimal(eyepiece.text),apparentDeg:Framing.decimal(apparent.text)}
+        root.request("save",p,"Estimated field saved.")
+    }
+    function saveManualField() {
+        const value=manualField.text.trim() ? Framing.decimal(manualField.text) : null
+        if (value!==null && !Framing.fieldIsValid(value)) {
+            root.fieldNotice="Enter a field of view from 0.01° to 180°, or leave it blank to clear it."
+            return
+        }
+        let p=JSON.parse(JSON.stringify(root.dataSet.profile))
+        p.fieldOfViewDeg=value
+        root.request("save",p,value===null?"Overlay field cleared.":"Manual field saved.")
+    }
+    function formatAngle(value) {return Number(value.toPrecision(4)).toString()+"°"}
     property var dataSet:null
     property string action:"tick"
     property string pending:""
     property string result:""
-    function request(a,p) {
+    property string fieldConfirmation:""
+    function request(a,p,confirmation) {
         if(helper.running)return
+        fieldConfirmation=confirmation||""
+        if(fieldConfirmation)fieldNotice="Saving field…"
         action=a;pending=JSON.stringify(p||({}))+"\n";result="Updating…"
         helper.stdinEnabled=true;helper.running=true
     }
@@ -35,7 +67,7 @@ Item {
         environment:({"OPENBLAS_NUM_THREADS":"1"});stdinEnabled:true
         onStarted:{write(root.pending);root.pending="";stdinEnabled=false}
         stderr:StdioCollector {id:errors}
-        onExited:function(code){if(code===0)view.reload();else root.dataSet=null;root.result=code===0?root.deployed?"Equipment and sky profile saved locally.":"Saved in this preview only.":errors.text.trim()||"Update unavailable. Try selecting a data source again."}
+        onExited:function(code){if(root.fieldConfirmation)root.fieldNotice=code===0?root.fieldConfirmation:"Field could not be saved.";if(code===0)view.reload();else root.dataSet=null;root.result=code===0?root.deployed?"Equipment and sky profile saved locally.":"Saved in this preview only.":errors.text.trim()||"Update unavailable. Try selecting a data source again."}
     }
     Timer {interval:30000;repeat:true;running:!!root.dataSet&&!helper.running&&root.dataSet.source==="live";onTriggered:root.request("tick")}
         Rectangle {
@@ -46,6 +78,18 @@ Item {
                 id:b;implicitHeight:40;leftPadding:14;rightPadding:14
                 contentItem:Text {text:b.text;textFormat:Text.PlainText;color:b.enabled?App.Palette.ink:App.Palette.muted;font.pixelSize:14;verticalAlignment:Text.AlignVCenter}
                 background:Rectangle {radius:6;color:b.hovered?App.Palette.hover:App.Palette.button;border.color:b.activeFocus?App.Palette.accent:App.Palette.border}
+            }
+            component SpecField:Column {
+                property alias text: input.text
+                required property string label
+                spacing:4
+                Text { text:parent.label;color:App.Palette.ink;font.pixelSize:14 }
+                TextField {
+                    id:input;width:parent.width;height:40
+                    color:App.Palette.ink;selectByMouse:true;inputMethodHints:Qt.ImhFormattedNumbersOnly
+                    Accessible.name:parent.label
+                    background:Rectangle {radius:5;color:App.Palette.field;border.color:input.activeFocus?App.Palette.accent:App.Palette.border}
+                }
             }
             component Toggle:CheckBox {
                 id:t;enabled:!!root.dataSet&&!helper.running
@@ -77,14 +121,45 @@ Item {
                             }
                         }
                         Copy {text:"A camera means a wide-field/tripod overview. Aperture, tracking, field of view and exposure are unassessed. Telescope selection alone does not establish faint-target capability.";color:App.Palette.muted}
+                        Copy {text:"Field of view for overlays";font.bold:true}
+                        Copy {
+                            text:root.savedField===null?"No field size saved. Calculate it or enter it manually.":"Saved overlay field: "+root.formatAngle(root.savedField)
+                            color:App.Palette.accent
+                        }
+                        Action {
+                            text:root.calculatorOpen?"Hide telescope calculator":"Calculate from telescope and eyepiece"
+                            onClicked:root.calculatorOpen=!root.calculatorOpen
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth:true;visible:root.calculatorOpen;spacing:7
+                            Copy {text:"Use the effective telescope focal length if you use a Barlow or focal reducer. Use the eyepiece’s apparent field for the third value.";color:App.Palette.muted}
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                SpecField {id:telescope;width:200;label:"Telescope focal length (mm)";text:root.scopeSpec??""}
+                                SpecField {id:eyepiece;width:200;label:"Eyepiece focal length (mm)";text:root.ocularSpec??""}
+                                SpecField {id:apparent;width:215;label:"Eyepiece apparent field (°)";text:root.apparentSpec??""}
+                            }
+                            Copy {
+                                text:root.estimate?"Estimated true field: "+root.formatAngle(root.estimate.field)+" · "+
+                                    Number(root.estimate.magnification.toPrecision(3))+"× magnification":
+                                    "Enter all three specs for an estimate (supported field: 0.01° to 180°)."
+                                color:root.estimate?App.Palette.accent:App.Palette.muted
+                            }
+                            Action {text:"Use estimated field";enabled:!!root.dataSet&&!helper.running&&!!root.estimate;onClicked:root.saveEstimate()}
+                        }
+                        Flow {
+                            Layout.fillWidth:true;spacing:8
+                            SpecField {id:manualField;width:200;label:"Manual true field (°)";text:root.savedField??""}
+                            Action {text:"Save manual field";enabled:!!root.dataSet&&!helper.running;onClicked:root.saveManualField()}
+                        }
+                        Copy {visible:root.fieldNotice!=="";text:root.fieldNotice;color:App.Palette.accent}
                         Action {text:root.capabilitiesOpen?"Hide equipment details":"Optional equipment details";onClicked:root.capabilitiesOpen=!root.capabilitiesOpen}
                         ColumnLayout {visible:root.capabilitiesOpen;Layout.fillWidth:true;spacing:8
-                            Copy {text:"Aperture (20–600 mm), field of view (0.1–180°), binocular power (2–30×). Leave unknown values blank.";color:App.Palette.muted}
+                            Copy {text:"Aperture (20–600 mm), binocular power (2–30×). Leave unknown values blank.";color:App.Palette.muted}
                             Flow {Layout.fillWidth:true;spacing:8
                                 TextField {id:aperture;width:145;placeholderText:"Aperture mm";text:root.dataSet?.profile?.apertureMm??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
-                                TextField {id:fov;width:145;placeholderText:"Field of view °";text:root.dataSet?.profile?.fieldOfViewDeg??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
                                 TextField {id:power;width:145;placeholderText:"Binocular ×";text:root.dataSet?.profile?.binocularMagnification??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
-                                Action {text:"Save details";enabled:!!root.dataSet&&!helper.running;onClicked:{let p=JSON.parse(JSON.stringify(root.dataSet.profile));p.apertureMm=aperture.text.trim()?Number(aperture.text):null;p.fieldOfViewDeg=fov.text.trim()?Number(fov.text):null;p.binocularMagnification=power.text.trim()?Number(power.text):null;if([p.apertureMm,p.fieldOfViewDeg,p.binocularMagnification].some(v=>v!==null&&!Number.isFinite(v))){root.result="Enter numbers or leave unknown values blank.";return}root.request("save",p)}}
+                                Action {text:"Save details";enabled:!!root.dataSet&&!helper.running;onClicked:{let p=JSON.parse(JSON.stringify(root.dataSet.profile));p.apertureMm=aperture.text.trim()?Number(aperture.text):null;p.binocularMagnification=power.text.trim()?Number(power.text):null;if([p.apertureMm,p.binocularMagnification].some(v=>v!==null&&!Number.isFinite(v))){root.result="Enter numbers or leave unknown values blank.";return}root.request("save",p)}}
                             }
                             Flow {Layout.fillWidth:true;spacing:8
                                 Repeater {model:["unknown","widefield","tracked"];Action {required property string modelData;text:(root.dataSet?.profile?.cameraMode===modelData?"● ":"")+"Camera: "+modelData;enabled:!!root.dataSet&&!helper.running;onClicked:root.preference("cameraMode",modelData)}}
@@ -137,6 +212,18 @@ Item {
             target:"omanova-equipment"
             function summary():string {return JSON.stringify({source:root.dataSet?.source,profile:root.dataSet?.profile,counts:root.dataSet?.counts,busy:helper.running,error:root.dataSet?.error})}
             function sampleProfile(value:string):void {if(root.dataSet?.source==="sample")root.request("save",JSON.parse(value))}
+            function sampleField(scope:string,ocular:string,afov:string,manual:string):bool {
+                if(root.deployed || root.dataSet?.source!=="sample" || helper.running)return false
+                if(manual!=="estimate") {
+                    manualField.text=manual
+                    root.saveManualField()
+                    return helper.running
+                }
+                root.calculatorOpen=true
+                telescope.text=scope;eyepiece.text=ocular;apparent.text=afov
+                root.saveEstimate()
+                return helper.running
+            }
             function capture():void {if(root.dataSet?.source==="sample")ui.grabToImage(r=>r.saveToFile(root.state+"/sample.png"))}
         }
 }

@@ -27,6 +27,13 @@ class CompletionTests(unittest.TestCase):
   self.assertEqual(p['gear'],['eye']);self.assertEqual(p['apertureMm'],100)
   for key,v in [('apertureMm',0),('apertureMm',float('nan')),('fieldOfViewDeg',181),('binocularMagnification',True),('cameraMode','magic')]:
    with self.assertRaises(ValueError):profile({key:v})
+ def test_telescope_optics_are_optional_and_survive_manual_field_changes(self):
+  self.assertIsNone(profile({})['telescopeOptics'])
+  optics={'telescopeMm':1200,'eyepieceMm':25,'apparentDeg':60}
+  saved=profile({'telescopeOptics':optics,'fieldOfViewDeg':1.25})
+  self.assertEqual(profile({**saved,'fieldOfViewDeg':.06})['telescopeOptics'],optics)
+  for invalid in ({}, {**optics,'apparentDeg':181}, {**optics,'eyepieceMm':0}):
+   with self.assertRaises(ValueError):profile({'telescopeOptics':invalid})
  def test_straight_line_distance_and_destination_catalogue(self):
   self.assertEqual(distance(0,0,0,0),0)
   self.assertAlmostEqual(distance(0,0,0,1),111.195,places=2)

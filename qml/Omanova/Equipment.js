@@ -17,6 +17,6 @@ function evaluate(row,p){
 function validProfile(p){
  if(!p||!Array.isArray(p.gear)||p.gear.length>4||p.gear.some(g=>!['eye','binoculars','telescope','camera'].includes(g))||!['unknown','bright','moderate','dark'].includes(p.sky))return false;
  for(const k of ['filter','uncertain','showExcluded'])if(typeof p[k]!=='boolean')return false;
- for(const [k,lo,hi] of [['apertureMm',20,600],['fieldOfViewDeg',.1,180],['binocularMagnification',2,30]])if(p[k]!==undefined&&p[k]!==null&&(typeof p[k]!=='number'||!Number.isFinite(p[k])||p[k]<lo||p[k]>hi))return false;
+ for(const [k,lo,hi] of [['apertureMm',20,600],['fieldOfViewDeg',.01,180],['binocularMagnification',2,30]])if(p[k]!==undefined&&p[k]!==null&&(typeof p[k]!=='number'||!Number.isFinite(p[k])||p[k]<lo||p[k]>hi))return false;
  return p.cameraMode===undefined||['unknown','widefield','tracked'].includes(p.cameraMode);
 }

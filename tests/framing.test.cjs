@@ -25,3 +25,19 @@ test('unconfigured or invalid fields and missing extents suppress the drawing', 
     for (const field of [null, 0, 181, '3', NaN]) assert.equal(context.compare(field,2).status,'missing-field');
     for (const extent of [undefined, 0, Infinity]) assert.equal(context.compare(3,extent).status,'missing-extent');
 });
+
+test('estimates the true field from focal lengths and apparent field', () => {
+    const result = context.estimate(1200, 25, 60);
+    assert.equal(result.magnification, 48);
+    assert.equal(result.field, 1.25);
+    assert.equal(context.estimate(3000, 4, 50).field, 50 / 750);
+    assert.equal(context.compare(50 / 750, 0.05).status, 'fits');
+});
+
+test('calculator rejects missing, nonphysical and out of range values', () => {
+    for (const args of [[0, 25, 60], [1200, NaN, 60], [1200, 25, 181], [120000, 1, 10], [1, 900, 90]]) {
+        assert.equal(context.estimate(...args), null);
+    }
+    assert.equal(context.decimal(' 12,5 '), 12.5);
+    assert.equal(context.decimal('0x10'), NaN);
+});

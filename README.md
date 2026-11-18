@@ -1264,6 +1264,9 @@ On a deep-sky target in **Sky Finder** or **My Night**, choose **Show
 field-of-view overlay**. The solid ring uses the true field of view from
 **My Equipment and Sky**. The dashed ring is the target’s approximate
 catalogue width. The diagram shows both centred at the same angular scale
-and calls out tight fits separately. Enter the amount of sky your setup
-covers, rather than the eyepiece's apparent field. Camera sensor shape,
-target detail and visibility are outside this comparison.
+and calls out tight fits separately. Choose **Calculate from telescope and
+eyepiece** and enter the telescope focal length, eyepiece focal length and
+eyepiece apparent field. **Use estimated field** saves the estimate and
+retains the specs locally. **Save manual field** lets you use a measured
+angle or clear the field. Camera sensor shape, target detail and visibility
+are outside this comparison.

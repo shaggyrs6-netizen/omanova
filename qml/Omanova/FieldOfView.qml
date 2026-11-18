@@ -97,7 +97,7 @@ Rectangle {
         Copy {
             visible:!panel.available
             text:panel.comparison.status==="missing-field"?
-                "Enter your setup’s true field of view in My Equipment and Sky. Use the angle of sky it covers, rather than the eyepiece’s apparent field.":
+                "Calculate the field from your telescope and eyepiece, or enter your true field of view in My Equipment and Sky.":
                 "This object has no catalogue width for a size comparison."
             color:App.Palette.muted
         }
