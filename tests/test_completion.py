@@ -28,7 +28,7 @@ class CompletionTests(unittest.TestCase):
   for key,v in [('apertureMm',0),('apertureMm',float('nan')),('fieldOfViewDeg',181),('binocularMagnification',True),('cameraMode','magic')]:
    with self.assertRaises(ValueError):profile({key:v})
  def test_telescope_optics_are_optional_and_survive_manual_field_changes(self):
-  self.assertIsNone(profile({})['telescopeOptics'])
+  self.assertIsNone(profile({}).get('telescopeOptics'))
   optics={'telescopeMm':1200,'eyepieceMm':25,'apparentDeg':60}
   saved=profile({'telescopeOptics':optics,'fieldOfViewDeg':1.25})
   self.assertEqual(profile({**saved,'fieldOfViewDeg':.06})['telescopeOptics'],optics)

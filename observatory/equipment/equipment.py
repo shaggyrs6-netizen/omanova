@@ -22,11 +22,11 @@ def allowed_state(state):
 
 GEAR=('eye','binoculars','telescope','camera')
 SKIES=('unknown','bright','moderate','dark')
-DEFAULT={'gear':['eye'],'sky':'unknown','filter':True,'uncertain':True,'showExcluded':False,'apertureMm':None,'fieldOfViewDeg':None,'binocularMagnification':None,'cameraMode':'unknown','telescopeOptics':None}
+DEFAULT={'gear':['eye'],'sky':'unknown','filter':True,'uncertain':True,'showExcluded':False,'apertureMm':None,'fieldOfViewDeg':None,'binocularMagnification':None,'cameraMode':'unknown'}
 
 
 def profile(raw):
-    if not isinstance(raw,dict) or set(raw)-set(DEFAULT):raise ValueError('Invalid equipment profile')
+    if not isinstance(raw,dict) or set(raw)-DEFAULT.keys()-{'telescopeOptics'}:raise ValueError('Invalid equipment profile')
     out={**deepcopy(DEFAULT),**raw};gear=out['gear']
     if not isinstance(gear,list) or len(gear)>4 or any(g not in GEAR for g in gear):raise ValueError('Choose recognised equipment')
     out['gear']=list(dict.fromkeys(gear))
@@ -36,12 +36,13 @@ def profile(raw):
     for key,lo,hi in (('apertureMm',20,600),('fieldOfViewDeg',.01,180),('binocularMagnification',2,30)):
         v=out[key]
         if v is not None and (type(v) not in (int,float) or not isfinite(v) or not lo<=v<=hi):raise ValueError('Equipment value outside supported range')
-    optics=out['telescopeOptics']
+    optics=out.pop('telescopeOptics',None)
     if optics is not None:
         if not isinstance(optics,dict) or set(optics)!={'telescopeMm','eyepieceMm','apparentDeg'}:
             raise ValueError('Invalid telescope and eyepiece details')
         if any(type(value) not in (int,float) or not isfinite(value) or value<=0 for value in optics.values()) or optics['apparentDeg']>180:
             raise ValueError('Invalid telescope and eyepiece values')
+        out['telescopeOptics']=optics
     if out['cameraMode'] not in ('unknown','widefield','tracked'):raise ValueError('Choose a camera mode')
     return out
 
@@ -202,10 +203,7 @@ def command(state,action,payload,now=None):
         p=profile(stored or {});source=read(state/'source.json',{'source':'sample'}).get('source','sample')
         if state.resolve()==LIVE_STATE.resolve():source='live'
         if source not in ('sample','live'):raise ValueError('Invalid saved source selection')
-        if action=='save':
-            p=profile(payload)
-            saved=p if p['telescopeOptics'] is not None else {k:v for k,v in p.items() if k!='telescopeOptics'}
-            write(state/'profile.json',saved)
+        if action=='save':p=profile(payload);write(state/'profile.json',p)
         elif action=='source':
             source=payload.get('source')
             if source not in ('sample','live') or (state.resolve()==LIVE_STATE.resolve() and source!='live'):raise ValueError('Choose sample or read-only live suggestions')
