@@ -35,9 +35,12 @@ class FinalSkyTest(unittest.TestCase):
   d=sky_chart(self.eph,self.ts,self.p,None,self.when)
   self.assertGreater(len(d['stars']),300)
   self.assertTrue(all(0<=s['el']<=90 and 0<=s['az']<360 for s in d['stars']))
+  self.assertEqual(d['poleAltitude'],self.p['lat'])
+  self.assertTrue(any(target['id']=='M31' and target['extent']==3 for target in d['targets']))
+  self.assertTrue(all(0<=target['el']<=90 and 0<=target['az']<360 for target in d['targets']))
   blocked={**self.p,'horizon':[{'from':0,'to':360,'height':90}]}
   b=sky_chart(self.eph,self.ts,blocked,None,self.when)
-  self.assertTrue(all(not s['clear'] for s in b['stars']))
+  self.assertTrue(all(not s['clear'] for s in b['stars']+b['targets']))
   later=sky_chart(self.eph,self.ts,self.p,None,self.when+timedelta(hours=6))
   a={s['id']:s for s in d['stars']};z={s['id']:s for s in later['stars']}
   self.assertTrue(any(abs(a[k]['az']-z[k]['az'])>30 for k in a.keys()&z.keys()))

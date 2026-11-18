@@ -1279,3 +1279,10 @@ Select the camera setup from the same overlay dropdown to see the rectangular
 field in degrees. The centred sketch compares the short side of the frame
 with a circular approximation of target size. Camera angle, lens distortion
 and the target's actual shape affect real framing.
+
+On **Star Chart**, switch **Camera framing** on and choose a saved camera.
+Select a catalogue target or tap the whole-sky chart to centre the frame.
+Use the rotation slider or **+90°** to adjust its position angle east from
+celestial north. The whole-sky footprint and magnified camera view update
+together. The magnified view draws approximate catalogue outlines and shows
+which bright chart stars and deep-sky centres lie inside the frame.

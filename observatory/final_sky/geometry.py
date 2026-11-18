@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from astronomy import iso, utc, station_rows, STATIONS, pass_ranges
 from worker import read, DEMO_NOW
-from observatory.field.field import point
+from observatory.field.field import CAT as FINDER_CATALOGUE, point
 from observatory.trips.terrain import combined_altitude
 
 CAT_PATH = Path(__file__).with_name('stars.json')
@@ -76,7 +76,15 @@ def sky_chart(eph,ts,p,terrain,when):
     for key,label in [('sun','Sun'),('moon','Moon'),('mercury','Mercury'),('venus','Venus'),('mars barycenter','Mars'),('jupiter barycenter','Jupiter'),('saturn barycenter','Saturn')]:
         el,a,_=observer.observe(eph[key]).apparent().altaz()
         if el.degrees>=0:objects.append({'name':label,'el':float(el.degrees),'az':float(a.degrees),'clear':bool(el.degrees>combined_altitude(a.degrees,p.get('horizon',[]),terrain))})
-    return {'stars':rows,'lines':cat['lines'],'objects':objects,'horizon':[float(x) for x in combined_altitude(np.arange(360),p.get('horizon',[]),terrain)],
+    targets = FINDER_CATALOGUE['targets']
+    deep_sky = Star(ra_hours=np.array([item['ra'] for item in targets]),
+                    dec_degrees=np.array([item['dec'] for item in targets]))
+    elevations, bearings, _ = observer.observe(deep_sky).apparent().altaz()
+    terrain_mask = combined_altitude(bearings.degrees, p.get('horizon', []), terrain)
+    centres = [{**{key: item[key] for key in ('id', 'name', 'extent')},
+                'az': float(az), 'el': float(el), 'clear': bool(el > horizon)}
+               for item, az, el, horizon in zip(targets, bearings.degrees, elevations.degrees, terrain_mask) if el >= 0]
+    return {'stars':rows,'lines':cat['lines'],'objects':objects,'targets':centres,'poleAltitude':p['lat'],'horizon':[float(x) for x in combined_altitude(np.arange(360),p.get('horizon',[]),terrain)],
             'sunAltitude':float(observer.observe(eph['sun']).apparent().altaz()[0].degrees),
             'basis':'Zenith-centred equidistant chart, looking up: north top, east left. Geometric horizon with saved manual/terrain obstructions. No refraction; apparent star directions with catalogue proper motion. Bright-star orientation, not telescope pointing or a visibility forecast.'}
 

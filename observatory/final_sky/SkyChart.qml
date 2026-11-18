@@ -1,17 +1,25 @@
 import "./qml/Omanova" as App
 import QtQuick
+import "CameraProjection.js" as CameraProjection
 Rectangle {
  id:root
  property var dataSet:null
  property string selection:""
  property var hits:[]
+ property bool framing:false
+ property var cameraCentre:null
+ property var cameraFootprint:[]
+ signal centreCamera(var point)
+ onFramingChanged:canvas.requestPaint()
+ onCameraCentreChanged:canvas.requestPaint()
+ onCameraFootprintChanged:canvas.requestPaint()
  property var satellites:[]
  property int selectedSatellite:0
  onSelectedSatelliteChanged:canvas.requestPaint()
  property var formatDistance:km=>Math.round(km)+" km"
  onSatellitesChanged:canvas.requestPaint()
  color:App.Palette.field;radius:8;border.color:App.Palette.border
- Accessible.name:"Whole sky chart, north up and east left. Tap a star or planet for bearing and elevation."
+ Accessible.name:framing?"Whole sky chart. Tap the sky to centre the camera frame.":"Whole sky chart, north up and east left. Tap a star or planet for bearing and elevation."
  function describe(s){return s.name+" · "+s.az.toFixed(1)+"° true bearing · "+s.el.toFixed(1)+"° up"+(s.clear?"":" · saved horizon blocked")+(s.satellite||s.id===selectedSatellite?" · "+root.formatDistance(s.rangeKm,0)+" slant range · elements "+s.ageHours.toFixed(1)+" h old · "+s.status:"")}
  function xy(az,el) {let a=az*Math.PI/180,r=(Math.min(width,canvas.height)-80)/2*(90-el)/90;return Qt.point(width/2-r*Math.sin(a),canvas.height/2-r*Math.cos(a))}
  onDataSetChanged:{if(!selectedSatellite)selection="";canvas.requestPaint()}
@@ -37,11 +45,51 @@ Rectangle {
     let p=root.xy(s.az,s.el);c.fillStyle=App.Palette.accent;c.beginPath();c.moveTo(p.x,p.y-6);c.lineTo(p.x+6,p.y);c.lineTo(p.x,p.y+6);c.lineTo(p.x-6,p.y);c.closePath();c.fill();c.globalAlpha=1;c.font="12px sans-serif";c.fillText(s.name,p.x,p.y-10);
     hits.push(Object.assign({},s,{x:p.x,y:p.y,satellite:true}));
    }
+   if(root.framing){
+    for(const s of root.dataSet.targets||[]){
+     const p=root.xy(s.az,s.el);
+     c.strokeStyle=App.Palette.warning;c.globalAlpha=s.clear?1:.35;c.lineWidth=1;c.strokeRect(p.x-3,p.y-3,6,6);c.globalAlpha=1;
+     hits.push(Object.assign({},s,{x:p.x,y:p.y,catalogueTarget:true}));
+    }
+   }
+   if(root.cameraFootprint.length&&root.cameraCentre){
+    c.save();c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.clip();
+    c.beginPath();let first=true;
+    for(const point of root.cameraFootprint){
+     const p=root.xy(point.az,point.el);
+     if(first){c.moveTo(p.x,p.y);first=false}else c.lineTo(p.x,p.y);
+    }
+    c.closePath();
+    c.fillStyle=App.Palette.accent;c.globalAlpha=.15;c.fill();c.globalAlpha=1;
+    c.strokeStyle=App.Palette.accent;c.lineWidth=2;c.stroke();
+    const centre=root.xy(root.cameraCentre.az,root.cameraCentre.el);
+    c.beginPath();c.arc(centre.x,centre.y,5,0,Math.PI*2);c.stroke();
+    c.restore();
+   }
    root.hits=hits;
    if(root.selectedSatellite){let s=root.satellites.find(o=>o.id===root.selectedSatellite);root.selection=s?root.describe(s):"Selected satellite is below the horizon, filtered or unavailable"}
 
   }
  }
- MouseArea {anchors.fill:parent;onClicked:function(mouse){let nearest=null,d=18;for(let s of root.hits.slice().reverse()){let v=Math.hypot(s.x-mouse.x,s.y-mouse.y);if(v<d){d=v;nearest=s}}root.selectedSatellite=nearest?.satellite?nearest.id:0;root.selection=nearest?root.describe(nearest):"Tap closer to a star or planet"}}
- Text {id:selectionText;visible:!!root.selection;anchors.bottom:parent.bottom;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottomMargin:8;width:parent.width-20;horizontalAlignment:Text.AlignHCenter;wrapMode:Text.Wrap;text:root.selection;textFormat:Text.PlainText;color:App.Palette.ink;font.pixelSize:13}
+ MouseArea {
+  anchors.fill:canvas
+  onClicked:function(mouse){
+   let nearest=null,d=18;
+   for(let s of root.hits.slice().reverse()){
+    let v=Math.hypot(s.x-mouse.x,s.y-mouse.y);
+    if(v<d){d=v;nearest=s}
+   }
+   if(root.framing){
+    const point=CameraProjection.chartDirection(mouse.x-width/2, mouse.y-height/2, (Math.min(width,height)-80)/2);
+    if(point){
+     root.centreCamera(nearest?.catalogueTarget ? {target:nearest.id} :
+                       nearest && !nearest.satellite ? (nearest.id ? {star:nearest.id} : {object:nearest.name}) : point);
+    }
+    return;
+   }
+   root.selectedSatellite=nearest?.satellite?nearest.id:0;
+   root.selection=nearest?root.describe(nearest):"Tap closer to a star or planet";
+  }
+ }
+ Text {id:selectionText;visible:!root.framing&&!!root.selection;anchors.bottom:parent.bottom;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottomMargin:8;width:parent.width-20;horizontalAlignment:Text.AlignHCenter;wrapMode:Text.Wrap;text:root.selection;textFormat:Text.PlainText;color:App.Palette.ink;font.pixelSize:13}
 }
