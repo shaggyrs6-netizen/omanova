@@ -6,6 +6,8 @@ import QtQuick.Layouts
 ColumnLayout {
     id: page
     required property var sky
+    property bool canAddToNight: false
+    signal addToNight(string key)
     signal inspect(var selected)
     signal recordObservation(var selected)
     property bool stationDetail: false
@@ -50,7 +52,7 @@ ColumnLayout {
     Copy { visible: !page.stationDetail && !page.rows.length; text: qsTr("No events in this selection. Try a longer range or another type.") }
     Repeater {
         model: page.stationDetail ? [] : page.rows.slice(0,100)
-        OpportunityCard { Layout.leftMargin: 22; Layout.rightMargin: 22; required property var modelData; event: modelData; sky: page.sky; onInspect: selected => page.inspect(selected); onRecordObservation:selected => page.recordObservation(selected) }
+        OpportunityCard { Layout.leftMargin: 22; Layout.rightMargin: 22; required property var modelData; event: modelData; sky: page.sky; canAddToNight:page.canAddToNight; onAddToNight:key=>page.addToNight(key); onInspect: selected => page.inspect(selected); onRecordObservation:selected => page.recordObservation(selected) }
     }
     Copy { visible: !page.stationDetail && page.rows.length > 100; text: qsTr("Showing the first 100 events. Filter by type to narrow the list.") }
     EventsPage {

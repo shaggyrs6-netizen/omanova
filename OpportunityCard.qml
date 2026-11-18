@@ -16,6 +16,8 @@ Rectangle {
         const sameDate=start.toDateString()===end.toDateString()
         return Qt.formatDateTime(start,"ddd d MMM · "+fmt)+" – "+Qt.formatDateTime(end,sameDate?fmt:"ddd d MMM · "+fmt)
     }
+    property bool canAddToNight: false
+    signal addToNight(string key)
     signal inspect(var selected)
     signal recordObservation(var selected)
     Layout.fillWidth: true
@@ -62,6 +64,7 @@ Rectangle {
         Flow {
             Layout.fillWidth: true;spacing:8
             App.ActionButton {text:qsTr("Explore details");onClicked:card.inspect(card.event)}
+            App.ActionButton {visible:card.canAddToNight;text:qsTr("Add to My Night");onClicked:card.addToNight(card.event.id)}
             App.ActionButton {text:qsTr("I saw it");onClicked:card.recordObservation(card.event)}
             App.ActionButton {text:card.whyOpen?qsTr("Hide reasoning"):qsTr("Why this pick?");onClicked:card.whyOpen=!card.whyOpen}
             App.ActionButton {text:qsTr("Source");visible:!!card.event.source;onClicked:if(/^https:\/\//.test(card.event.source))Qt.openUrlExternally(card.event.source)}

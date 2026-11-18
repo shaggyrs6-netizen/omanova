@@ -26,6 +26,7 @@ var pages = [
     {id:"trains", label:"Starlink Trains", group:"spaceflight", legacy:12},
     {id:"plumes", label:"Launch Plumes", group:"spaceflight", legacy:10},
     {id:"following", label:"Launch Following", group:"spaceflight", legacy:18, extended:true},
+    {id:"my-night", label:"My Night", group:"plan", legacy:28, extended:true},
     {id:"trips", label:"Trip Planner", group:"plan", legacy:17, extended:true},
     {id:"sites", label:"Destination Sites", group:"plan", legacy:22, extended:true},
     {id:"regional-sites", label:"Regional Sites", group:"plan", legacy:14},

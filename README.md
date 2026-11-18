@@ -1235,3 +1235,23 @@ Development testing uses isolated synthetic fixtures for updates and failures;
 normal acceptance uses the maintainer's live copy when authorised, preserving
 saved data, worker/autostart choices and the compact fallback. No fixture
 upgrade or synthetic observation is written into the real user data.
+
+### My Night and timing charts (local development)
+
+Open **Plan → My Night**, or choose **Add to My Night** on Tonight, Events or
+Sky Finder. Choose your active location, Trip Home or Trip destination and a
+local date, then press **Set night**. One saved list holds up to 24 picks.
+Catalogue targets recalculate for the chosen place and night. Timed events
+keep their original location and window.
+
+The chart shows altitude against the saved horizon, darkness and the selected
+window. Cached hourly cloud cover appears when available. Begin, Best and End
+are approximate local times with UTC offsets. The best sample is the highest
+eligible point, with weather listed separately. A timed event without a path
+shows only its source window. Stale or ended events remain inspectable.
+Geometry does not guarantee a sighting.
+
+**Save offline guide** saves only your eligible picks, subject to the existing
+equipment filters, in the Offline Cards library. **I saw it** opens a log
+draft for the saved observing location. Review the place and actual sighting
+time before saving. No new downloads or worker changes are needed.

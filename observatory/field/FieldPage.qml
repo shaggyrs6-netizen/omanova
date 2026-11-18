@@ -6,6 +6,8 @@ import Quickshell
 import Quickshell.Io
 Item {
  id:root
+ signal addToNight(string key)
+ property bool canAddToNight:false
  property var skyModel:null
  readonly property bool useMiles:skyModel?skyModel.useMiles:Quickshell.env("OMANOVA_DISTANCE_MI")==="1"
  property string section:"sites"
@@ -65,6 +67,7 @@ Item {
       Action {visible:root.section==="sites";text:"Official site/access guidance";onClicked:Qt.openUrlExternally(card.modelData.source)}
       Copy {visible:root.section==="finder";text:(card.modelData.type||"")+" · "+(card.modelData.status||"");color:App.Palette.warning}
       Copy {visible:root.section==="finder";text:card.modelData.hint||"";color:App.Palette.muted}
+      Action {visible:root.section==="finder"&&root.canAddToNight;text:"Add to My Night";onClicked:root.addToNight(card.modelData.id)}
       Repeater {model:root.section==="finder"?card.modelData.windows||[]:[]
        ColumnLayout {required property var modelData;Layout.fillWidth:true;spacing:6
         Copy {text:(root.clock>Date.parse(modelData.event.end)?"Ended window · ":"")+(modelData.when||modelData.event.start+" — "+modelData.event.end);font.bold:true}

@@ -75,9 +75,9 @@ def source_data(state,source,now,live_path=None):
     return rows,data.get('generated'),now,issues
 
 
-def prepare(state,request,now,live_path=None):
+def prepare(state,request,now,live_path=None,*,selected_source=None):
     source=request_source(state,request)
-    raw,generated,clock,issues=source_data(state,source,now,live_path)
+    raw,generated,clock,issues=selected_source if selected_source is not None else source_data(state,source,now,live_path)
     zone=request.get('zone') or (raw[0].get('timeZone') if source.startswith('trip-') and raw else None) or desktop_zone()
     ZoneInfo(zone)
     d=clock.astimezone(ZoneInfo(zone))
@@ -195,7 +195,12 @@ def save(state,request,now):
     display=request.get('displayMode','normal')
     if display not in ('normal','dim','red'):raise ValueError('Choose normal, dim or red display')
     deck['displayMode']=display
-    deck['rows']=chosen;deck['available']=len(chosen);deck['savedAt']=iso(now)
+    deck['rows']=chosen;deck['available']=len(chosen)
+    return persist(state,deck,now)
+
+
+def persist(state,deck,now):
+    deck['savedAt']=iso(now)
     guide=now.strftime('%Y%m%dT%H%M%SZ')+'-'+secrets.token_hex(4)
     folder=state/'guides'/guide;folder.mkdir(parents=True,mode=0o700,exist_ok=False)
     write(folder/'deck.json',deck)
@@ -219,7 +224,7 @@ def render_html(deck,now):
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>OMANOVA · {e(d['night'])} observing guide</title>
 <style>body{{background:#0a1220;color:#eef5ff;font:16px/1.55 system-ui,sans-serif;max-width:980px;margin:auto;padding:28px}}article{{background:#142137;border:1px solid #3f5872;border-radius:12px;padding:22px;margin:20px 0;break-inside:avoid}}h1,h2{{line-height:1.2}}.tag,.status{{color:#77e3df;font-weight:bold}}.warning,.weather-status,.status{{color:#ffcf8b}}.source{{overflow-wrap:anywhere;color:#afc0d5}}body[data-mode="dim"]{{background:#020508;color:#a8c0c3}}body[data-mode="red"],body[data-mode="red"] article{{background:#0c0202;color:#ffaaa0;border-color:#ce6c64}}body[data-mode="red"] .tag,body[data-mode="red"] .status,body[data-mode="red"] .warning,body[data-mode="red"] .weather-status,body[data-mode="red"] .source{{color:#ffc0b8}}button{{background:#142137;color:#eef5ff;border:1px solid #607a94;border-radius:5px;padding:10px}}body[data-mode="red"] button{{background:#240807;color:#ffaaa0;border-color:#ce6c64}}@media print{{button{{display:none}}body,article{{background:white;color:black}}article{{border:1px solid #777}}.tag,.status,.warning,.weather-status,.source{{color:black}}}}</style></head><body data-mode="{e(d.get('displayMode','normal'))}">
 <header><p><button onclick="setDisplay('normal')">Normal</button> <button onclick="setDisplay('dim')">Dim</button> <button onclick="setDisplay('red')">Red</button></p><p>OMANOVA / {'SIMULATED EXAMPLES' if d['source']=='sample' else 'SAVED OFFLINE SNAPSHOT'}</p><h1>Your night: {e(d['night'])}</h1><p>Guide zone: {e(d['zone'])}. Noon to noon: {e(d['windowStart'])} — {e(d['windowEnd'])} UTC.</p>
-<p>Saved {e(d['savedAt'])}. Prediction snapshot {e(d['capturedAt'])}. No address, coordinates or location name included.</p><p class="warning">{'SIMULATED: not real predictions. ' if d['source']=='sample' else ''}Recheck timing, weather, local horizon and safety before observing. Applies to the observing location used when saved, not a newly selected place. No automatic updates, alarms or live visibility guarantee. Source links are references only. {('Saved Trip Planner manual/terrain horizon clipping applied.' if d.get('horizonApplied') else 'Active-location guide; Trip Planner horizons are not applied.')}</p><p>On-screen freshness uses this device's clock. Printed copies cannot update: use the timestamps and recheck deadlines on each card.</p><noscript><p class="warning">Dynamic age checks are unavailable. Treat freshness as unknown; inspect each saved timestamp and recheck deadline.</p></noscript></header>
+<p>Saved {e(d['savedAt'])}. Prediction snapshot {e(d['capturedAt'])}. No address, coordinates or location name included.</p><p class="warning">{'SIMULATED: not real predictions. ' if d['source']=='sample' else ''}Recheck timing, weather, local horizon and safety before observing. Applies to the observing location used when saved, not a newly selected place. No automatic updates, alarms or live visibility guarantee. Source links are references only. {('Saved horizon used for calculated target windows. Timed events retain their source window.' if d.get('myNight') else 'Saved Trip Planner manual/terrain horizon clipping applied.' if d.get('horizonApplied') else 'Active-location guide; Trip Planner horizons are not applied.')}</p><p>On-screen freshness uses this device's clock. Printed copies cannot update: use the timestamps and recheck deadlines on each card.</p><noscript><p class="warning">Dynamic age checks are unavailable. Treat freshness as unknown; inspect each saved timestamp and recheck deadline.</p></noscript></header>
 {''.join(cards)}<script>{script}</script></body></html>'''
 
 

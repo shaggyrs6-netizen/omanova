@@ -88,7 +88,7 @@ ShellRoot {
             readonly property string sectionId: Navigation.section(pageId)
             readonly property var sectionPages: Navigation.sectionPages(sectionId, extendedPages)
             readonly property bool showingPlanets: pageId === "planets"
-            readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "sites", "sky-finder", "log", "star-chart", "live-orbit", "polar", "transits"].includes(pageId)
+            readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "my-night", "sites", "sky-finder", "log", "star-chart", "live-orbit", "polar", "transits"].includes(pageId)
             NightContext { id: nightContext; skyModel: sky }
             property real scrub: -1
             readonly property real riseTime: event ? Date.parse(event.start) : 0
@@ -134,8 +134,13 @@ ShellRoot {
                 return true
             }
             function changeScreen(index) { return navigate(Navigation.fromLegacy(index)) }
+            function addToNight(kind,key) {
+                if (!myNightLoader.item) return
+                myNightLoader.item.add(kind,key)
+                navigate("my-night")
+            }
             function startObservation(selected) {
-                const draft = ObservationDraft.make(selected, sky.data?.place?.name || "", new Date(), ++logDraftSequence)
+                const draft = ObservationDraft.make(selected, selected?.place ?? sky.data?.place?.name ?? "", new Date(), ++logDraftSequence)
                 if (!draft) return false
                 logDraftRequest = draft
                 return navigate("log")
@@ -444,8 +449,14 @@ ShellRoot {
                     visible:ui.pageId === "offline";active:visible
                     sourceComponent:Component {OfflinePage {}}
                 }
+                Loader {
+                    id: myNightLoader
+                    Layout.fillWidth:true;Layout.fillHeight:true
+                    visible:ui.pageId === "my-night";active:ui.extendedPages
+                    sourceComponent:Component {MyNightPage {sky:ui.skyModel;onRecordObservation:selected=>ui.startObservation(selected)}}
+                }
                 Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {FieldPage {section:"sites";skyModel:sky}}}
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky;canAddToNight:ui.extendedPages;onAddToNight:key=>ui.addToNight("target",key)}}}
                 Loader {
                     id: finalSkyLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
@@ -525,6 +536,8 @@ ShellRoot {
                 id: eventsView
                 UnifiedEventsPage {
                     sky: ui.skyModel
+                    canAddToNight:ui.extendedPages
+                    onAddToNight:key=>ui.addToNight("event",key)
                     onRecordObservation: selected => ui.startObservation(selected)
                     onInspect: function(selected) {
                         if (selected.station_id) ui.selectedEventId = selected.station_id
@@ -538,6 +551,8 @@ ShellRoot {
                 TonightPage {
                     sky: ui.skyModel
                     night: nightContext
+                    canAddToNight:ui.extendedPages
+                    onAddToNight:key=>ui.addToNight("event",key)
                     onRecordObservation: selected => ui.startObservation(selected)
                     onInspect: function(selected) {
                         if (selected.station_id) ui.selectedEventId = selected.station_id

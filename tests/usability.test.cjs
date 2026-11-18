@@ -1,8 +1,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 function load(path){const c={};vm.createContext(c);vm.runInContext(fs.readFileSync(path,'utf8').replace(/^\.pragma library\n/,''),c);return c;}
 const nav=load('qml/Omanova/Navigation.js'),night=load('qml/Omanova/Tonight.js');
-test('All 28 pages have stable, unique keys and preserve event/IPC adapters',()=>{
- assert.equal(nav.pages.length,28);assert.equal(new Set(nav.pages.map(p=>p.id)).size,28);assert.equal(new Set(nav.pages.map(p=>p.legacy)).size,28);
+test('All 29 pages have stable, unique keys and preserve event/IPC adapters',()=>{
+ assert.equal(nav.pages.length,29);assert.equal(new Set(nav.pages.map(p=>p.id)).size,29);assert.equal(new Set(nav.pages.map(p=>p.legacy)).size,29);
  for(const p of nav.pages){assert.equal(nav.fromLegacy(p.legacy),p.id);assert.ok(nav.groups.some(g=>g.id===p.group));assert.ok(nav.sectionPages(p.group,true).some(v=>v.id===p.id));}
  assert.equal(nav.fromLegacy(99),'');assert.equal(nav.available(false).length,16);
 });

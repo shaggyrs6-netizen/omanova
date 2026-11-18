@@ -7,6 +7,8 @@ ColumnLayout {
     id: page
     required property var sky
     required property var night
+    property bool canAddToNight: false
+    signal addToNight(string key)
     signal inspect(var selected)
     signal recordObservation(var selected)
     signal openEvents()
@@ -95,6 +97,8 @@ ColumnLayout {
             Layout.leftMargin:24;Layout.rightMargin:24
             event:modelData;sky:page.sky;hero:index===0
             onInspect:function(selected){page.inspect(selected)}
+            canAddToNight:page.canAddToNight
+            onAddToNight:key=>page.addToNight(key)
             onRecordObservation:function(selected){page.recordObservation(selected)}
         }
     }
