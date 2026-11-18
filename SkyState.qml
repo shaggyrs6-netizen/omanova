@@ -19,6 +19,35 @@ QtObject {
         onLoaded:{try{root.equipmentProfile=JSON.parse(text());root.equipmentInvalid=!Equipment.validProfile(root.equipmentProfile)}catch(e){root.equipmentInvalid=true}}
         onLoadFailed:root.equipmentProfile=null
     }
+    readonly property string equipmentState: Quickshell.env("OMANOVA_EQUIPMENT_STATE")
+    readonly property string equipmentRuntime: Quickshell.env("OMANOVA_EQUIPMENT_RUNTIME")
+    readonly property bool changingSetup: setupWriter.running
+    property string setupError: ""
+    property string setupPayload: ""
+
+    function selectEquipmentSetup(name) {
+        if (!equipmentState || !equipmentRuntime || equipmentInvalid || changingSetup)
+            return false
+        setupError = ""
+        setupPayload = JSON.stringify({name: name}) + "\n"
+        setupWriter.stdinEnabled = true
+        setupWriter.running = true
+        return true
+    }
+
+    property Process setupProcess: Process {
+        id: setupWriter
+        command: [root.equipmentRuntime + "/.venv/bin/python",
+                  root.equipmentRuntime + "/observatory/equipment/equipment.py",
+                  "--state", root.equipmentState, "select_setup"]
+        environment: ({"OPENBLAS_NUM_THREADS": "1"})
+        onStarted: { write(root.setupPayload); stdinEnabled = false }
+        onExited: function(code) {
+            root.equipmentFile.reload()
+            if (code !== 0) root.setupError = "Could not switch observing setup. Try again."
+        }
+    }
+
     function equipmentMatches(row){return !equipmentInvalid&&Equipment.evaluate(row,equipmentProfile)}
     property var planning: null
     readonly property bool plannerStale: !planning || snapshotStale || planning.location_id !== data?.place?.id ||

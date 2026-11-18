@@ -22,13 +22,30 @@ Item {
     readonly property var estimate: Framing.estimate(Framing.decimal(telescope.text),
                                                      Framing.decimal(eyepiece.text),
                                                      Framing.decimal(apparent.text))
+    readonly property var setups: dataSet?.profile?.opticalSetups || []
+    readonly property var activeSetup: setups.find(setup => setup.name === dataSet?.profile?.activeOpticalSetup)
+    readonly property string setupName: nameInput.text.trim()
+    readonly property bool existingName: setups.some(setup => setup.name === setupName)
+
+    function opticsFromFields() {
+        return {telescopeMm: Framing.decimal(telescope.text), eyepieceMm: Framing.decimal(eyepiece.text),
+                apparentDeg: Framing.decimal(apparent.text)}
+    }
     function saveEstimate() {
         if (!root.estimate) return
-        let p=JSON.parse(JSON.stringify(root.dataSet.profile))
-        p.fieldOfViewDeg=root.estimate.field
-        p.telescopeOptics={telescopeMm:Framing.decimal(telescope.text),
-                          eyepieceMm:Framing.decimal(eyepiece.text),apparentDeg:Framing.decimal(apparent.text)}
-        root.request("save",p,"Estimated field saved.")
+        root.request("save_field", {fieldOfViewDeg: root.estimate.field, telescopeOptics: opticsFromFields()},
+                     "Estimated field saved.")
+    }
+    function saveNamedSetup() {
+        if (!root.estimate || !root.setupName || (!root.existingName && root.setups.length >= 12)) return false
+        root.request("save_setup", {name: root.setupName, optics: opticsFromFields()}, "Setup saved and selected.")
+        return helper.running
+    }
+    function editSetup(setup) {
+        nameInput.text = setup.name
+        telescope.text = setup.optics.telescopeMm.toString()
+        eyepiece.text = setup.optics.eyepieceMm.toString()
+        apparent.text = setup.optics.apparentDeg.toString()
     }
     function saveManualField() {
         const value=manualField.text.trim() ? Framing.decimal(manualField.text) : null
@@ -36,9 +53,7 @@ Item {
             root.fieldNotice="Enter a field of view from 0.01° to 180°, or leave it blank to clear it."
             return
         }
-        let p=JSON.parse(JSON.stringify(root.dataSet.profile))
-        p.fieldOfViewDeg=value
-        root.request("save",p,value===null?"Overlay field cleared.":"Manual field saved.")
+        root.request("save_field", {fieldOfViewDeg: value}, value===null?"Overlay field cleared.":"Manual field saved.")
     }
     function formatAngle(value) {return Number(value.toPrecision(4)).toString()+"°"}
     property var dataSet:null
@@ -53,7 +68,7 @@ Item {
         action=a;pending=JSON.stringify(p||({}))+"\n";result="Updating…"
         helper.stdinEnabled=true;helper.running=true
     }
-    function preference(k,v) {let p=JSON.parse(JSON.stringify(dataSet.profile));p[k]=v;request("save",p)}
+    function preference(k,v) {request("patch",{[k]:v})}
     function gear(k,on) {let g=dataSet.profile.gear.filter(v=>v!==k);if(on)g.push(k);preference("gear",g)}
     function when(t) {return t?Qt.formatDateTime(new Date(t),"ddd d MMM · HH:mm")+" local":"Unknown"}
     FileView {
@@ -82,11 +97,14 @@ Item {
             component SpecField:Column {
                 property alias text: input.text
                 required property string label
+                property bool numeric: true
+                property int maximumLength: 20
                 spacing:4
                 Text { text:parent.label;color:App.Palette.ink;font.pixelSize:14 }
                 TextField {
                     id:input;width:parent.width;height:40
-                    color:App.Palette.ink;selectByMouse:true;inputMethodHints:Qt.ImhFormattedNumbersOnly
+                    color:App.Palette.ink;selectByMouse:true;maximumLength:parent.maximumLength
+                    inputMethodHints:parent.numeric?Qt.ImhFormattedNumbersOnly:Qt.ImhNone
                     Accessible.name:parent.label
                     background:Rectangle {radius:5;color:App.Palette.field;border.color:input.activeFocus?App.Palette.accent:App.Palette.border}
                 }
@@ -123,7 +141,9 @@ Item {
                         Copy {text:"A camera means a wide-field/tripod overview. Aperture, tracking, field of view and exposure are unassessed. Telescope selection alone does not establish faint-target capability.";color:App.Palette.muted}
                         Copy {text:"Field of view for overlays";font.bold:true}
                         Copy {
-                            text:root.savedField===null?"No field size saved. Calculate it or enter it manually.":"Saved overlay field: "+root.formatAngle(root.savedField)
+                            text:root.activeSetup ? "Active setup: "+root.activeSetup.name+" · "+root.formatAngle(root.activeSetup.fieldDeg) :
+                                root.savedField===null ? "No field size saved. Calculate it or enter it manually." :
+                                "Active field: "+root.formatAngle(root.savedField)
                             color:App.Palette.accent
                         }
                         Action {
@@ -145,7 +165,41 @@ Item {
                                     "Enter all three specs for an estimate (supported field: 0.01° to 180°)."
                                 color:root.estimate?App.Palette.accent:App.Palette.muted
                             }
-                            Action {text:"Use estimated field";enabled:!!root.dataSet&&!helper.running&&!!root.estimate;onClicked:root.saveEstimate()}
+                            Action {text:"Use estimated field without naming it";enabled:!!root.dataSet&&!helper.running&&!!root.estimate;onClicked:root.saveEstimate()}
+                            SpecField {id:nameInput;width:240;label:"Setup name";numeric:false;maximumLength:48}
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                Action {
+                                    text:root.existingName?"Update and use setup":"Save and use setup"
+                                    enabled:!!root.dataSet&&!helper.running&&!!root.estimate&&!!root.setupName&&
+                                        (root.existingName||root.setups.length<12)
+                                    onClicked:root.saveNamedSetup()
+                                }
+                                Action {
+                                    visible:root.existingName
+                                    text:"Remove named setup"
+                                    enabled:!helper.running
+                                    onClicked:root.request("remove_setup",{name:root.setupName},"Setup removed.")
+                                }
+                            }
+                            Copy {
+                                visible:root.setups.length>0
+                                text:root.setups.length>=12 ? "12 setups saved. Choose one below to edit or remove." :
+                                    "Choose a saved setup below to load its details for editing."
+                                color:App.Palette.muted
+                            }
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                Repeater {
+                                    model:root.setups
+                                    Action {
+                                        required property var modelData
+                                        text:modelData.name
+                                        enabled:!helper.running
+                                        onClicked:root.editSetup(modelData)
+                                    }
+                                }
+                            }
                         }
                         Flow {
                             Layout.fillWidth:true;spacing:8
@@ -159,7 +213,7 @@ Item {
                             Flow {Layout.fillWidth:true;spacing:8
                                 TextField {id:aperture;width:145;placeholderText:"Aperture mm";text:root.dataSet?.profile?.apertureMm??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
                                 TextField {id:power;width:145;placeholderText:"Binocular ×";text:root.dataSet?.profile?.binocularMagnification??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
-                                Action {text:"Save details";enabled:!!root.dataSet&&!helper.running;onClicked:{let p=JSON.parse(JSON.stringify(root.dataSet.profile));p.apertureMm=aperture.text.trim()?Number(aperture.text):null;p.binocularMagnification=power.text.trim()?Number(power.text):null;if([p.apertureMm,p.binocularMagnification].some(v=>v!==null&&!Number.isFinite(v))){root.result="Enter numbers or leave unknown values blank.";return}root.request("save",p)}}
+                                Action {text:"Save details";enabled:!!root.dataSet&&!helper.running;onClicked:{let p={};p.apertureMm=aperture.text.trim()?Number(aperture.text):null;p.binocularMagnification=power.text.trim()?Number(power.text):null;if([p.apertureMm,p.binocularMagnification].some(v=>v!==null&&!Number.isFinite(v))){root.result="Enter numbers or leave unknown values blank.";return}root.request("patch",p)}}
                             }
                             Flow {Layout.fillWidth:true;spacing:8
                                 Repeater {model:["unknown","widefield","tracked"];Action {required property string modelData;text:(root.dataSet?.profile?.cameraMode===modelData?"● ":"")+"Camera: "+modelData;enabled:!!root.dataSet&&!helper.running;onClicked:root.preference("cameraMode",modelData)}}
@@ -224,6 +278,12 @@ Item {
                 root.saveEstimate()
                 return helper.running
             }
-            function capture():void {if(root.dataSet?.source==="sample")ui.grabToImage(r=>r.saveToFile(root.state+"/sample.png"))}
+            function sampleSaveSetup(name:string, scope:string, ocular:string, afov:string):bool {
+            if(root.deployed || root.dataSet?.source!=="sample" || helper.running)return false
+            root.calculatorOpen=true
+            nameInput.text=name;telescope.text=scope;eyepiece.text=ocular;apparent.text=afov
+            return root.saveNamedSetup()
+        }
+        function capture():void {if(root.dataSet?.source==="sample")ui.grabToImage(r=>r.saveToFile(root.state+"/sample.png"))}
         }
 }

@@ -25,8 +25,39 @@ SKIES=('unknown','bright','moderate','dark')
 DEFAULT={'gear':['eye'],'sky':'unknown','filter':True,'uncertain':True,'showExcluded':False,'apertureMm':None,'fieldOfViewDeg':None,'binocularMagnification':None,'cameraMode':'unknown'}
 
 
+MAX_SETUPS = 12
+SETUP_KEYS = {'opticalSetups', 'activeOpticalSetup'}
+PROFILE_ACTIONS = ('save', 'patch', 'save_field', 'save_setup', 'select_setup', 'remove_setup')
+
+
+def validate_optics(optics):
+    if not isinstance(optics, dict) or set(optics) != {'telescopeMm', 'eyepieceMm', 'apparentDeg'}:
+        raise ValueError('Invalid telescope and eyepiece details')
+    if any(type(value) not in (int, float) or not isfinite(value) or value <= 0 for value in optics.values()) or optics['apparentDeg'] > 180:
+        raise ValueError('Invalid telescope and eyepiece values')
+    return optics
+
+
+def setup_details(name, optics):
+    if not isinstance(name, str) or not 1 <= len(name.strip()) <= 48 or not name.strip().isprintable():
+        raise ValueError('Enter a setup name of up to 48 characters')
+    optics = validate_optics(optics)
+    # Multiply by the eyepiece-to-telescope ratio to avoid dividing by an underflowed magnification.
+    field = optics['apparentDeg'] * (optics['eyepieceMm'] / optics['telescopeMm'])
+    if not .01 <= field <= 180:
+        raise ValueError('Estimated field outside the supported range')
+    return {'name': name.strip(), 'optics': optics, 'fieldDeg': field}
+
+
+def active_field(p):
+    for setup in p.get('opticalSetups', []):
+        if setup['name'] == p.get('activeOpticalSetup'):
+            return setup['fieldDeg']
+    return p.get('fieldOfViewDeg')
+
+
 def profile(raw):
-    if not isinstance(raw,dict) or set(raw)-DEFAULT.keys()-{'telescopeOptics'}:raise ValueError('Invalid equipment profile')
+    if not isinstance(raw,dict) or set(raw)-DEFAULT.keys()-{'telescopeOptics'}-SETUP_KEYS:raise ValueError('Invalid equipment profile')
     out={**deepcopy(DEFAULT),**raw};gear=out['gear']
     if not isinstance(gear,list) or len(gear)>4 or any(g not in GEAR for g in gear):raise ValueError('Choose recognised equipment')
     out['gear']=list(dict.fromkeys(gear))
@@ -36,13 +67,25 @@ def profile(raw):
     for key,lo,hi in (('apertureMm',20,600),('fieldOfViewDeg',.01,180),('binocularMagnification',2,30)):
         v=out[key]
         if v is not None and (type(v) not in (int,float) or not isfinite(v) or not lo<=v<=hi):raise ValueError('Equipment value outside supported range')
-    optics=out.pop('telescopeOptics',None)
+    optics = out.pop('telescopeOptics', None)
     if optics is not None:
-        if not isinstance(optics,dict) or set(optics)!={'telescopeMm','eyepieceMm','apparentDeg'}:
-            raise ValueError('Invalid telescope and eyepiece details')
-        if any(type(value) not in (int,float) or not isfinite(value) or value<=0 for value in optics.values()) or optics['apparentDeg']>180:
-            raise ValueError('Invalid telescope and eyepiece values')
-        out['telescopeOptics']=optics
+        out['telescopeOptics'] = validate_optics(optics)
+    setups = out.pop('opticalSetups', [])
+    active = out.pop('activeOpticalSetup', None)
+    if not isinstance(setups, list) or len(setups) > MAX_SETUPS:
+        raise ValueError('Too many optical setups')
+    cleaned = []
+    for setup in setups:
+        if not isinstance(setup, dict) or set(setup) - {'name', 'optics', 'fieldDeg'}:
+            raise ValueError('Invalid optical setup')
+        cleaned.append(setup_details(setup.get('name'), setup.get('optics')))
+    names = {setup['name'] for setup in cleaned}
+    if len(names) != len(cleaned) or (active is not None and (not isinstance(active, str) or active not in names)):
+        raise ValueError('Invalid optical setup selection')
+    if cleaned:
+        out['opticalSetups'] = cleaned
+    if active is not None:
+        out['activeOpticalSetup'] = active
     if out['cameraMode'] not in ('unknown','widefield','tracked'):raise ValueError('Choose a camera mode')
     return out
 
@@ -195,6 +238,39 @@ def build(p,source,now,state,live_path=None):
             'limits':'Equipment and sky rules are planning guidance. No telescope aperture, camera exposure, limiting magnitude, Bortle rating or actual sighting probability is predicted. Profile changes never enable downloads, alerts or GO recommendations.'}
 
 
+def update_profile(current, action, payload):
+    if not isinstance(payload, dict):
+        raise ValueError('Invalid profile edit')
+    if action == 'save':
+        return profile(payload)
+    if action == 'patch':
+        if set(payload) - DEFAULT.keys() or 'fieldOfViewDeg' in payload:
+            raise ValueError('Invalid preference edit')
+        return profile({**current, **payload})
+    if action == 'save_field':
+        if 'fieldOfViewDeg' not in payload or set(payload) - {'fieldOfViewDeg', 'telescopeOptics'}:
+            raise ValueError('Invalid field edit')
+        return profile({**current, **payload, 'activeOpticalSetup': None})
+    setups = current.get('opticalSetups', [])
+    name = payload.get('name')
+    if action == 'save_setup':
+        saved = setup_details(name, payload.get('optics'))
+        name = saved['name']
+        updated = [saved if setup['name'] == name else setup for setup in setups]
+        if not any(setup['name'] == name for setup in setups):
+            updated.append(saved)
+        return profile({**current, 'opticalSetups': updated, 'activeOpticalSetup': name})
+    if name is not None and not any(setup['name'] == name for setup in setups):
+        raise ValueError('Optical setup no longer exists')
+    if action == 'select_setup':
+        return profile({**current, 'activeOpticalSetup': name})
+    if name is None:
+        raise ValueError('Choose an optical setup to remove')
+    active = current.get('activeOpticalSetup')
+    return profile({**current, 'opticalSetups': [setup for setup in setups if setup['name'] != name],
+                    'activeOpticalSetup': None if active == name else active})
+
+
 def command(state,action,payload,now=None):
     now=now or datetime.now(UTC)
     with lock(state):
@@ -203,7 +279,9 @@ def command(state,action,payload,now=None):
         p=profile(stored or {});source=read(state/'source.json',{'source':'sample'}).get('source','sample')
         if state.resolve()==LIVE_STATE.resolve():source='live'
         if source not in ('sample','live'):raise ValueError('Invalid saved source selection')
-        if action=='save':p=profile(payload);write(state/'profile.json',p)
+        if action in PROFILE_ACTIONS:
+            p = update_profile(p, action, payload)
+            write(state/'profile.json', p)
         elif action=='source':
             source=payload.get('source')
             if source not in ('sample','live') or (state.resolve()==LIVE_STATE.resolve() and source!='live'):raise ValueError('Choose sample or read-only live suggestions')
@@ -213,11 +291,11 @@ def command(state,action,payload,now=None):
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--state',type=Path,required=True);parser.add_argument('action',choices=('init','save','source','tick'));args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--state',type=Path,required=True);parser.add_argument('action',choices=('init','source','tick', *PROFILE_ACTIONS));args=parser.parse_args()
     state=args.state.resolve()
     if not allowed_state(state):raise ValueError('Use the dedicated equipment state or checkout preview directory')
     os.umask(0o077);payload={}
-    if args.action in ('save','source'):
+    if args.action in ('source', *PROFILE_ACTIONS):
         raw=sys.stdin.buffer.readline(8193)
         if len(raw)>8192 or not raw.endswith(b'\n'):raise ValueError('Expected one bounded JSON request')
         payload=json.loads(raw)

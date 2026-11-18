@@ -1,11 +1,18 @@
 import "." as App
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import "Framing.js" as Framing
 
 Rectangle {
     id: panel
-    required property var fieldDeg
+    required property var skyModel
+    readonly property var profile: skyModel && !skyModel.equipmentInvalid ? skyModel.equipmentProfile : null
+    readonly property var choices: [{name: null, label: "Manual / last estimate"}].concat(
+        (profile?.opticalSetups || []).map(setup => ({name: setup.name, label: setup.name})))
+    readonly property string activeName: profile?.activeOpticalSetup || ""
+    readonly property var activeSetup: profile?.opticalSetups?.find(setup => setup.name === activeName)
+    readonly property var fieldDeg: activeSetup ? activeSetup.fieldDeg : profile?.fieldOfViewDeg
     required property var extentDeg
     signal openEquipment()
     readonly property var comparison: Framing.compare(fieldDeg,extentDeg)
@@ -20,6 +27,10 @@ Rectangle {
     color:App.Palette.background
     border.color:App.Palette.line
     radius:8
+
+    function selectSetup(name) {
+        return skyModel?.selectEquipmentSetup(name) ?? false
+    }
 
     function angle(deg) {
         return deg < 0.1 ? (deg*60).toFixed(1)+"′" :
@@ -38,6 +49,59 @@ Rectangle {
         anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top
         anchors.margins:12
         spacing:7
+        ComboBox {
+            id: selector
+            visible: panel.choices.length > 1
+            enabled: !!panel.skyModel?.equipmentRuntime && !panel.skyModel?.changingSetup
+            Layout.fillWidth: true
+            Layout.maximumWidth: 360
+            implicitHeight: 42
+            model: panel.choices
+            textRole: "label"
+            currentIndex: Math.max(0, panel.choices.findIndex(choice => choice.name === panel.activeName))
+            onActivated: index => {
+                panel.selectSetup(panel.choices[index].name)
+                // The saved profile confirms the switch and updates the binding.
+                currentIndex = Qt.binding(() => Math.max(0, panel.choices.findIndex(choice => choice.name === panel.activeName)))
+            }
+            Accessible.name: "Observing setup"
+            palette.base: App.Palette.field
+            palette.button: App.Palette.button
+            palette.window: App.Palette.surface
+            palette.text: App.Palette.ink
+            palette.buttonText: App.Palette.ink
+            palette.windowText: App.Palette.ink
+            palette.highlight: App.Palette.hover
+            palette.highlightedText: App.Palette.ink
+            background: Rectangle { radius: 6; color: App.Palette.button; border.color: selector.activeFocus ? App.Palette.accent : App.Palette.border }
+            contentItem: Text {
+                text: selector.displayText
+                textFormat: Text.PlainText
+                color: App.Palette.ink
+                leftPadding: 12
+                rightPadding: 28
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
+            delegate: ItemDelegate {
+                required property int index
+                required property var modelData
+                width: selector.width
+                highlighted: selector.highlightedIndex === index
+                contentItem: Text {
+                    text: modelData.label
+                    textFormat: Text.PlainText
+                    color: App.Palette.ink
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+            }
+        }
+        Copy {
+            visible: text !== ""
+            text: panel.skyModel?.changingSetup ? "Switching setup…" : panel.skyModel?.setupError || ""
+            color: App.Palette.warning
+        }
         Copy {text:panel.title;font.bold:true;color:panel.comparison.status==="fits"?App.Palette.accent:App.Palette.warning}
         Copy {
             visible:panel.available

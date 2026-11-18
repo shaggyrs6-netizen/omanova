@@ -13,14 +13,16 @@ def equipment_profile():
     if raw is None and path.exists():raise ValueError('Equipment profile unreadable; retain it for inspection')
     return profile(raw or {})
 
-def match(row,p,now=None):
-    from observatory.equipment.equipment import assess
+def match(row,p,now=None,include_field=True):
+    from observatory.equipment.equipment import active_field,assess
     now=now or datetime.now(UTC)
     a=assess(row,p,now,iso(now))
     if a:
         details=[]
-        for k,label in (('apertureMm','aperture mm'),('fieldOfViewDeg','field °'),('binocularMagnification','binocular ×')):
+        for k,label in (('apertureMm','aperture mm'),('binocularMagnification','binocular ×')):
             if p.get(k) is not None:details.append(str(p[k])+' '+label)
+        field=active_field(p) if include_field else None
+        if field is not None:details.append(f'{field:.4g} field °')
         if p.get('cameraMode') not in (None,'unknown'):details.append('camera '+p['cameraMode'])
         if details:a['notes'].append('Instrument context: '+', '.join(details)+'. No sensitivity or detail guarantee inferred.')
     return a

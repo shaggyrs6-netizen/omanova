@@ -89,11 +89,9 @@ def finder(request,fixture=False,now=None):
                    'look':{'time':iso(when),'az':round(bearing,1),'el':round(height,1),'direction':DIRECTIONS[int((bearing+11.25)//22.5)%16]},
                    'visibility':'unconfirmed','conditions':{'label':'Uncertain','reason':'No forecast is fetched by the finder'},'recommended':False,'reason':target['hint'],
                    'source':target.get('source',CAT['coordinateSource']),'valid_until':iso(now+timedelta(hours=2))}
-                assessment=match(r,selected,now)
-                fov=selected.get('fieldOfViewDeg');extent=target.get('extent')
-                framing='Field of view not supplied; full-target framing unassessed.' if not fov or not extent else 'Target fits the supplied field approximately; camera framing/optical projection still vary.' if fov>=extent else 'Full target exceeds the supplied field; central detail may still be visible.'
+                assessment=match(r,selected,now,include_field=False)
                 windows.append({'when':local_stamp(a,tz)+' — '+local_stamp(b,tz),'lookWhen':local_stamp(when,tz),'event':r,'equipment':assessment['notes'] if assessment else ['Equipment unknown'],'profileExcluded':bool(selected['filter'] and assessment and assessment['excluded']),
-                    'moonAltitude':round(moonalt),'moonPercent':round(100*float(almanac.fraction_illuminated(eph,'moon',ts.from_datetime(when)))), 'framing':framing})
+                    'moonAltitude':round(moonalt),'moonPercent':round(100*float(almanac.fraction_illuminated(eph,'moon',ts.from_datetime(when))))})
             rows.append({**target,'kind':'landmark' if landmark else 'deep-sky','windows':windows,'status':'Potential geometry only; brightness/conditions unconfirmed' if windows else 'No usable window: below threshold, daylight or saved horizon blocked'})
     return {'source':source,'fixture':fixture,'night':day.isoformat(),'zone':tz,'generated':iso(now),'rows':rows,'darkness':darkness,
             'horizon':'Saved manual sectors and enabled terrain applied; no new terrain downloads.','limits':CAT['coordinateBasis']+' Minimum 20° elevation; twilight for bright landmarks, astronomical darkness for deep-sky targets. No GO, weather guarantee, refraction or telescope alignment solution.'}

@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 from astronomy import iso
 from worker import read,write
-from observatory.equipment.equipment import DEFAULT,profile,fixtures,assess,build,command
+from observatory.equipment.equipment import DEFAULT,profile,fixtures,assess,build,command,active_field
 
 NOW=datetime(2026,11,14,18,tzinfo=timezone.utc)
 
@@ -29,6 +29,41 @@ class EquipmentTests(unittest.TestCase):
             with self.assertRaises(ValueError):profile(raw)
         r=assess(self.rows[0],profile({'gear':[]}),NOW,iso(NOW),sample=True)
         self.assertTrue(r['excluded']);self.assertFalse(r['eligible'])
+    def test_named_setups_switch_without_losing_an_existing_field(self):
+        def perform(action, data):
+            command(self.path, action, data, NOW)
+            return profile(read(self.path/'profile.json', {}))
+        wide = {'telescopeMm': 600, 'eyepieceMm': 30, 'apparentDeg': 70}
+        tight = {'telescopeMm': 1200, 'eyepieceMm': 25, 'apparentDeg': 60}
+        original = {'fieldOfViewDeg': 2, 'telescopeOptics': tight, 'gear': ['telescope']}
+        perform('save', original)
+        self.assertEqual(active_field(perform('save_setup', {'name': ' Wide ', 'optics': wide})), 3.5)
+        self.assertEqual(active_field(perform('save_setup', {'name': 'Tight', 'optics': tight})), 1.25)
+        self.assertEqual(active_field(perform('patch', {'sky': 'dark'})), 1.25)
+        saved = perform('select_setup', {'name': 'Wide'})
+        self.assertEqual(active_field(saved), 3.5)
+        self.assertEqual(saved['telescopeOptics'], original['telescopeOptics'])
+        self.assertEqual(active_field(perform('select_setup', {'name': None})), 2)
+        self.assertEqual(active_field(perform('save_field', {'fieldOfViewDeg': 6})), 6)
+        self.assertEqual(active_field(perform('select_setup', {'name': 'Wide'})), 3.5)
+        self.assertEqual(active_field(perform('remove_setup', {'name': 'Wide'})), 6)
+        self.assertEqual(perform('select_setup', {'name': 'Tight'})['sky'], 'dark')
+        self.assertEqual(active_field(perform('save_setup', {'name': 'Tight', 'optics': wide})), 3.5)
+        self.assertEqual(len(read(self.path/'profile.json', {})['opticalSetups']), 1)
+        self.assertEqual(active_field(perform('remove_setup', {'name': 'Tight'})), 6)
+
+    def test_bad_named_setup_commands_leave_the_profile_untouched(self):
+        command(self.path, 'save', {'fieldOfViewDeg': 2}, NOW)
+        saved = (self.path/'profile.json').read_bytes()
+        for action, data in (
+            ('select_setup', {'name': 'missing'}),
+            ('save_setup', {'name': 'Too narrow', 'optics': {'telescopeMm': 10000000, 'eyepieceMm': 2, 'apparentDeg': 60}}),
+            ('save_setup', {'name': ' ', 'optics': {}}),
+        ):
+            with self.assertRaises(ValueError):
+                command(self.path, action, data, NOW)
+            self.assertEqual((self.path/'profile.json').read_bytes(), saved)
+
     def test_wide_field_meteors_do_not_match_scope_only(self):
         self.assertTrue(self.check(3,['telescope'])['excluded'])
         self.assertTrue(self.check(3,['camera'])['eligible'])

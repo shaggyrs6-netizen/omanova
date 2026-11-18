@@ -1268,5 +1268,8 @@ and calls out tight fits separately. Choose **Calculate from telescope and
 eyepiece** and enter the telescope focal length, eyepiece focal length and
 eyepiece apparent field. **Use estimated field** saves the estimate and
 retains the specs locally. **Save manual field** lets you use a measured
-angle or clear the field. Camera sensor shape, target detail and visibility
+angle or clear the field. Give a telescope and eyepiece combination a name
+and choose **Save and use setup** to keep up to 12 named setups. Choose an
+observing setup from the overlay in either view. **Manual / last estimate**
+returns to the previous unnamed field. Camera sensor shape, target detail and visibility
 are outside this comparison.

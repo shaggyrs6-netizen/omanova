@@ -104,7 +104,7 @@ Item {
        Layout.fillWidth:true;visible:root.framingId===card.modelData.id;active:visible
        sourceComponent:Component {
         App.FieldOfView {
-         fieldDeg:root.skyModel && !root.skyModel.equipmentInvalid ? root.skyModel.equipmentProfile?.fieldOfViewDeg : null
+         skyModel:root.skyModel
          extentDeg:card.modelData.extent
          onOpenEquipment:root.openEquipment()
         }
@@ -120,7 +120,7 @@ Item {
          Connections {target:App.Palette;function onObservingModeChanged(){compass.requestPaint()}}
         }
         Copy {text:"Single-target compass at that suggested time; not a simultaneous whole-sky map. Moon "+modelData.moonAltitude+"° up · "+modelData.moonPercent+"% illuminated.";color:App.Palette.muted}
-        Copy {text:modelData.equipment.join("\n")+"\n"+modelData.framing+(modelData.profileExcluded?"\nExcluded by current Equipment and Sky preferences · inspect only":"");color:modelData.profileExcluded?App.Palette.warning:App.Palette.muted}
+        Copy {text:modelData.equipment.join("\n")+(modelData.profileExcluded?"\nExcluded by current Equipment and Sky preferences · inspect only":"");color:modelData.profileExcluded?App.Palette.warning:App.Palette.muted}
        }
       }
      }
@@ -148,7 +148,12 @@ Item {
   function sampleFramingState():string {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1")return ""
    const panel=cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing
-   return panel ? JSON.stringify(panel.comparison) : ""
+   return panel ? JSON.stringify(Object.assign({}, panel.comparison, {field:panel.fieldDeg, setup:panel.activeName})) : ""
+  }
+  function sampleSelectSetup(name:string):bool {
+   if(Quickshell.env("OMASKY_FIXTURE")!=="1")return false
+   const panel=cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing
+   return panel?.selectSetup(name || null) ?? false
   }
   function sampleCaptureFraming():void {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1")return

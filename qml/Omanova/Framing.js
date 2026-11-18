@@ -14,7 +14,7 @@ function estimate(telescopeMm, eyepieceMm, apparentDeg) {
             || apparentDeg > 180)
         return null
     const magnification = telescopeMm / eyepieceMm
-    const field = apparentDeg / magnification
+    const field = apparentDeg * (eyepieceMm / telescopeMm)
     return fieldIsValid(field) ? {field, magnification} : null
 }
 

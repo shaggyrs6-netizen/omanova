@@ -176,10 +176,12 @@ Item {
                 Copy {visible:!page.result?.rows?.length;text:"Nothing saved yet. Add a target above or use Add to My Night on Tonight, Events or Sky Finder.";color:App.Palette.muted}
             }
             Repeater {
+                id:pickCards
                 model:page.result?.rows||[]
                 delegate:Rectangle {
                     id:card
                     required property var modelData
+                    readonly property var framing:framingLoader.item
                     readonly property bool expanded:page.result?.chart?.id===modelData.id && !page.editing
                     Layout.fillWidth:true;Layout.leftMargin:22;Layout.rightMargin:22
                     implicitHeight:body.implicitHeight+28
@@ -209,10 +211,11 @@ Item {
                             App.ActionButton {text:"Remove";enabled:!page.busy;Accessible.name:"Remove "+card.modelData.name;onClicked:page.request("remove",{selected:card.modelData.id})}
                         }
                         Loader {
+                            id:framingLoader
                             Layout.fillWidth:true;visible:page.framingId===card.modelData.id;active:visible
                             sourceComponent:Component {
                                 App.FieldOfView {
-                                    fieldDeg:page.sky.equipmentInvalid?null:page.sky.equipmentProfile?.fieldOfViewDeg
+                                    skyModel:page.sky
                                     extentDeg:card.modelData.extent
                                     onOpenEquipment:page.openEquipment()
                                 }
@@ -256,6 +259,14 @@ Item {
             if(verb==="remove")return page.request(verb,{selected:key})
             if(verb==="export")return page.request(verb)
             return false
+        }
+        function fixtureFraming(name:string, switchSetup:bool):string {
+            if (!page.sky.fixture) return ""
+            const index=(page.result?.rows || []).findIndex(row=>row.id===page.framingId)
+            const panel=pickCards.itemAt(index)?.framing
+            if (!panel) return ""
+            if (switchSetup) return JSON.stringify(panel.selectSetup(name || null))
+            return JSON.stringify({status:panel.comparison.status, field:panel.fieldDeg, setup:panel.activeName})
         }
         function fixtureCapture():void {
             if(page.sky.fixture)page.grabToImage(r=>r.saveToFile(page.state+"/my-night.png"))
