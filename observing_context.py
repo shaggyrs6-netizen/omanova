@@ -14,15 +14,18 @@ def equipment_profile():
     return profile(raw or {})
 
 def match(row,p,now=None,include_field=True):
-    from observatory.equipment.equipment import active_field,assess
+    from observatory.equipment.equipment import active_field,active_setup,assess
     now=now or datetime.now(UTC)
     a=assess(row,p,now,iso(now))
     if a:
         details=[]
         for k,label in (('apertureMm','aperture mm'),('binocularMagnification','binocular ×')):
             if p.get(k) is not None:details.append(str(p[k])+' '+label)
-        field=active_field(p) if include_field else None
-        if field is not None:details.append(f'{field:.4g} field °')
+        if include_field:
+            setup=active_setup(p)
+            field=active_field(p)
+            if setup and 'camera' in setup:details.append(f"camera frame {setup['widthDeg']:.4g}° × {setup['heightDeg']:.4g}°")
+            elif field is not None:details.append(f'{field:.4g} field °')
         if p.get('cameraMode') not in (None,'unknown'):details.append('camera '+p['cameraMode'])
         if details:a['notes'].append('Instrument context: '+', '.join(details)+'. No sensitivity or detail guarantee inferred.')
     return a

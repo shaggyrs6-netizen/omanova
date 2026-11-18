@@ -266,7 +266,8 @@ Item {
             const panel=pickCards.itemAt(index)?.framing
             if (!panel) return ""
             if (switchSetup) return JSON.stringify(panel.selectSetup(name || null))
-            return JSON.stringify({status:panel.comparison.status, field:panel.fieldDeg, setup:panel.activeName})
+            return JSON.stringify({status:panel.comparison.status, field:panel.fieldDeg, setup:panel.activeName,
+                                   width:panel.activeSetup?.widthDeg, height:panel.activeSetup?.heightDeg})
         }
         function fixtureCapture():void {
             if(page.sky.fixture)page.grabToImage(r=>r.saveToFile(page.state+"/my-night.png"))

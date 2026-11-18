@@ -52,6 +52,29 @@ class EquipmentTests(unittest.TestCase):
         self.assertEqual(len(read(self.path/'profile.json', {})['opticalSetups']), 1)
         self.assertEqual(active_field(perform('remove_setup', {'name': 'Tight'})), 6)
 
+    def test_camera_setup_saves_two_axes_and_preserves_telescope_and_manual_fields(self):
+        def perform(action, data):
+            command(self.path, action, data, NOW)
+            return profile(read(self.path/'profile.json', {}))
+        camera = {'sensorWidthMm': 36, 'sensorHeightMm': 24, 'focalLengthMm': 600}
+        optics = {'telescopeMm': 1200, 'eyepieceMm': 25, 'apparentDeg': 60}
+        perform('save', {'fieldOfViewDeg': 6})
+        perform('save_setup', {'name': 'Visual', 'optics': optics})
+        saved = perform('save_setup', {'name': 'Imaging', 'camera': camera})
+        self.assertEqual(saved['activeOpticalSetup'], 'Imaging')
+        frame = saved['opticalSetups'][1]
+        self.assertAlmostEqual(frame['widthDeg'], 3.4367160033)
+        self.assertAlmostEqual(frame['heightDeg'], 2.2915256764)
+        self.assertIsNone(active_field(saved))
+        for invalid in ({'name': 'Visual', 'camera': camera},
+                        {'name': 'Invalid', 'camera': {**camera, 'sensorWidthMm': 0}},
+                        {'name': 'Mixed', 'camera': camera, 'optics': optics}):
+            with self.assertRaises(ValueError):
+                perform('save_setup', invalid)
+            self.assertEqual(profile(read(self.path/'profile.json', {})), saved)
+        self.assertEqual(active_field(perform('select_setup', {'name': 'Visual'})), 1.25)
+        self.assertEqual(active_field(perform('select_setup', {'name': None})), 6)
+
     def test_bad_named_setup_commands_leave_the_profile_untouched(self):
         command(self.path, 'save', {'fieldOfViewDeg': 2}, NOW)
         saved = (self.path/'profile.json').read_bytes()

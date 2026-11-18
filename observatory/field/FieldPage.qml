@@ -148,7 +148,7 @@ Item {
   function sampleFramingState():string {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1")return ""
    const panel=cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing
-   return panel ? JSON.stringify(Object.assign({}, panel.comparison, {field:panel.fieldDeg, setup:panel.activeName})) : ""
+   return panel ? JSON.stringify(Object.assign({}, panel.comparison, {field:panel.fieldDeg, setup:panel.activeName, width:panel.activeSetup?.widthDeg, height:panel.activeSetup?.heightDeg})) : ""
   }
   function sampleSelectSetup(name:string):bool {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1")return false

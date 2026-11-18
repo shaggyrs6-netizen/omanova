@@ -14,6 +14,7 @@ Item {
     Component.onCompleted:if(deployed)request("tick")
     property bool capabilitiesOpen:false
     property bool calculatorOpen:false
+    property bool cameraOpen:false
     property string fieldNotice:""
     readonly property var scopeSpec: dataSet?.profile?.telescopeOptics?.telescopeMm ?? null
     readonly property var ocularSpec: dataSet?.profile?.telescopeOptics?.eyepieceMm ?? null
@@ -25,7 +26,16 @@ Item {
     readonly property var setups: dataSet?.profile?.opticalSetups || []
     readonly property var activeSetup: setups.find(setup => setup.name === dataSet?.profile?.activeOpticalSetup)
     readonly property string setupName: nameInput.text.trim()
-    readonly property bool existingName: setups.some(setup => setup.name === setupName)
+    readonly property var telescopeNameMatch: setups.find(setup => setup.name === setupName)
+    readonly property bool existingName: !!telescopeNameMatch && !telescopeNameMatch.camera
+    readonly property string photoName: cameraName.text.trim()
+    readonly property var photoNameMatch: setups.find(setup => setup.name === photoName)
+    readonly property bool knownCamera: !!photoNameMatch?.camera
+    readonly property var cameraEstimate: Framing.cameraField(Framing.decimal(sensorWidth.text),
+                                                             Framing.decimal(sensorHeight.text),
+                                                             Framing.decimal(cameraFocal.text))
+    readonly property bool canSaveCamera: !!dataSet && !helper.running && !!cameraEstimate && !!photoName &&
+        (knownCamera || (!photoNameMatch && setups.length < 12))
 
     function opticsFromFields() {
         return {telescopeMm: Framing.decimal(telescope.text), eyepieceMm: Framing.decimal(eyepiece.text),
@@ -37,7 +47,8 @@ Item {
                      "Estimated field saved.")
     }
     function saveNamedSetup() {
-        if (!root.estimate || !root.setupName || (!root.existingName && root.setups.length >= 12)) return false
+        if (!root.estimate || !root.setupName ||
+                (!root.existingName && (root.telescopeNameMatch || root.setups.length >= 12))) return false
         root.request("save_setup", {name: root.setupName, optics: opticsFromFields()}, "Setup saved and selected.")
         return helper.running
     }
@@ -46,6 +57,22 @@ Item {
         telescope.text = setup.optics.telescopeMm.toString()
         eyepiece.text = setup.optics.eyepieceMm.toString()
         apparent.text = setup.optics.apparentDeg.toString()
+    }
+    function saveCameraSetup() {
+        if (!canSaveCamera) return false
+        root.request("save_setup", {name: root.photoName, camera: {
+            sensorWidthMm: Framing.decimal(sensorWidth.text), sensorHeightMm: Framing.decimal(sensorHeight.text),
+            focalLengthMm: Framing.decimal(cameraFocal.text)}}, "Camera setup saved and selected.")
+        return helper.running
+    }
+    function editCamera(setup) {
+        cameraName.text = setup.name
+        sensorWidth.text = setup.camera.sensorWidthMm.toString()
+        sensorHeight.text = setup.camera.sensorHeightMm.toString()
+        cameraFocal.text = setup.camera.focalLengthMm.toString()
+    }
+    function labelField(setup) {
+        return setup.camera ? formatAngle(setup.widthDeg)+" × "+formatAngle(setup.heightDeg) : formatAngle(setup.fieldDeg)
     }
     function saveManualField() {
         const value=manualField.text.trim() ? Framing.decimal(manualField.text) : null
@@ -138,17 +165,17 @@ Item {
                                 Toggle {required property var modelData;text:modelData.label;checked:root.dataSet?.profile?.gear?.includes(modelData.key)||false;onClicked:root.gear(modelData.key,checked)}
                             }
                         }
-                        Copy {text:"A camera means a wide-field/tripod overview. Aperture, tracking, field of view and exposure are unassessed. Telescope selection alone does not establish faint-target capability.";color:App.Palette.muted}
+                        Copy {text:"Equipment choices filter suggestions. A saved frame estimates the sky your camera covers. Exposure, tracking and faint-target detail still depend on your setup.";color:App.Palette.muted}
                         Copy {text:"Field of view for overlays";font.bold:true}
                         Copy {
-                            text:root.activeSetup ? "Active setup: "+root.activeSetup.name+" · "+root.formatAngle(root.activeSetup.fieldDeg) :
+                            text:root.activeSetup ? "Active setup: "+root.activeSetup.name+" · "+root.labelField(root.activeSetup) :
                                 root.savedField===null ? "No field size saved. Calculate it or enter it manually." :
                                 "Active field: "+root.formatAngle(root.savedField)
                             color:App.Palette.accent
                         }
                         Action {
                             text:root.calculatorOpen?"Hide telescope calculator":"Calculate from telescope and eyepiece"
-                            onClicked:root.calculatorOpen=!root.calculatorOpen
+                            onClicked:{root.calculatorOpen=!root.calculatorOpen;if(root.calculatorOpen)root.cameraOpen=false}
                         }
                         ColumnLayout {
                             Layout.fillWidth:true;visible:root.calculatorOpen;spacing:7
@@ -172,7 +199,7 @@ Item {
                                 Action {
                                     text:root.existingName?"Update and use setup":"Save and use setup"
                                     enabled:!!root.dataSet&&!helper.running&&!!root.estimate&&!!root.setupName&&
-                                        (root.existingName||root.setups.length<12)
+                                        (root.existingName||(!root.telescopeNameMatch&&root.setups.length<12))
                                     onClicked:root.saveNamedSetup()
                                 }
                                 Action {
@@ -183,20 +210,76 @@ Item {
                                 }
                             }
                             Copy {
-                                visible:root.setups.length>0
-                                text:root.setups.length>=12 ? "12 setups saved. Choose one below to edit or remove." :
-                                    "Choose a saved setup below to load its details for editing."
+                                visible:text!==""
+                                text:root.telescopeNameMatch?.camera ? "This name is used by a camera setup." :
+                                    root.setups.length>=12 ? "All 12 setup slots are in use. Edit or remove a saved setup." : ""
                                 color:App.Palette.muted
                             }
                             Flow {
                                 Layout.fillWidth:true;spacing:8
                                 Repeater {
-                                    model:root.setups
+                                    model:root.setups.filter(setup=>!setup.camera)
                                     Action {
                                         required property var modelData
                                         text:modelData.name
                                         enabled:!helper.running
                                         onClicked:root.editSetup(modelData)
+                                    }
+                                }
+                            }
+                        }
+                        Action {
+                            text:root.cameraOpen?"Hide camera calculator":"Calculate camera frame"
+                            onClicked:{root.cameraOpen=!root.cameraOpen;if(root.cameraOpen)root.calculatorOpen=false}
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth:true;visible:root.cameraOpen;spacing:8
+                            Copy {
+                                text:"Use the sensor’s active width and height in millimetres and the actual focal length of the lens or telescope."
+                                color:App.Palette.muted
+                            }
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                SpecField {id:sensorWidth;width:205;label:"Sensor width (mm)"}
+                                SpecField {id:sensorHeight;width:205;label:"Sensor height (mm)"}
+                                SpecField {id:cameraFocal;width:205;label:"Focal length (mm)"}
+                            }
+                            Copy {
+                                text:root.cameraEstimate ? "Estimated camera frame: "+root.formatAngle(root.cameraEstimate.width)+
+                                    " wide × "+root.formatAngle(root.cameraEstimate.height)+" high" :
+                                    "Enter positive dimensions and focal length to calculate the frame."
+                                color:root.cameraEstimate?App.Palette.accent:App.Palette.muted
+                            }
+                            SpecField {id:cameraName;width:240;label:"Camera setup name";numeric:false;maximumLength:48}
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                Action {
+                                    text:root.knownCamera?"Update and use camera setup":"Save and use camera setup"
+                                    enabled:root.canSaveCamera
+                                    onClicked:root.saveCameraSetup()
+                                }
+                                Action {
+                                    visible:root.knownCamera
+                                    text:"Remove camera setup"
+                                    enabled:!helper.running
+                                    onClicked:root.request("remove_setup",{name:root.photoName},"Camera setup removed.")
+                                }
+                            }
+                            Copy {
+                                visible:text!==""
+                                text:root.photoNameMatch&&!root.knownCamera ? "This name is used by a telescope setup." :
+                                    root.setups.length>=12 ? "All 12 setup slots are in use. Edit or remove a saved setup." : ""
+                                color:App.Palette.muted
+                            }
+                            Flow {
+                                Layout.fillWidth:true;spacing:8
+                                Repeater {
+                                    model:root.setups.filter(setup=>!!setup.camera)
+                                    Action {
+                                        required property var modelData
+                                        text:modelData.name
+                                        enabled:!helper.running
+                                        onClicked:root.editCamera(modelData)
                                     }
                                 }
                             }
@@ -283,6 +366,12 @@ Item {
             root.calculatorOpen=true
             nameInput.text=name;telescope.text=scope;eyepiece.text=ocular;apparent.text=afov
             return root.saveNamedSetup()
+        }
+        function sampleSaveCamera(name:string, wide:string, high:string, focal:string):bool {
+            if(root.deployed || root.dataSet?.source!=="sample" || helper.running)return false
+            root.cameraOpen=true;root.calculatorOpen=false
+            cameraName.text=name;sensorWidth.text=wide;sensorHeight.text=high;cameraFocal.text=focal
+            return root.saveCameraSetup()
         }
         function capture():void {if(root.dataSet?.source==="sample")ui.grabToImage(r=>r.saveToFile(root.state+"/sample.png"))}
         }

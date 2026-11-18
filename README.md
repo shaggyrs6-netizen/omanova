@@ -1271,5 +1271,11 @@ retains the specs locally. **Save manual field** lets you use a measured
 angle or clear the field. Give a telescope and eyepiece combination a name
 and choose **Save and use setup** to keep up to 12 named setups. Choose an
 observing setup from the overlay in either view. **Manual / last estimate**
-returns to the previous unnamed field. Camera sensor shape, target detail and visibility
-are outside this comparison.
+returns to the previous unnamed field.
+
+Choose **Calculate camera frame** to save a named camera setup using the
+sensor's active width and height in millimetres and the actual focal length.
+Select the camera setup from the same overlay dropdown to see the rectangular
+field in degrees. The centred sketch compares the short side of the frame
+with a circular approximation of target size. Camera angle, lens distortion
+and the target's actual shape affect real framing.

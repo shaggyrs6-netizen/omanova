@@ -41,3 +41,15 @@ test('calculator rejects missing, nonphysical and out of range values', () => {
     assert.equal(context.decimal(' 12,5 '), 12.5);
     assert.equal(context.decimal('0x10'), NaN);
 });
+
+test('camera sensor axes give independent angles and the shorter axis limits a centred fit', () => {
+    const frame = context.cameraField(36, 24, 600);
+    assert.ok(Math.abs(frame.width - 3.4367160033) < 1e-8);
+    assert.ok(Math.abs(frame.height - 2.2915256764) < 1e-8);
+    assert.equal(context.compareFrame(frame.width, frame.height, 3).status, 'wide');
+    assert.equal(context.compareFrame(frame.width, frame.height, 2.2).status, 'edge');
+    assert.equal(context.compareFrame(frame.height, frame.width, 2).status, 'fits');
+    assert.equal(context.compareFrame(frame.width, frame.height, frame.height * 1.01).status, 'wide');
+    assert.equal(context.cameraField(0, 24, 600), null);
+    assert.equal(context.cameraField(36, 24, NaN), null);
+});

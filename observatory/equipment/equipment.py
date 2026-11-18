@@ -3,7 +3,7 @@ import argparse
 from copy import deepcopy
 from datetime import UTC,datetime,timedelta
 import json
-from math import isfinite
+from math import atan, degrees, isfinite
 import os
 from pathlib import Path
 import re
@@ -38,22 +38,35 @@ def validate_optics(optics):
     return optics
 
 
-def setup_details(name, optics):
+def setup_details(name, optics=None, camera=None):
     if not isinstance(name, str) or not 1 <= len(name.strip()) <= 48 or not name.strip().isprintable():
         raise ValueError('Enter a setup name of up to 48 characters')
+    name = name.strip()
+    if camera is not None:
+        if optics is not None or not isinstance(camera, dict) or set(camera) != {'sensorWidthMm', 'sensorHeightMm', 'focalLengthMm'}:
+            raise ValueError('Invalid camera setup')
+        if any(type(value) not in (int, float) or not isfinite(value) or value <= 0 for value in camera.values()):
+            raise ValueError('Enter positive sensor dimensions and focal length')
+        width, height = (degrees(2 * atan((camera[key] / camera['focalLengthMm']) / 2))
+                         for key in ('sensorWidthMm', 'sensorHeightMm'))
+        if not (.01 <= width < 180 and .01 <= height < 180):
+            raise ValueError('Camera field outside the supported range')
+        return {'name': name, 'camera': camera, 'widthDeg': width, 'heightDeg': height}
     optics = validate_optics(optics)
     # Multiply by the eyepiece-to-telescope ratio to avoid dividing by an underflowed magnification.
     field = optics['apparentDeg'] * (optics['eyepieceMm'] / optics['telescopeMm'])
     if not .01 <= field <= 180:
         raise ValueError('Estimated field outside the supported range')
-    return {'name': name.strip(), 'optics': optics, 'fieldDeg': field}
+    return {'name': name, 'optics': optics, 'fieldDeg': field}
+
+
+def active_setup(p):
+    return next((setup for setup in p.get('opticalSetups', []) if setup['name'] == p.get('activeOpticalSetup')), None)
 
 
 def active_field(p):
-    for setup in p.get('opticalSetups', []):
-        if setup['name'] == p.get('activeOpticalSetup'):
-            return setup['fieldDeg']
-    return p.get('fieldOfViewDeg')
+    setup = active_setup(p)
+    return setup.get('fieldDeg') if setup else p.get('fieldOfViewDeg')
 
 
 def profile(raw):
@@ -76,9 +89,9 @@ def profile(raw):
         raise ValueError('Too many optical setups')
     cleaned = []
     for setup in setups:
-        if not isinstance(setup, dict) or set(setup) - {'name', 'optics', 'fieldDeg'}:
+        if not isinstance(setup, dict) or set(setup) - {'name', 'optics', 'fieldDeg', 'camera', 'widthDeg', 'heightDeg'}:
             raise ValueError('Invalid optical setup')
-        cleaned.append(setup_details(setup.get('name'), setup.get('optics')))
+        cleaned.append(setup_details(setup.get('name'), setup.get('optics'), setup.get('camera')))
     names = {setup['name'] for setup in cleaned}
     if len(names) != len(cleaned) or (active is not None and (not isinstance(active, str) or active not in names)):
         raise ValueError('Invalid optical setup selection')
@@ -254,11 +267,12 @@ def update_profile(current, action, payload):
     setups = current.get('opticalSetups', [])
     name = payload.get('name')
     if action == 'save_setup':
-        saved = setup_details(name, payload.get('optics'))
+        saved = setup_details(name, payload.get('optics'), payload.get('camera'))
         name = saved['name']
-        updated = [saved if setup['name'] == name else setup for setup in setups]
-        if not any(setup['name'] == name for setup in setups):
-            updated.append(saved)
+        existing = next((setup for setup in setups if setup['name'] == name), None)
+        if existing and ('camera' in existing) != ('camera' in saved):
+            raise ValueError('Use a different name for this equipment type')
+        updated = [saved if setup['name'] == name else setup for setup in setups] if existing else [*setups, saved]
         return profile({**current, 'opticalSetups': updated, 'activeOpticalSetup': name})
     if name is not None and not any(setup['name'] == name for setup in setups):
         raise ValueError('Optical setup no longer exists')

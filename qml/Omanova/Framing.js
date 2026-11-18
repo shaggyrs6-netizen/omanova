@@ -32,3 +32,20 @@ function compare(field, extent) {
         ratio: ratio
     }
 }
+
+function cameraField(sensorWidth, sensorHeight, focalLength) {
+    if (![sensorWidth, sensorHeight, focalLength].every(value => Number.isFinite(value) && value > 0))
+        return null
+    const width = 2 * Math.atan((sensorWidth / focalLength) / 2) * (180 / Math.PI)
+    const height = 2 * Math.atan((sensorHeight / focalLength) / 2) * (180 / Math.PI)
+    return fieldIsValid(width) && width < 180 && fieldIsValid(height) && height < 180 ? {width, height} : null
+}
+
+function compareFrame(width, height, extent) {
+    if (!fieldIsValid(width) || !fieldIsValid(height))
+        return {status: "missing-field"}
+    if (!Number.isFinite(extent) || extent <= 0 || extent > 180)
+        return {status: "missing-extent"}
+    const ratio = extent / Math.min(width, height)
+    return {status: ratio > 1 ? "wide" : ratio >= 0.95 ? "edge" : "fits", ratio}
+}
