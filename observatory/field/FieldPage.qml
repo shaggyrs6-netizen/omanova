@@ -7,6 +7,8 @@ import Quickshell.Io
 Item {
  id:root
  signal addToNight(string key)
+ signal openEquipment()
+ property string framingId:""
  property bool canAddToNight:false
  property var skyModel:null
  readonly property bool useMiles:skyModel?skyModel.useMiles:Quickshell.env("OMANOVA_DISTANCE_MI")==="1"
@@ -80,8 +82,8 @@ Item {
     Copy {text:root.result;color:App.Palette.muted}
     Copy {visible:root.detailsOpen;text:root.dataSet?.limits||"";color:App.Palette.muted}
    }
-   Repeater {model:root.shownRows
-    Rectangle {id:card;required property var modelData;Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:App.Palette.line
+   Repeater {id:cards;model:root.shownRows
+    Rectangle {id:card;required property var modelData;readonly property var framing:overlay.item;Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:App.Palette.line
      ColumnLayout {id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
       Copy {text:card.modelData.name;font.pixelSize:22;font.bold:true}
       Copy {visible:root.section==="sites";text:(card.modelData.area||"")+" · "+(root.useMiles?((card.modelData.distanceKm||0)/1.609344).toFixed(0)+" mi":(card.modelData.distanceKm||0).toFixed(0)+" km")+" straight-line";color:App.Palette.accent}
@@ -92,6 +94,22 @@ Item {
       Copy {visible:root.section==="finder";text:[card.modelData.type,card.modelData.constellation,card.modelData.status].filter(Boolean).join(" · ");color:App.Palette.warning}
       Copy {visible:root.section==="finder";text:card.modelData.hint||"";color:App.Palette.muted}
       Action {visible:root.section==="finder"&&root.canAddToNight;text:"Add to My Night";Accessible.name:"Add "+card.modelData.name+" to My Night";onClicked:root.addToNight(card.modelData.id)}
+      Action {
+       visible:root.section==="finder"&&root.canAddToNight&&!!card.modelData.extent
+       text:root.framingId===card.modelData.id?"Hide field-of-view overlay":"Show field-of-view overlay"
+       onClicked:root.framingId=root.framingId===card.modelData.id?"":card.modelData.id
+      }
+      Loader {
+       id:overlay
+       Layout.fillWidth:true;visible:root.framingId===card.modelData.id;active:visible
+       sourceComponent:Component {
+        App.FieldOfView {
+         fieldDeg:root.skyModel && !root.skyModel.equipmentInvalid ? root.skyModel.equipmentProfile?.fieldOfViewDeg : null
+         extentDeg:card.modelData.extent
+         onOpenEquipment:root.openEquipment()
+        }
+       }
+      }
       Repeater {model:root.section==="finder"?card.modelData.windows||[]:[]
        ColumnLayout {required property var modelData;Layout.fillWidth:true;spacing:6
         Copy {text:(root.clock>Date.parse(modelData.event.end)?"Ended window · ":"")+(modelData.when||modelData.event.start+" — "+modelData.event.end);font.bold:true}
@@ -121,6 +139,20 @@ Item {
    if(root.section!=="finder"||Quickshell.env("OMASKY_FIXTURE")!=="1")return ""
    search.text=query
    return JSON.stringify(root.shownRows.map(row=>row.id))
+  }
+  function sampleFraming(key:string):bool {
+   if(Quickshell.env("OMASKY_FIXTURE")!=="1"||!root.shownRows.some(row=>row.id===key&&row.extent))return false
+   root.framingId=key
+   return true
+  }
+  function sampleFramingState():string {
+   if(Quickshell.env("OMASKY_FIXTURE")!=="1")return ""
+   const panel=cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing
+   return panel ? JSON.stringify(panel.comparison) : ""
+  }
+  function sampleCaptureFraming():void {
+   if(Quickshell.env("OMASKY_FIXTURE")!=="1")return
+   cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing?.grabToImage(r=>r.saveToFile(root.state+"/framing.png"))
   }
   function sampleAdd(key:string):bool {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1"||!root.canAddToNight||job.running||

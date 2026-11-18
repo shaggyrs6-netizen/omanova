@@ -453,10 +453,10 @@ ShellRoot {
                     id: myNightLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "my-night";active:ui.extendedPages
-                    sourceComponent:Component {MyNightPage {sky:ui.skyModel;onRecordObservation:selected=>ui.startObservation(selected)}}
+                    sourceComponent:Component {MyNightPage {sky:ui.skyModel;onOpenEquipment:ui.navigate("equipment");onRecordObservation:selected=>ui.startObservation(selected)}}
                 }
                 Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {FieldPage {section:"sites";skyModel:sky}}}
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky;canAddToNight:ui.extendedPages;onAddToNight:key=>ui.addToNight("target",key)}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky;canAddToNight:ui.extendedPages;onOpenEquipment:ui.navigate("equipment");onAddToNight:key=>ui.addToNight("target",key)}}}
                 Loader {
                     id: finalSkyLoader
                     Layout.fillWidth:true;Layout.fillHeight:true

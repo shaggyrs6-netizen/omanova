@@ -9,6 +9,8 @@ Item {
     id: page
     required property var sky
     signal recordObservation(var selected)
+    signal openEquipment()
+    property string framingId:""
     property var result: null
     property string problem: ""
     property string notice: ""
@@ -199,7 +201,22 @@ Item {
                                 text:"I saw it";enabled:!page.busy&&!page.editing&&!!card.modelData.logPlace
                                 onClicked:page.recordObservation({name:card.modelData.name,place:card.modelData.logPlace,assessment:"From My Night"})
                             }
+                            App.ActionButton {
+                                visible:!!card.modelData.extent
+                                text:page.framingId===card.modelData.id?"Hide field-of-view overlay":"Show field-of-view overlay"
+                                onClicked:page.framingId=page.framingId===card.modelData.id?"":card.modelData.id
+                            }
                             App.ActionButton {text:"Remove";enabled:!page.busy;Accessible.name:"Remove "+card.modelData.name;onClicked:page.request("remove",{selected:card.modelData.id})}
+                        }
+                        Loader {
+                            Layout.fillWidth:true;visible:page.framingId===card.modelData.id;active:visible
+                            sourceComponent:Component {
+                                App.FieldOfView {
+                                    fieldDeg:page.sky.equipmentInvalid?null:page.sky.equipmentProfile?.fieldOfViewDeg
+                                    extentDeg:card.modelData.extent
+                                    onOpenEquipment:page.openEquipment()
+                                }
+                            }
                         }
                         NightTimingChart {
                             Layout.fillWidth:true;Layout.preferredHeight:185
@@ -235,6 +252,7 @@ Item {
             if (!page.sky.fixture) return false
             if(verb==="target"||verb==="event")return page.add(verb,key)
             if(verb==="configure")return page.request(verb,{night:key,source:"active"})
+            if(verb==="framing"){page.framingId=key;return true}
             if(verb==="remove")return page.request(verb,{selected:key})
             if(verb==="export")return page.request(verb)
             return false

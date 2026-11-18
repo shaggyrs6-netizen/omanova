@@ -1257,3 +1257,13 @@ Geometry does not guarantee a sighting.
 equipment filters, in the Offline Cards library. **I saw it** opens a log
 draft for the saved observing location. Review the place and actual sighting
 time before saving. No new downloads or worker changes are needed.
+
+### Field-of-view overlays (local development)
+
+On a deep-sky target in **Sky Finder** or **My Night**, choose **Show
+field-of-view overlay**. The solid ring uses the true field of view from
+**My Equipment and Sky**. The dashed ring is the target’s approximate
+catalogue width. The diagram shows both centred at the same angular scale
+and calls out tight fits separately. Enter the amount of sky your setup
+covers, rather than the eyepiece's apparent field. Camera sensor shape,
+target detail and visibility are outside this comparison.

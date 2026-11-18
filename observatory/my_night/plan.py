@@ -202,7 +202,9 @@ def get_point(source, fixture, active):
 
 def build(plan, context, data, fixture, now, selected):
     source=plan['source']
-    rows = [dict(id=p['id'], name=p['name'], kind=p['kind']) for p in plan['picks']]
+    rows = [dict(id=p['id'], name=p['name'], kind=p['kind'],
+                 extent=TARGETS.get(p['id'][2:], {}).get('extent') if p['kind']=='target' else None)
+            for p in plan['picks']]
     frame = {'plan': plan, 'rows': rows, 'chart': None, 'error': '', 'zone': '',
              'catalogue': [dict(id=k,name=t['name']) for k,t in TARGETS.items()]}
     try:

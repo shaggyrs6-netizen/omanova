@@ -4,3 +4,4 @@ ActionButton 1.0 ActionButton.qml
 PageHeader 1.0 PageHeader.qml
 RuntimeStatus 1.0 RuntimeStatus.qml
 PassSlider 1.0 PassSlider.qml
+FieldOfView 1.0 FieldOfView.qml
