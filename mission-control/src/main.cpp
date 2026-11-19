@@ -25,7 +25,7 @@ int main(int argc,char**argv){
  auto args=app.arguments();auto mission=window->findChild<Mission*>("missionScene");
  if(args.contains("--live")){
   QString data=QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)+"/omasky";
-  mission->startLive(QFileInfo(data+"/runtime").canonicalFilePath(),QCoreApplication::applicationDirPath()+"/../live_bridge.py",data);
+  mission->startLive(data+"/runtime",QCoreApplication::applicationDirPath()+"/../live_bridge.py",data);
  }
 
  StartupOptions startup;

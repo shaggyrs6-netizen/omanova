@@ -12,6 +12,7 @@ ShellRoot {
     property SkyState stateModel: SkyState { id: sky;applyEquipmentProfile:true }
     readonly property bool settingsTrial: Quickshell.env("OMASKY_SETTINGS_PREVIEW") === "1" && stateModel.fixture
     property bool compactOpen: false
+    property MissionControlState wallpaper: MissionControlState {}
 
     LazyLoader {
         active: shell.settingsTrial && shell.compactOpen
@@ -503,6 +504,7 @@ ShellRoot {
                 SettingsPage {
                     sky: shell.stateModel
                     updateDraftBlocked:logLoader.item?.logPage?.dirty || false
+                    wallpaper: shell.wallpaper
                     onOpenCompact: shell.compactOpen = true
                 }
             }
@@ -830,6 +832,15 @@ ShellRoot {
                 return JSON.stringify({ planned: sky.plannedEvents.length, next: sky.nextOpportunity?.name, plannerStale: sky.plannerStale, screen: ui.screenIndex, event: ui.event?.name, verdict: ui.verdict,
                     alerts: sky.data?.settings?.alerts === true, fixture: sky.fixture, generated: sky.data?.generated, stale: ui.snapshotStale,
                     width: ui.width, height: ui.height, contentHeight: ui.contentHeight, time: ui.clock(ui.scrubTime, true), position: ui.predicted })
+            }
+            function wallpaperStatus(): string {
+                return JSON.stringify({busy:shell.wallpaper.busy,state:shell.wallpaper.state,
+                                       error:shell.wallpaper.error})
+            }
+            function wallpaperFixture(action: string): string {
+                if (!shell.settingsTrial) return ""
+                if (action !== "read") shell.wallpaper.request(action)
+                return wallpaperStatus()
             }
             function capture(name: string): void {
                 if (sky.fixture && ["overview", "sky", "conditions", "events", "settings"].includes(name))

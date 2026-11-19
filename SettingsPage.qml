@@ -10,6 +10,7 @@ ColumnLayout {
     required property var sky
     property bool compact: false
     property bool updateDraftBlocked:false
+    property var wallpaper: null
     readonly property bool trial: Quickshell.env("OMASKY_SETTINGS_PREVIEW") === "1" && sky.fixture
     readonly property var preferences: sky.data?.settings ?? ({ profiles: [], online: false, weather: false })
     readonly property bool busy: sky.settingsWorker.running
@@ -147,6 +148,62 @@ ColumnLayout {
         }
         Copy { visible: App.Palette.previewTheme.length>0; text: qsTr("Previewing sample colours. Your desktop theme has not changed.");color:App.Palette.warning }
 
+    }
+
+    ColumnLayout {
+        id: wallpaperSection
+        visible: !page.compact && !!page.wallpaper
+        Layout.fillWidth: true
+        Layout.leftMargin: page.gutter; Layout.rightMargin: page.gutter
+        spacing: 6
+        readonly property var state: page.wallpaper?.state
+        readonly property bool waiting: page.wallpaper?.busy ?? false
+        Component.onCompleted: if (visible) page.wallpaper.request("status")
+        onVisibleChanged: if (visible && page.wallpaper) page.wallpaper.request("status")
+        Timer {
+            interval: 3500
+            repeat: true
+            running: wallpaperSection.visible && (page.wallpaper?.configured ?? false)
+            onTriggered: page.wallpaper.request("status")
+        }
+        Heading { text: qsTr("Mission Control wallpaper") }
+        Copy {
+            text: page.wallpaper?.settling || (wallpaperSection.waiting && page.wallpaper?.action !== "status") ? qsTr("Changing wallpaper…") :
+                  wallpaperSection.state?.running ? qsTr("On · Primary monitor") :
+                  wallpaperSection.state?.available ? qsTr("Off") :
+                  wallpaperSection.state?.message || qsTr("Wallpaper unavailable")
+            color: wallpaperSection.state?.running ? App.Palette.accent : App.Palette.muted
+        }
+        Flow {
+            Layout.fillWidth: true
+            spacing: 8
+            Action {
+                text: wallpaperSection.state?.running ? qsTr("Turn wallpaper off") : qsTr("Turn wallpaper on")
+                enabled: !wallpaperSection.waiting && (
+                    wallpaperSection.state?.available === true || wallpaperSection.state?.running === true)
+                onClicked: page.wallpaper.request(wallpaperSection.state?.running ? "normal" : "start")
+            }
+            CheckBox {
+                text: qsTr("Start at login")
+                checked: wallpaperSection.state?.autostart === true
+                enabled: !wallpaperSection.waiting && wallpaperSection.state?.startupAvailable === true
+                palette.windowText: App.Palette.ink; palette.text: App.Palette.ink
+                palette.buttonText: App.Palette.ink; palette.highlight: App.Palette.accent
+                nextCheckState: function() {
+                    page.wallpaper.request(checked ? "login-off" : "login-on")
+                    return checkState
+                }
+            }
+        }
+        Copy {
+            text: qsTr("Turning it off restores your normal wallpaper and disables Mission Control login startup.")
+            color: App.Palette.muted
+        }
+        Copy {
+            visible: !!page.wallpaper?.error
+            text: page.wallpaper?.error || ""
+            color: App.Palette.warning
+        }
     }
 
     Card {

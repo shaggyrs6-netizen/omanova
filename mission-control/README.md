@@ -263,3 +263,24 @@ isolated entry. A real disabled login command did not launch a wallpaper.
 Sample-motion and live freshness regressions passed. **No real logout/reboot
 was performed; next-login acceptance remains to be confirmed.** The current PC's
 real wallpaper-startup entry is still absent/off. No uploads authorised.
+
+
+## Observatory Settings — local integration
+
+**Settings → Appearance → Mission Control wallpaper** starts the optional
+component on the primary monitor. **Turn wallpaper off** removes its layer
+and disables Mission Control login startup. The separate **Start at login**
+checkbox is off by default. The existing Restore desktop window remains
+available while the layer runs.
+
+The local component lives under `$XDG_DATA_HOME/omasky/mission-control`
+(usually `~/.local/share/omasky/mission-control`). Its controller, read-only
+bridge and compiled renderer have a stable path alongside versioned Observatory
+runtimes. Observatory gives the controller the desktop's actual runtime and
+config directories. The built-in Quickshell preview keeps its own isolated
+directories and only uses an explicitly configured test helper. The component
+uses existing cached astronomy data and does not start or change the observing
+worker. Missing renderer or desktop support is shown as unavailable.
+
+This is a local opt-in integration on top of 0.1.6. Public component packaging,
+multi-monitor behaviour and actual login/reboot verification remain separate.

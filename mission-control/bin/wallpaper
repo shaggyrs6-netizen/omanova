@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Local wallpaper with explicit opt-in startup; never changes the normal theme."""
-import fcntl,json,os,signal,subprocess,sys,time
+import fcntl,json,os,shutil,signal,subprocess,sys,time
 from pathlib import Path
 os.umask(0o077)
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -37,6 +37,28 @@ def stop(r):
  if layers():raise RuntimeError('A trial layer remains; inspect before retrying. No unrelated process was signalled.')
  return {'status':'stopped','originalWallpaper':'retained underneath; no restore write required'}
 
+def ready_for_wallpaper():
+ display=os.environ.get('WAYLAND_DISPLAY')
+ socket=RUN.parent/display if display else None
+ return bool(socket and socket.is_socket() and os.access(BINARY,os.X_OK) and shutil.which('hyprctl'))
+
+def wallpaper_status(receipt):
+ try:
+  startup=startup_options.status()
+ except (OSError,ValueError):
+  startup={'enabled':False,'available':False}
+ try:
+  current=layers() if shutil.which('hyprctl') else []
+ except (OSError,ValueError,subprocess.SubprocessError):
+  return {'running':False,'available':False,'autostart':startup['enabled'],
+          'startupAvailable':False,'message':'Desktop status unavailable.'}
+ running=owned(receipt) and any(row.get('pid')==receipt['pid'] for row in current)
+ available=ready_for_wallpaper() and (not current or running)
+ return {'running':running,'available':available,'autostart':startup['enabled'],
+         'startupAvailable':available and startup['available'] and bool(shutil.which('omarchy-control')),
+         'message':'A different wallpaper trial is already running.' if current and not running else
+                   'Mission Control requires its renderer and an Omarchy Wayland session.' if not available else ''}
+
 if len(sys.argv)>1 and sys.argv[1]=='startup':
  try:
   option=sys.argv[2] if len(sys.argv)>2 else 'status'
@@ -59,31 +81,56 @@ if login:
 with (RUN/'control.lock').open('a') as lock:
  fcntl.flock(lock,fcntl.LOCK_EX)
  action='start' if login else sys.argv[1] if len(sys.argv)>1 else 'start';r=read()
- if action=='status':print(json.dumps({'running':owned(r),'layers':layers(),'autostart':startup_options.status()['enabled']}));sys.exit(0)
+ if action=='status':print(json.dumps(wallpaper_status(r)));sys.exit(0)
  if action=='stop':print(json.dumps(stop(r)));sys.exit(0)
- if action=='normal':startup_options.change(False);print(json.dumps(stop(r)));sys.exit(0)
+ if action=='normal':
+  try:
+   stop(r)
+   startup_options.change(False)
+  except (ValueError,RuntimeError,OSError,subprocess.SubprocessError):
+   print(json.dumps({'error':'Could not verify both desktop restore and login startup. Check the status or use Restore desktop.'}))
+   sys.exit(1)
+  print(json.dumps(wallpaper_status(r)));sys.exit(0)
  if action!='start' or any(x not in ('--sample','--test-restore') for x in sys.argv[2:]):raise SystemExit('Use: wallpaper start [--sample] [--test-restore] | stop | normal | status | startup status|on|off')
- if owned(r):print(json.dumps({'status':'already running','pid':r['pid']}));sys.exit(0)
+ if owned(r):
+  if wallpaper_status(r)['running']:
+   print(json.dumps({'status':'already running','pid':r['pid']}));sys.exit(0)
+  stop(r)
  if layers():raise SystemExit('Existing unknown trial layer: inspect before starting another.')
  if login and not startup_options.status()['enabled']:sys.exit(0)
- if not BINARY.is_file():raise SystemExit('Build the local preview with mission-control/bin/build first.')
+ if not ready_for_wallpaper():raise SystemExit('Mission Control renderer or Wayland session unavailable.')
  args=[str(BINARY),'--wallpaper']
  if '--sample' not in sys.argv:args.append('--live')
  if '--test-restore' in sys.argv:args.append('--wallpaper-self-test')
  env={**os.environ,'QT_FORCE_STDERR_LOGGING':'1'}
  with (RUN/'trial.log').open('ab') as log:
   child=subprocess.Popen(args,stdin=subprocess.DEVNULL,stdout=log,stderr=log,env=env,start_new_session=True)
- r={'pid':child.pid,'start':starttime(child.pid),'binary':str(BINARY),'autostart':startup_options.status()['enabled']}
- RECEIPT.write_text(json.dumps(r)+'\n')
- for _ in range(80):
-  if child.poll() is not None:raise SystemExit('Wallpaper trial failed safely; your original desktop remains. See '+str(RUN/'trial.log'))
-  current=layers()
-  controls=json.loads(subprocess.check_output(['hyprctl','clients','-j'],text=True,timeout=5))
-  ready=any(c.get('pid')==child.pid and c.get('title')=='Mission Control trial — Restore desktop' and c.get('mapped') for c in controls)
-  if ready and any(x.get('pid')==child.pid for x in current):print(json.dumps({'status':'running','pid':child.pid,'autostart':startup_options.status()['enabled'],'restore':'Close the control window, press Restore desktop, or run '+str(ROOT/'bin/wallpaper')+' stop'}));break
-  time.sleep(.1)
- else:
-  stop(r);raise SystemExit('No background layer appeared; trial stopped, original desktop retained.')
+ r={'pid':child.pid,'start':starttime(child.pid),'binary':str(BINARY)}
+ def terminate(_signal,_frame):
+  raise RuntimeError('Wallpaper start interrupted')
+ previous_handler=signal.signal(signal.SIGTERM,terminate)
+ try:
+  RECEIPT.write_text(json.dumps(r)+'\n')
+  deadline=time.monotonic()+12
+  while time.monotonic()<deadline:
+   if child.poll() is not None:raise RuntimeError('Wallpaper renderer exited')
+   current=layers()
+   controls=json.loads(subprocess.check_output(['hyprctl','clients','-j'],text=True,timeout=5))
+   ready=any(c.get('pid')==child.pid and c.get('title')=='Mission Control trial — Restore desktop' and c.get('mapped') for c in controls)
+   if ready and any(x.get('pid')==child.pid for x in current):
+    print(json.dumps({'status':'running','pid':child.pid}),flush=True)
+    break
+   time.sleep(.1)
+  else:raise RuntimeError('No verified wallpaper and restore window appeared')
+ except (OSError,ValueError,RuntimeError,subprocess.SubprocessError):
+  if child.poll() is None:
+   child.terminate()
+   try:child.wait(timeout=3)
+   except subprocess.TimeoutExpired:child.kill();child.wait()
+  print(json.dumps({'error':'Wallpaper could not start. Your normal desktop is available.'}))
+  sys.exit(1)
+ finally:
+  signal.signal(signal.SIGTERM,previous_handler)
 
 # Stay in the generated XDG service's lifetime; release the stop/start lock first.
 if login:
