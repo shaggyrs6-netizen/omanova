@@ -69,8 +69,9 @@ class UpdateTests(unittest.TestCase):
   launcher=self.state/'mission-control/bin/wallpaper'
   launcher.parent.mkdir(parents=True)
   launcher.touch()
-  desktop=self.root/'desktop'
-  desktop.mkdir()
+  socket_directory=tempfile.TemporaryDirectory(prefix='omanova-ipc-',dir='/tmp')
+  self.addCleanup(socket_directory.cleanup)
+  desktop=Path(socket_directory.name)
   only_config={'OMANOVA_WALLPAPER_RUNTIME':str(desktop),
                'OMANOVA_WALLPAPER_CONFIG':str(self.config),
                'XDG_CONFIG_HOME':str(self.root/'quickshell'),
