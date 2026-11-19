@@ -8,7 +8,7 @@ OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.7** adds an optional Mission Control live wallpaper with a rotating Earth, the local sky and ISS and Tiangong tracks. Read the [release notes](docs/RELEASE-0.1.7.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).
+> **Version 0.1.8** improves installer recovery and documents upgrades and removal for Mission Control. Read the [release notes](docs/RELEASE-0.1.8.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).
 
 > **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
 
@@ -185,7 +185,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.7 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.8 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```
@@ -249,6 +249,11 @@ plugin installer; leave it unset or set to `$HOME/.config`.
 
 ### Upgrading an existing installation
 
+**Coming from the marketplace's 0.1.1 snapshot?** Use the terminal steps
+below in your original runtime checkout. That version has no in-app updater.
+On a newer managed install, **Settings → Check for updates** can apply a
+published release after you confirm it.
+
 Back up `~/.local/share/omasky/` (locations, preferences and observing log)
 and `~/.local/share/omanova-trips/` if present (trip settings, manual horizons
 and terrain cache). For 0.1.3 also retain `omanova-launch-follow`,
@@ -262,7 +267,11 @@ Substitute `$XDG_DATA_HOME` if you use a custom data root.
    release tag from a clean worktree, and run `./install` there. This upgrades
    the matching widget and starts the hidden worker; existing login startup
    preferences are preserved. Modified or diverged widget checkouts are
-   refused so local changes can be reviewed first.
+   refused so local changes can be reviewed first. If dependency setup fails,
+   the installer restores the previous Python environment and attempts to
+   restart a previously active worker. The checkout still points at the tag
+   you selected. Use the previous tag and repeat these steps if the current
+   code cannot run with that environment.
 3. Run `omarchy restart shell` to clear cached bar code, then reopen the
    Observatory. A plugin rescan alone may leave the old bar code running.
 4. If you prefer a foreground worker, stop the service and run the foreground
@@ -277,6 +286,23 @@ The data directory retains its original `omasky` name so existing locations,
 preferences and observing logs remain available.
 
 ## Remove
+
+If you set up Mission Control, first turn off the wallpaper and clear
+**Start at login** under **Settings → Appearance → Mission Control wallpaper**.
+Confirm both are off. This also applies when restoring an older version
+without wallpaper controls. From your Omarchy desktop terminal, you can
+do both in one step:
+
+```sh
+wallpaper="${XDG_DATA_HOME:-$HOME/.local/share}/omasky/mission-control/bin/wallpaper"
+"$wallpaper" normal
+```
+
+Continue after the command reports `running` and `autostart` as false.
+If the controller reports an error, resolve it before removing the app.
+The optional renderer can be left on disk for reuse, or you can move its
+`mission-control` directory out of the data root once it is off. Keep the
+rest of the data root to retain your observing information.
 
 Stop the foreground worker with Ctrl+C or disable and stop the background
 service as described above. Close the Observatory, then run:
@@ -1228,7 +1254,9 @@ Checksums are integrity checks, not independent publisher signatures.
 
 Failures after activation restore the former alias/widget. An interrupted
 update offers **Restore previous installation**; a completed update can also be
-restored while the managed files remain unmodified. Update work survives closing
+restored while the managed files remain unmodified. For a rollback to a version
+without Mission Control, first turn its wallpaper and login startup off as
+described under [Remove](#remove). Update work survives closing
 the UI; keep the login session active. On success close/reopen Observatory and
 reload the shell to refresh the bar. Local receipts, logs and retained files are
 under `~/.local/share/omasky/updates/` (or the matching data root). There is no

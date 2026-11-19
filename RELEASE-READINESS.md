@@ -1,5 +1,13 @@
 # OMANOVA — release validation and maintenance
 
+## Local candidate: 0.1.8 — upgrade and wallpaper recovery
+
+See [release notes](docs/RELEASE-0.1.8.md). Test an in-place upgrade from the
+recorded 0.1.1 marketplace snapshot, guided setup failure, and an update and
+restore from a wallpaper-free version. Check wallpaper defaults, explicit
+login startup and desktop restore in an isolated Hyprland setup. Keep GitHub
+and marketplace publication separate.
+
 ## Release: 0.1.7 — optional Mission Control wallpaper
 
 See [release notes](docs/RELEASE-0.1.7.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).

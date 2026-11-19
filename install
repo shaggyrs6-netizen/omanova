@@ -55,7 +55,51 @@ if [[ "$state" != "$manager_data/omasky" ]]; then
 fi
 repository=https://github.com/shaggyrs6-netizen/omanova.git
 stage=$(mktemp -d)
-trap 'rm -rf -- "$stage"' EXIT
+restore_worker=0
+runtime_backup=
+setup_pending=0
+had_environment=0
+had_runtime=0
+cleanup() {
+    local result=$? recover=0
+    if (( setup_pending )); then
+        # Keep the previous environment at its original path so existing
+        # entry-point shebangs remain valid. Preserve any partial output aside.
+        if { (( ! had_environment )) || [[ -e "$runtime_backup/venv" || -L "$runtime_backup/venv" ]]; } &&
+            [[ -e .venv || -L .venv ]]; then
+            mv -T -- .venv "$runtime_backup/failed-venv" || recover=1
+        fi
+        if [[ -e "$runtime_backup/venv" || -L "$runtime_backup/venv" ]]; then
+            mv -T -- "$runtime_backup/venv" .venv || recover=1
+        fi
+        if [[ -f "$runtime_backup/build.json" ]]; then
+            cp -p -- "$runtime_backup/build.json" .omanova-build.json || recover=1
+        else
+            rm -f -- .omanova-build.json || recover=1
+        fi
+        if (( ! had_runtime )) && [[ -L "$state/runtime" && $(readlink -- "$state/runtime") == "$PWD" ]]; then
+            unlink -- "$state/runtime" || recover=1
+        fi
+    fi
+    if (( result && restore_worker && ! recover )); then
+        if systemctl --user is-active --quiet omanova-worker.service ||
+            systemctl --user start omanova-worker.service; then
+            printf 'Installation failed. The existing worker was left running or restarted.\n' >&2
+        else
+            printf 'Installation failed and the existing worker could not restart. Check: journalctl --user -u omanova-worker.service\n' >&2
+        fi
+    fi
+    if (( recover )); then
+        printf 'Could not restore the original runtime environment. Recovery files are at %s\n' "$runtime_backup" >&2
+    elif [[ -n "$runtime_backup" ]]; then
+        rm -rf -- "$runtime_backup"
+    fi
+    rm -rf -- "$stage"
+    return "$result"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 # Install the widget from this checkout, never from a moving remote HEAD.
 # Release archives without Git metadata use their version tag and the same
 # byte-for-byte check before any widget is installed or updated.
@@ -94,13 +138,29 @@ fi
 # A running managed worker must be stopped before changing its environment.
 # Foreground workers are left alone and cause a clear, early refusal.
 if systemctl --user is-active --quiet omanova-worker.service; then
+    restore_worker=1
     systemctl --user stop omanova-worker.service
 fi
 flock -n "$state/watch.lock" true || {
     printf 'A foreground worker is running. Stop it before installing, then retry.\n' >&2
     exit 1
 }
+runtime_backup=$(mktemp -d -- "$PWD/.omanova-install.XXXXXX")
+if [[ -f .omanova-build.json ]]; then
+    cp -p -- .omanova-build.json "$runtime_backup/build.json"
+fi
+if [[ -L "$state/runtime" ]]; then
+    had_runtime=1
+fi
+if [[ -e .venv || -L .venv ]]; then
+    had_environment=1
+fi
+setup_pending=1
+if (( had_environment )); then
+    mv -T -- .venv "$runtime_backup/venv"
+fi
 OMANOVA_SOURCE_REVISION=$(git -C "$stage/widget" rev-parse HEAD) ./setup-runtime
+setup_pending=0
 
 # Omarchy owns plugin installation. Do not silently mix widget and runtime versions.
 if [[ ! -e "$plugin/manifest.json" ]]; then

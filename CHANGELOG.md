@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.8 — upgrade and wallpaper recovery
+
+- Restore the previous Python environment after a failed guided setup, and restart a previously active worker when possible.
+- Before restoring a version without Mission Control, require wallpaper and its login startup to be off.
+- Document the in-place upgrade from marketplace 0.1.1 and how to stop Mission Control before removing OMANOVA.
+
+See [full release notes](docs/RELEASE-0.1.8.md).
+
 ## 0.1.7 — Mission Control live wallpaper
 
 - Show the local sky, rotating Earth, ISS and Tiangong tracks, Moon and observing context as an optional primary-monitor wallpaper.

@@ -227,7 +227,53 @@ def swap_alias(state,target):
     temp.symlink_to(target);os.replace(temp,state/'runtime')
 
 
-def restore(state,services):
+class WallpaperRollbackRequired(ValueError):
+    pass
+
+
+def check_wallpaper_before_restore(state, runtime):
+    if (runtime/'install-mission-control').is_file():
+        return
+
+    env = os.environ.copy()
+    config = env.get('OMANOVA_WALLPAPER_CONFIG') or env.get('XDG_CONFIG_HOME') or str(Path.home()/'.config')
+    desktop_runtime = env.get('OMANOVA_WALLPAPER_RUNTIME') or env.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}'
+    env.update(XDG_CONFIG_HOME=config, XDG_RUNTIME_DIR=desktop_runtime)
+    entry = Path(config)/'autostart/omanova-mission-control.desktop'
+    receipt = Path(desktop_runtime)/'omanova-mission-control-trial/session.json'
+    launcher = state/'mission-control/bin/wallpaper'
+    message = ('Before restoring this earlier version, turn off Mission Control wallpaper and Start at login '
+               'in Settings → Appearance, then retry. If Settings is unavailable, see the removal instructions.')
+
+    if not launcher.is_file():
+        if entry.exists() or entry.is_symlink() or receipt.exists():
+            raise WallpaperRollbackRequired(message)
+        return
+
+    def status_of(*args):
+        try:
+            reply = subprocess.check_output([launcher, *args], env=env, text=True, timeout=15)
+            status = json.loads(reply)
+            if isinstance(status, dict):
+                return status
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
+        raise WallpaperRollbackRequired(message)
+
+    startup = status_of('startup', 'status')
+    if startup.get('available') is not True or startup.get('enabled') is not False:
+        raise WallpaperRollbackRequired(message)
+
+    display = env.get('WAYLAND_DISPLAY')
+    if display and (Path(desktop_runtime)/display).is_socket():
+        wallpaper = status_of('status')
+        if wallpaper.get('available') is not True or wallpaper.get('running') is not False:
+            raise WallpaperRollbackRequired(message)
+    elif receipt.exists():
+        raise WallpaperRollbackRequired(message)
+
+
+def restore(state,services, *, check_wallpaper=False):
     path=state/'updates/journal.json';j=read(path)
     if j.get('phase')=='restored':return
     if j.get('phase')=='complete':preflight(state)
@@ -238,6 +284,7 @@ def restore(state,services):
     alias=state/'runtime'
     if not alias.is_symlink() or alias.resolve() not in (runtime,Path(j.get('candidate',str(runtime)))):raise ValueError('Runtime changed since update; review recovery manually')
     if not runtime.is_dir():raise ValueError('Original runtime unavailable; manual review required')
+    if check_wallpaper:check_wallpaper_before_restore(state,runtime)
     if services.active():services.stop()
     if backup.exists():
         if plugin.exists():plugin.rename(backup.parent/'failed-widget')
@@ -303,7 +350,7 @@ def status(state):
 
 def dispatch(action,state,fixture=False):
     if fixture:
-        return {'status':'available' if action=='check' else 'fixture','version':'0.1.8','notes':'SIMULATED release for updater UI testing.','message':'Demonstration only: no download, install, service or source change.','canInstall':action=='check'}
+        return {'status':'available' if action=='check' else 'fixture','version':'0.1.9','notes':'SIMULATED release for updater UI testing.','message':'Demonstration only: no download, install, service or source change.','canInstall':action=='check'}
     if action=='status':return status(state)
     if action=='check':
         now=datetime.now(UTC);p=state/'updates/ticket.json'
@@ -337,7 +384,7 @@ def dispatch(action,state,fixture=False):
         log.close();return status(state)
     if action=='_install':return install(state,read(state/'updates/ticket.json'))
     if action=='_restore':
-        with exclusive(state):restore(state,Services())
+        with exclusive(state):restore(state,Services(),check_wallpaper=True)
         return {'status':'restored','message':'Previous installation restored. Close and reopen Observatory.'}
     raise ValueError('Unknown update operation')
 
@@ -350,6 +397,8 @@ def main():
             if not args.plugin:raise ValueError('Specify widget path')
             register(args.state,ROOT,args.plugin);result={'status':'registered','message':'Update baseline recorded.'}
         else:result=dispatch(args.action,args.state,args.fixture)
+    except WallpaperRollbackRequired as exc:
+        result={'status':'recovery','message':str(exc)}
     except Exception as exc:
         result={'status':'error','message':'Update failed or was refused. Existing data retained. Check the local update log or use the documented installer; no automatic retry.'}
         if isinstance(exc,ValueError):result['message']=str(exc)[:400]

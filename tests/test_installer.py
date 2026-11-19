@@ -45,6 +45,11 @@ printf '{"generated":"2000-01-01T00:00:00Z"}' >"$XDG_DATA_HOME/omasky/snapshot.j
 mkdir -p .venv/bin
 [[ -e .venv/bin/python ]] || ln -s "$OMANOVA_TEST_PYTHON" .venv/bin/python
 touch "$QA/setup-called"
+if [[ -f "$QA/fail-setup" ]]; then
+    printf 'partial environment' > .venv/partial
+    printf 'candidate identity' > .omanova-build.json
+    exit 42
+fi
 ''')
         self.script(self.bin / 'systemctl', '''#!/usr/bin/python
 import os,sys,json,datetime
@@ -54,7 +59,7 @@ with (q/'service-calls').open('a') as f: f.write(' '.join(args)+'\\n')
 if action=='show-environment': print('XDG_DATA_HOME='+os.environ['XDG_DATA_HOME'])
 elif action=='is-active': sys.exit(0 if (q/'running').exists() else 3)
 elif action=='stop': (q/'running').unlink(missing_ok=True)
-elif action=='restart':
+elif action in ('restart','start'):
  (q/'running').touch()
  if not (q/'fail-worker').exists():
   p=Path(os.environ['XDG_DATA_HOME'])/'omasky/snapshot.json'
@@ -132,6 +137,32 @@ printf '%s\\n' "$*" >"$QA/sudo-called"
         self.assertIn('has not discovered', result.stderr)
         self.assertFalse((self.root / 'enabled').exists())
         self.assertFalse((self.root / 'running').exists())
+
+    def test_failed_setup_restores_environment_and_active_worker(self):
+        self.assertEqual(self.run_install('--autostart').returncode, 0)
+        env = self.project / '.venv'
+        (env / 'previous').write_text('existing environment')
+        identity = self.project / '.omanova-build.json'
+        identity.write_text('previous identity')
+        (self.root / 'fail-setup').touch()
+
+        result = self.run_install()
+
+        self.assertEqual(result.returncode, 42, result.stderr)
+        self.assertIn('existing worker was left running or restarted', result.stderr)
+        self.assertTrue((self.root / 'running').exists())
+        self.assertTrue((self.root / 'enabled').exists())
+        self.assertEqual((env / 'previous').read_text(), 'existing environment')
+        self.assertFalse((env / 'partial').exists())
+        self.assertEqual(identity.read_text(), 'previous identity')
+
+    def test_failed_first_setup_leaves_worker_and_login_off(self):
+        (self.root / 'fail-setup').touch()
+        self.assertEqual(self.run_install('--autostart').returncode, 42)
+        self.assertFalse((self.root / 'running').exists())
+        self.assertFalse((self.root / 'enabled').exists())
+        self.assertFalse((self.project / '.venv').exists())
+        self.assertFalse((Path(self.env['XDG_DATA_HOME']) / 'omasky/runtime').is_symlink())
 
     def test_worker_failure_does_not_enable_or_claim_success(self):
         (self.root / 'fail-worker').touch()

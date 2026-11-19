@@ -61,6 +61,46 @@ class UpdateTests(unittest.TestCase):
   u.write(self.state/'updates/journal.json',{'phase':'switching','previous':previous,'backup':str(backup),'wasActive':True})
   self.assertEqual(u.status(self.state)['status'],'recovery');service=FakeServices(active=False);u.restore(self.state,service)
   self.assertTrue(self.plugin.is_dir());self.assertTrue(service.running);u.preflight(self.state)
+ def test_restore_requires_wallpaper_off_before_switching_to_older_runtime(self):
+  import socket
+  service=FakeServices()
+  u.install(self.state,{'version':'0.1.5'},service,self.prepare)
+  candidate=(self.state/'runtime').resolve()
+  launcher=self.state/'mission-control/bin/wallpaper'
+  launcher.parent.mkdir(parents=True)
+  launcher.touch()
+  desktop=self.root/'desktop'
+  desktop.mkdir()
+  only_config={'OMANOVA_WALLPAPER_RUNTIME':str(desktop),
+               'OMANOVA_WALLPAPER_CONFIG':str(self.config),
+               'XDG_CONFIG_HOME':str(self.root/'quickshell'),
+               'WAYLAND_DISPLAY':'test-display'}
+  with socket.socket(socket.AF_UNIX) as display,patch.dict(os.environ,only_config):
+   display.bind(str(desktop/'test-display'))
+   for replies in (['{"available":true,"enabled":true}'],
+                   ['{"available":true,"enabled":false}','{"available":true,"running":true}'],
+                   ['{"available":true,"enabled":false}','{"available":false,"running":false}']):
+    with patch.object(u.subprocess,'check_output',side_effect=replies) as call:
+     with self.assertRaises(u.WallpaperRollbackRequired):
+      u.restore(self.state,service,check_wallpaper=True)
+     self.assertEqual(call.call_args.kwargs['env']['XDG_CONFIG_HOME'],str(self.config))
+    self.assertEqual((self.state/'runtime').resolve(),candidate)
+    self.assertEqual(service.calls,['stop','start'])
+   with patch.object(u.subprocess,'check_output',side_effect=[
+    '{"available":true,"enabled":false}','{"available":true,"running":false}']):
+    u.restore(self.state,service,check_wallpaper=True)
+  self.assertEqual((self.state/'runtime').resolve(),self.runtime)
+  self.assertEqual(u.read(self.state/'updates/journal.json')['phase'],'restored')
+
+ def test_restore_to_wallpaper_capable_release_keeps_independent_preference(self):
+  (self.runtime/'install-mission-control').touch()
+  service=FakeServices()
+  u.register(self.state,self.runtime,self.plugin)
+  u.install(self.state,{'version':'0.1.5'},service,self.prepare)
+  with patch.object(u,'subprocess',side_effect=AssertionError('No desktop action required')):
+   u.restore(self.state,service,check_wallpaper=True)
+  self.assertEqual((self.state/'runtime').resolve(),self.runtime)
+
  def test_fixture_check_install_restore_never_touch_network_or_service(self):
   with patch.object(u,'fetch',side_effect=AssertionError('No network')),patch.object(u,'Services',side_effect=AssertionError('No services')):
    for action in ('check','launch','restore'):
