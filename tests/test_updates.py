@@ -93,6 +93,20 @@ class UpdateTests(unittest.TestCase):
   self.assertEqual((self.state/'runtime').resolve(),self.runtime)
   self.assertEqual(u.read(self.state/'updates/journal.json')['phase'],'restored')
 
+ def test_restore_without_component_ignores_other_session_receipt_and_honours_login(self):
+  desktop=self.root/'desktop'
+  receipt=desktop/'omanova-mission-control-trial/session.json'
+  u.write(receipt,{'binary':'/another/install/renderer','pid':os.getpid(),'start':u.process_start(os.getpid())})
+  entry=self.config/'autostart/omanova-mission-control.desktop'
+  entry.parent.mkdir()
+  with patch.dict(os.environ,{'OMANOVA_WALLPAPER_RUNTIME':str(desktop),'OMANOVA_WALLPAPER_CONFIG':str(self.config)}):
+   u.check_wallpaper_before_restore(self.state,self.runtime)
+   entry.write_text('[Desktop Entry]\nHidden=true\n')
+   u.check_wallpaper_before_restore(self.state,self.runtime)
+   entry.write_text('[Desktop Entry]\nHidden=false\n')
+   with self.assertRaises(u.WallpaperRollbackRequired):
+    u.check_wallpaper_before_restore(self.state,self.runtime)
+
  def test_restore_to_wallpaper_capable_release_keeps_independent_preference(self):
   (self.runtime/'install-mission-control').touch()
   service=FakeServices()

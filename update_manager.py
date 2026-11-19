@@ -5,6 +5,7 @@ keeps enough information to restore the alias/widget if activation fails or is
 interrupted. Checksums provide integrity, not independent publisher signatures.
 """
 import argparse
+from configparser import ConfigParser, Error as ConfigError
 from contextlib import contextmanager
 from datetime import UTC,datetime,timedelta
 import fcntl,hashlib,json,os,re,shutil,ssl,subprocess,sys,tarfile,tempfile,time
@@ -241,13 +242,32 @@ def check_wallpaper_before_restore(state, runtime):
     env.update(XDG_CONFIG_HOME=config, XDG_RUNTIME_DIR=desktop_runtime)
     entry = Path(config)/'autostart/omanova-mission-control.desktop'
     receipt = Path(desktop_runtime)/'omanova-mission-control-trial/session.json'
-    launcher = state/'mission-control/bin/wallpaper'
+    component = state/'mission-control'
+    launcher = component/'bin/wallpaper'
     message = ('Before restoring this earlier version, turn off Mission Control wallpaper and Start at login '
                'in Settings → Appearance, then retry. If Settings is unavailable, see the removal instructions.')
 
+    def matching_renderer_running():
+        try:
+            record = read(receipt)
+            renderer = component/'build/omanova-mission-control-preview'
+            return (record.get('binary') == str(renderer) and bool(record.get('start'))
+                    and process_start(record.get('pid')) == record['start'])
+        except (OSError, ValueError, AttributeError):
+            return False
+
     if not launcher.is_file():
-        if entry.exists() or entry.is_symlink() or receipt.exists():
+        if entry.is_symlink() or matching_renderer_running():
             raise WallpaperRollbackRequired(message)
+        if entry.exists():
+            config_parser = ConfigParser(interpolation=None)
+            try:
+                with entry.open() as file:
+                    config_parser.read_file(file)
+                if not config_parser.getboolean('Desktop Entry', 'Hidden', fallback=False):
+                    raise WallpaperRollbackRequired(message)
+            except (OSError, ConfigError) as exc:
+                raise WallpaperRollbackRequired(message) from exc
         return
 
     def status_of(*args):
@@ -269,7 +289,7 @@ def check_wallpaper_before_restore(state, runtime):
         wallpaper = status_of('status')
         if wallpaper.get('available') is not True or wallpaper.get('running') is not False:
             raise WallpaperRollbackRequired(message)
-    elif receipt.exists():
+    elif matching_renderer_running():
         raise WallpaperRollbackRequired(message)
 
 
