@@ -1,14 +1,22 @@
 # OMANOVA — release validation and maintenance
 
-## Local candidate: 0.1.6 — observing plans and camera framing
+## Release: 0.1.7 — optional Mission Control wallpaper
+
+See [release notes](docs/RELEASE-0.1.7.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).
+Verify the exact archive on clean installation, a 0.1.6 upgrade and rollback.
+Exercise the optional Qt build, default-off settings and wallpaper restore
+under Hyprland, plus renderer motion and stale-data fixtures. Keep physical
+login/reboot and multi-monitor checks distinct from the isolated desktop test.
+
+## Previous release: 0.1.6 — observing plans and camera framing
 
 See [release notes](docs/RELEASE-0.1.6.md) and the
 [sample screenshot gallery](docs/SCREENSHOTS-0.1.6.md). The comet catalogue
 expires on 2 January 2027 at 00:00 UTC. The candidate archive carries the
 source identity and excludes local state. Test the actual archive, including
 clean install, the public 0.1.5 update path and restore. Prior physical
-login/reboot tests cover earlier releases. Mission Control remains a separate
-project branch. GitHub uploads and marketplace are on hold.
+login/reboot tests cover earlier releases. Mission Control joins the GitHub
+release in 0.1.7. The marketplace listing remains separate.
 
 ## Public release: 0.1.5 — manual updates and live sky satellites
 

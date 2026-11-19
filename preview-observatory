@@ -55,13 +55,17 @@ if [[ $fixture == 0 ]]; then
 fi
 # Wallpaper commands need the desktop session's directories, while Observatory
 # keeps its own Quickshell IPC, theme simulation and cache paths.
-export OMANOVA_WALLPAPER_HELPER="" OMANOVA_WALLPAPER_RUNTIME="" OMANOVA_WALLPAPER_CONFIG=""
-if [[ $fixture == 0 && -x "$data/mission-control/bin/wallpaper" ]]; then
+export OMANOVA_WALLPAPER_HELPER="" OMANOVA_WALLPAPER_RUNTIME="" OMANOVA_WALLPAPER_CONFIG="" OMANOVA_WALLPAPER_SETUP="" OMANOVA_WALLPAPER_READY=0
+if [[ $fixture == 0 ]]; then
+    export OMANOVA_WALLPAPER_SETUP="$PWD/install-mission-control"
+    if [[ -x "$data/mission-control/bin/wallpaper" && -x "$data/mission-control/build/omanova-mission-control-preview" ]]; then
+        export OMANOVA_WALLPAPER_READY=1
+    fi
     export OMANOVA_WALLPAPER_HELPER="$data/mission-control/bin/wallpaper"
     export OMANOVA_WALLPAPER_RUNTIME="${XDG_RUNTIME_DIR:?}"
     export OMANOVA_WALLPAPER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
 elif [[ $settings_trial == 1 && -x ${OMANOVA_WALLPAPER_FIXTURE_HELPER:-} ]]; then
-    export OMANOVA_WALLPAPER_HELPER="$OMANOVA_WALLPAPER_FIXTURE_HELPER"
+    export OMANOVA_WALLPAPER_HELPER="$OMANOVA_WALLPAPER_FIXTURE_HELPER" OMANOVA_WALLPAPER_READY=1
     export OMANOVA_WALLPAPER_RUNTIME="$state"
     export OMANOVA_WALLPAPER_CONFIG="$state/config"
 fi

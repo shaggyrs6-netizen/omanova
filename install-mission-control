@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Build the optional per-user Mission Control wallpaper. Setup never starts it."""
+import fcntl
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parent
+RENDERER = Path("build/omanova-mission-control-preview")
+FILES = ("bin/wallpaper", "startup_options.py", "live_bridge.py")
+
+
+def executable(path):
+    return path.is_file() and not path.is_symlink() and os.access(path, os.X_OK)
+
+
+def install():
+    state = Path(os.environ.get("XDG_DATA_HOME") or Path.home()/".local/share")/"omasky"
+    destination = state/"mission-control"
+    state.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (state/"install.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError("Another OMANOVA installation is running. Try again when it finishes.") from None
+        if destination.exists() or destination.is_symlink():
+            if not destination.is_symlink() and all(executable(destination/p) for p in (FILES[0], RENDERER)):
+                return {"installed": True, "existing": True}
+            raise ValueError("A Mission Control directory already exists. Preserve it before reviewing setup.")
+        if not all(shutil.which(cmd) for cmd in ("qmake6", "make", "g++", "hyprctl")):
+            raise ValueError("Mission Control needs Hyprland and the Qt build tools. See the release notes for dependencies.")
+        with tempfile.TemporaryDirectory(prefix=".mission-control-", dir=state) as directory:
+            scratch = Path(directory)
+            build = scratch/"source"
+            build.mkdir()
+            source = ROOT/"mission-control"
+            for folder in ("src", "assets"):
+                shutil.copytree(source/folder, build/folder)
+            for name in ("mission-control.pro", "bin/build", *FILES):
+                path = build/name
+                path.parent.mkdir(exist_ok=True, parents=True)
+                shutil.copy2(source/name, path)
+            log = state/"mission-control-build.log"
+            with log.open("w") as output:
+                completed = subprocess.run([build/"bin/build"], cwd=build, stdout=output,
+                                           stderr=subprocess.STDOUT, timeout=240)
+            if completed.returncode or not executable(build/RENDERER):
+                raise ValueError("Mission Control could not build. Check the Qt dependencies and mission-control-build.log.")
+            stage = scratch/"component"
+            for name in (*FILES, RENDERER):
+                path = stage/name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(build/name, path)
+            stage.rename(destination)
+    return {"installed": True, "existing": False}
+
+
+if __name__ == "__main__":
+    os.umask(0o077)
+    try:
+        result = install()
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        print(json.dumps({"error": str(error) if isinstance(error, ValueError) else
+                          "Mission Control setup could not finish. See mission-control-build.log."}))
+        sys.exit(1)
+    print(json.dumps(result))

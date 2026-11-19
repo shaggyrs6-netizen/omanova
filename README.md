@@ -2,15 +2,35 @@
 
 ![OMANOVA: your local Observatory for Omarchy. Sky charts, ISS and Tiangong passes, launches, trip planning and terrain, polar alignment, transit candidates, equipment, offline guides and observing-log CSV export.](preview.png)
 
-*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.6.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.7.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.6:** My Night, observing timing charts, 25 deep-sky targets in Sky Finder, named telescope and camera setups, and a rotatable camera frame on Star Chart. Read the [release notes](docs/RELEASE-0.1.6.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.6.md).
+> **Version 0.1.7** adds an optional Mission Control live wallpaper with a rotating Earth, the local sky and ISS and Tiangong tracks. Read the [release notes](docs/RELEASE-0.1.7.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).
 
 > **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
+
+## Mission Control live wallpaper
+
+Open **Settings → Appearance → Mission Control wallpaper**. **Set up Mission
+Control** builds the optional component for your user. Then choose **Turn
+wallpaper on**. **Start at login** is a separate opt-in and the wallpaper
+starts on the primary monitor. Choose **Turn wallpaper off** to restore your
+normal wallpaper and switch off Mission Control startup, or use **Restore
+desktop** in the Mission Control window for this session only.
+
+On Omarchy, the optional setup needs the Qt build tools. If they are missing,
+you can install them yourself before using the setup button:
+
+```sh
+sudo pacman -S --needed gcc make qt6-base qt6-declarative qt6-wayland layer-shell-qt
+```
+
+Alternatively, run `./install-mission-control` from the release checkout,
+then reopen the Observatory. The standard OMANOVA installer leaves this
+component optional. [Setup details and limits](docs/RELEASE-0.1.7.md).
 
 ## Navigation, Overview and runtime status (0.1.4)
 
@@ -104,6 +124,8 @@ remain on hold; GitHub releases are separate.
 
 ## Screenshots
 
+[0.1.7 gallery: Mission Control, orbital tracks and wallpaper settings](docs/SCREENSHOTS-0.1.7.md).
+
 [0.1.6 gallery: My Night, Sky Finder and camera framing](docs/SCREENSHOTS-0.1.6.md).
 [0.1.5 gallery: updater and live sky satellites](docs/SCREENSHOTS-0.1.5.md). The older galleries below retain all earlier features.
 
@@ -163,7 +185,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.6 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.7 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.7 — Mission Control live wallpaper
+
+- Show the local sky, rotating Earth, ISS and Tiangong tracks, Moon and observing context as an optional primary-monitor wallpaper.
+- Add per-user setup, on/off and a separate **Start at login** control in Settings. Wallpaper and login startup default to Off.
+- Restore the desktop for this session from Mission Control, or turn the wallpaper off in Settings to also disable login startup.
+- Smooth the Earth rotation and offer reduced motion. Hide satellite positions when the live frame or orbital elements are stale.
+- Reuse the local OMANOVA cache and existing download preferences. Optional setup builds locally and leaves the core installer independent.
+
+See [full release notes](docs/RELEASE-0.1.7.md) and [native screenshots](docs/SCREENSHOTS-0.1.7.md).
+
 ## 0.1.6 — plan a night and frame the sky
 
 - Add My Night with up to 24 targets or timed events, planning by date and saved location, offline export and pre-filled observation drafts.

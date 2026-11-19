@@ -1,4 +1,10 @@
-# Mission Control — local animated design preview
+# Mission Control wallpaper
+
+For the shipped wallpaper, open **Settings → Appearance → Mission Control
+wallpaper** in OMANOVA. [Setup and release notes](../docs/RELEASE-0.1.7.md)
+cover the optional Qt build and controls. Both wallpaper and login startup
+default to Off. The notes below document the development previews and
+historical test runs.
 
 ![Polished Mission Control sample preview](assets/preview-polished.png)
 
@@ -282,5 +288,6 @@ directories and only uses an explicitly configured test helper. The component
 uses existing cached astronomy data and does not start or change the observing
 worker. Missing renderer or desktop support is shown as unavailable.
 
-This is a local opt-in integration on top of 0.1.6. Public component packaging,
-multi-monitor behaviour and actual login/reboot verification remain separate.
+The 0.1.6 trial became the optional 0.1.7 wallpaper. Multi-monitor behaviour
+and clean-release physical login/reboot verification are separate from the
+isolated desktop tests.

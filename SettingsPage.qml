@@ -168,7 +168,8 @@ ColumnLayout {
         }
         Heading { text: qsTr("Mission Control wallpaper") }
         Copy {
-            text: page.wallpaper?.settling || (wallpaperSection.waiting && page.wallpaper?.action !== "status") ? qsTr("Changing wallpaper…") :
+            text: wallpaperSection.waiting && page.wallpaper?.action === "setup" ? qsTr("Building Mission Control…") :
+                  page.wallpaper?.settling || (wallpaperSection.waiting && page.wallpaper?.action !== "status") ? qsTr("Changing wallpaper…") :
                   wallpaperSection.state?.running ? qsTr("On · Primary monitor") :
                   wallpaperSection.state?.available ? qsTr("Off") :
                   wallpaperSection.state?.message || qsTr("Wallpaper unavailable")
@@ -178,6 +179,13 @@ ColumnLayout {
             Layout.fillWidth: true
             spacing: 8
             Action {
+                visible: page.wallpaper?.canSetup === true
+                text: qsTr("Set up Mission Control")
+                enabled: !wallpaperSection.waiting
+                onClicked: page.wallpaper.request("setup")
+            }
+            Action {
+                visible: page.wallpaper?.configured === true
                 text: wallpaperSection.state?.running ? qsTr("Turn wallpaper off") : qsTr("Turn wallpaper on")
                 enabled: !wallpaperSection.waiting && (
                     wallpaperSection.state?.available === true || wallpaperSection.state?.running === true)

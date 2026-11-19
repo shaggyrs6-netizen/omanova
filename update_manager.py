@@ -303,7 +303,7 @@ def status(state):
 
 def dispatch(action,state,fixture=False):
     if fixture:
-        return {'status':'available' if action=='check' else 'fixture','version':'0.1.7','notes':'SIMULATED release for updater UI testing.','message':'Demonstration only: no download, install, service or source change.','canInstall':action=='check'}
+        return {'status':'available' if action=='check' else 'fixture','version':'0.1.8','notes':'SIMULATED release for updater UI testing.','message':'Demonstration only: no download, install, service or source change.','canInstall':action=='check'}
     if action=='status':return status(state)
     if action=='check':
         now=datetime.now(UTC);p=state/'updates/ticket.json'
