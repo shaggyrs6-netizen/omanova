@@ -15,4 +15,4 @@ export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omasky-alerts.XXXXXX)"
 export XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
 export OMASKY_ALERT_STATE="$state" OMASKY_ALERT_TOOL="$PWD" WAYLAND_DISPLAY="$display"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
-exec qs --no-color -p "$PWD/observatory/notifications/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/notifications/Window.qml" exec qs --no-color -p "$PWD/ObservatoryPreview.qml"

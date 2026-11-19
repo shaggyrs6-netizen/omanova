@@ -13,4 +13,4 @@ display=${WAYLAND_DISPLAY:?Run from a Wayland session}
 export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omanova-offline.XXXXXX)" WAYLAND_DISPLAY="$display"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
 export OMANOVA_OFFLINE_STATE="$state" OMANOVA_OFFLINE_RUNTIME="$PWD" OMASKY_STATE="$state"
-exec qs -n --no-color -p "$PWD/observatory/offline/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/offline/Window.qml" exec qs -n --no-color -p "$PWD/ObservatoryPreview.qml"

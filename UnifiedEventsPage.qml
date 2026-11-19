@@ -1,4 +1,5 @@
 import "./qml/Omanova" as App
+import "./observatory/events" as EventComponents
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -55,7 +56,7 @@ ColumnLayout {
         OpportunityCard { Layout.leftMargin: 22; Layout.rightMargin: 22; required property var modelData; event: modelData; sky: page.sky; canAddToNight:page.canAddToNight; onAddToNight:key=>page.addToNight(key); onInspect: selected => page.inspect(selected); onRecordObservation:selected => page.recordObservation(selected) }
     }
     Copy { visible: !page.stationDetail && page.rows.length > 100; text: qsTr("Showing the first 100 events. Filter by type to narrow the list.") }
-    EventsPage {
+    EventComponents.EventsPage {
         id: detailed
         visible: page.stationDetail; Layout.fillWidth: true; sky: page.sky
         onInspect: eventId => page.inspect({ kind: "station", station_id: eventId, page: 1 })

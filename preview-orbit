@@ -19,4 +19,4 @@ export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omasky-orbit.XXXXXX)"
 export XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
 export OMASKY_ORBIT="$state/tracks.json" OMASKY_ORBIT_LAND="$PWD/observatory/orbit/land.geojson" WAYLAND_DISPLAY="$display"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
-exec qs --no-color -p "$PWD/observatory/orbit/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/orbit/Window.qml" exec qs --no-color -p "$PWD/ObservatoryPreview.qml"

@@ -146,4 +146,4 @@ if [[ $fixture == 0 ]]; then
     export OMANOVA_DISTANCE_MI="$distance_mi"
 fi
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
-exec qs --no-color -n -p "$PWD/observatory/Window.qml" "$@"
+exec qs --no-color -n -p "$PWD/Observatory.qml" "$@"

@@ -19,4 +19,4 @@ OPENBLAS_NUM_THREADS=1 .venv/bin/python observatory/comets/comets.py "$state/com
 export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
 export OMASKY_COMETS="$state/comets.json" WAYLAND_DISPLAY="$display"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
-qs --no-color -n -p "$PWD/observatory/comets/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/comets/Window.qml" qs --no-color -n -p "$PWD/ObservatoryPreview.qml"

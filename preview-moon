@@ -20,4 +20,4 @@ export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omasky-moon.XXXXXX)"
 export XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
 export OMASKY_MOON="$state/moon.json" WAYLAND_DISPLAY="$display"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
-exec qs --no-color -p "$PWD/observatory/moon/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/moon/Window.qml" exec qs --no-color -p "$PWD/ObservatoryPreview.qml"

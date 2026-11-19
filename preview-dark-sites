@@ -13,4 +13,4 @@ mkdir "$state"/{config,cache,runtime}
 export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACHE_HOME="$state/cache"
 export OMASKY_DARK_SITES="$PWD/observatory/dark-sites/sites.json" WAYLAND_DISPLAY="$display"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
-qs --no-color -n -p "$PWD/observatory/dark-sites/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/dark-sites/Window.qml" qs --no-color -n -p "$PWD/ObservatoryPreview.qml"

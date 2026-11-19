@@ -18,4 +18,4 @@ export XDG_RUNTIME_DIR="$(mktemp -d /tmp/omanova-trip.XXXXXX)"
 export WAYLAND_DISPLAY="$display" QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
 export OMANOVA_TRIP_STATE="$state" OMANOVA_TRIP_RUNTIME="$PWD" OMANOVA_TRIP_FIXTURE="$fixture"
 export OPENBLAS_NUM_THREADS=1
-exec qs -n --no-color -p "$PWD/observatory/trips/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/trips/Window.qml" exec qs -n --no-color -p "$PWD/ObservatoryPreview.qml"

@@ -24,4 +24,4 @@ export XDG_RUNTIME_DIR="$state/runtime" XDG_CONFIG_HOME="$state/config" XDG_CACH
 export OMASKY_AURORA="$state/aurora.json" WAYLAND_DISPLAY="$display"
 export OMASKY_AURORA_TOOL="$PWD" OMASKY_AURORA_MODE="$mode"
 export QT_QPA_PLATFORM=wayland QT_QUICK_CONTROLS_STYLE=Basic
-qs --no-color -n -p "$PWD/observatory/aurora/Window.qml"
+OMANOVA_PREVIEW_ENTRY="observatory/aurora/Window.qml" qs --no-color -n -p "$PWD/ObservatoryPreview.qml"

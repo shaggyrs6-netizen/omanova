@@ -1,4 +1,6 @@
 import "../../qml/Omanova" as App
+import "../trips" as TripControls
+import "../orbit" as OrbitComponents
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -69,7 +71,7 @@ Item {
   }
  }
  component Copy:Text {Layout.fillWidth:true;color:App.Palette.ink;textFormat:Text.PlainText;wrapMode:Text.Wrap;font.pixelSize:14}
- component Action:TripButton {enabled:!job.running}
+ component Action:TripControls.TripButton {enabled:!job.running}
  ScrollView {id:scroll;anchors.fill:parent;clip:true;contentWidth:availableWidth;ScrollBar.horizontal.policy:ScrollBar.AlwaysOff
   ColumnLayout {width:scroll.availableWidth;spacing:14
    ColumnLayout {Layout.fillWidth:true;Layout.margins:24;spacing:12
@@ -82,7 +84,7 @@ Item {
      }
     }
     Flow {Layout.fillWidth:true;spacing:10
-     TripField {id:instant;visible:root.section==="chart"||root.section==="polar";width:250;maximumLength:32;placeholderText:"UTC: 2026-11-15T02:00Z";Accessible.name:"Chart or pole time, ISO date with timezone";enabled:!job.running&&!root.satellitesOn}
+     TripControls.TripField {id:instant;visible:root.section==="chart"||root.section==="polar";width:250;maximumLength:32;placeholderText:"UTC: 2026-11-15T02:00Z";Accessible.name:"Chart or pole time, ISO date with timezone";enabled:!job.running&&!root.satellitesOn}
      Action {text:root.section==="transits"?"Search next 24 hours locally":"Refresh locally";onClicked:root.request()}
      Action {visible:root.section==="chart"||root.section==="polar";text:"Use current time";onClicked:{instant.text="";root.request()}}
     }
@@ -111,14 +113,14 @@ Item {
      Layout.fillWidth:true;spacing:8
      Flow {
       Layout.fillWidth:true;spacing:8
-      TripChoice {
+      TripControls.TripChoice {
        width:Math.min(230,parent.width)
        model:root.cameras.map(setup=>setup.name)
        currentIndex:root.cameras.findIndex(setup=>setup.name===root.camera?.name)
        Accessible.name:"Camera setup"
        onActivated:index=>root.cameraName=root.cameras[index].name
       }
-      TripChoice {
+      TripControls.TripChoice {
        width:Math.min(275,parent.width)
        model:root.cameraTargets.map(target=>target.name)
        currentIndex:Math.max(0,root.cameraTargets.findIndex(target=>target.id===root.aim.target))
@@ -199,7 +201,7 @@ Item {
      Flow {Layout.fillWidth:true;spacing:8
       Repeater {model:["ISS","Tiangong"];Action {required property string modelData;required property int index;text:(root.stationIndex===index?"● ":"")+modelData;onClicked:root.stationIndex=index}}
      }
-     GroundMap {Layout.fillWidth:true;observer:root.dataSet?.observer||null;sample:root.station?.usable&&!root.expired?root.station:null;selected:root.station?.usable?{track:root.station.track,pass:[]}:null}
+     OrbitComponents.GroundMap {Layout.fillWidth:true;observer:root.dataSet?.observer||null;sample:root.station?.usable&&!root.expired?root.station:null;selected:root.station?.usable?{track:root.station.track,pass:[]}:null}
      Copy {text:!root.station?"No cached station positions.":!root.station.usable?root.station.name+" · stale / future elements: current marker withheld.":root.station.name+" · "+Number(root.station.el).toFixed(1)+"° up · "+Number(root.station.az).toFixed(1)+"° true bearing · "+root.skyModel.formatDistance(root.station.slant,0)+" slant range\n"+(root.station.el>0?"Above geometric horizon":"Below geometric horizon")+" · "+(root.station.sunlit?"station sunlit":"station in shadow")+" · "+(root.station.skyDark?"sky dark enough":"sky bright")+" · visibility unconfirmed";color:root.expired?App.Palette.warning:App.Palette.ink}
      Copy {text:root.station?"Element epoch "+root.station.epoch+" · age "+Number(root.station.ageHours).toFixed(1)+" h":"";color:App.Palette.muted}
     }
