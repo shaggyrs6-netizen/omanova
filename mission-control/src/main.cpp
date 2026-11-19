@@ -9,6 +9,8 @@
 #include <QJsonArray>
 #include <QFile>
 #include <QFileInfo>
+#include <QPainter>
+#include <memory>
 #include <QDebug>
 #include <QStandardPaths>
 #include <QQmlContext>
@@ -108,13 +110,28 @@ int main(int argc,char**argv){
   auto require=[](bool ok,const char*msg){if(!ok){qCritical("Preview QA failed: %s",msg);std::exit(3);}};
   auto click=[=](const char*id){auto button=window->findChild<QObject*>(id);require(button,"button lookup");require(QMetaObject::invokeMethod(button,"clicked"),"button action");};
   auto capture=[=](QString name){require(window->grabWindow().save(dir+"/"+name+".png"),"capture saved");};
-  QTimer::singleShot(900,[=]{require(scene->elapsed()>0,"animation advances");capture("wide");});
+  struct GlobeCheck { QImage last; double lastTime=-1; int samples=0, changes=0; };
+  auto globeCheck=std::make_shared<GlobeCheck>();
+  QObject::connect(scene,&Mission::changed,&app,[=]{
+   const double t=scene->elapsed();
+   if(t<=0||t==globeCheck->lastTime||globeCheck->samples>=6||scene->width()<200||scene->height()<200)return;
+   globeCheck->lastTime=t;
+   QImage frame(scene->size().toSize(),QImage::Format_ARGB32_Premultiplied);
+   QPainter painter(&frame);
+   scene->paint(&painter);
+   painter.end();
+   const QImage centre=frame.copy(frame.width()*3/4-48,frame.height()/2-48,96,96);
+   if(globeCheck->samples>0&&centre!=globeCheck->last)++globeCheck->changes;
+   globeCheck->last=centre;
+   ++globeCheck->samples;
+  });
+  QTimer::singleShot(900,[=]{require(scene->elapsed()>0,"animation advances");require(globeCheck->samples==6&&globeCheck->changes>=3,"Earth texture advances across consecutive frames");capture("wide");});
   QTimer::singleShot(1500,[=]{click("selectTiangong");click("reducedButton");click("trailsButton");click("orbitView");require(scene->selection()==1&&scene->reduced()&&!scene->trails()&&scene->view()==2,"QML controls reach renderer");});
   QTimer::singleShot(2200,[=]{capture("orbit");click("pauseButton");require(scene->paused(),"pause control");});
   QTimer::singleShot(2500,[=]{double before=scene->elapsed();QTimer::singleShot(400,[=]{require(scene->elapsed()==before,"pause freezes simulation");});});
   QTimer::singleShot(3000,[=]{window->resize(780,850);scene->setView(1);scene->setTrails(true);});
 
-  auto finish=[=]{require(scene->elapsed()>0,"animation resumes");scene->setSelection(8);require(scene->selection()==1,"invalid selection refused");QFile out(dir+"/checks.json");require(out.open(QIODevice::WriteOnly),"report open");out.write(QJsonDocument(QJsonObject{{"animationAdvances",true},{"qmlSelectionControls",true},{"qmlViewControls",true},{"qmlTrailControls",true},{"pauseFreezes",true},{"resumeAdvances",true},{"reset",true},{"reducedMotion",true},{"invalidSelectionRefused",true},{"offlineSampleOnly",true}}).toJson());QCoreApplication::quit();};
+  auto finish=[=]{require(scene->elapsed()>0,"animation resumes");scene->setSelection(8);require(scene->selection()==1,"invalid selection refused");QFile out(dir+"/checks.json");require(out.open(QIODevice::WriteOnly),"report open");out.write(QJsonDocument(QJsonObject{{"animationAdvances",true},{"qmlSelectionControls",true},{"qmlViewControls",true},{"qmlTrailControls",true},{"pauseFreezes",true},{"resumeAdvances",true},{"reset",true},{"reducedMotion",true},{"invalidSelectionRefused",true},{"offlineSampleOnly",true},{"earthFrameSamples",globeCheck->samples},{"earthTextureChanges",globeCheck->changes}}).toJson());QCoreApplication::quit();};
   QTimer::singleShot(3800,[=]{capture("narrow");scene->reset();require(scene->elapsed()==0,"reset simulation");click("pauseButton");require(!scene->paused(),"resume control");QTimer::singleShot(650,finish);});
  }
  return app.exec();

@@ -6,11 +6,19 @@
 #include <QQuickWindow>
 #include <QtMath>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFileInfo>
 #include <QProcessEnvironment>
 #include <QFontMetricsF>
+namespace {
+constexpr int globeSize = 600;
+constexpr int motionIntervalMs = 33;
+constexpr int reducedIntervalMs = 67;
+}
+
 static const QColor cyan("#5de7ef"),white("#edf5fa"),muted("#90aabd"),amber("#f9bb64");
 static QString name(int i){return i==0?"ISS":"TIANGONG";}
 static void label(QPainter*p,QPointF pos,QString text,int size,QColor color=white){QFont f("DejaVu Sans");f.setPixelSize(size);p->setFont(f);p->setPen(color);p->drawText(pos,text);}
@@ -19,17 +27,17 @@ static void diamond(QPainter*p,QPointF pos,QColor color,bool selected){
  QPolygonF poly;poly<<pos+QPointF(0,-6)<<pos+QPointF(6,0)<<pos+QPointF(0,6)<<pos+QPointF(-6,0);p->setPen(QPen(color,1.5));p->setBrush(selected?color:QColor("#081726"));p->drawPolygon(poly);
 }
 Mission::Mission(QQuickItem*p):QQuickPaintedItem(p){
- setAntialiasing(true);setAcceptedMouseButtons(Qt::LeftButton);texture.load(":/assets/earth.jpg");
+ setAntialiasing(true);setAcceptedMouseButtons(Qt::LeftButton);texture.load(":/assets/earth.jpg");texture=texture.convertToFormat(QImage::Format_RGB32);prepareGlobe();
  QRandomGenerator rng(4261);for(int i=0;i<650;i++){stars<<QPointF(rng.generateDouble(),rng.generateDouble());sizes<<(.4+rng.generateDouble()*1.25);}
  connect(this,&QQuickItem::windowChanged,this,[this](QQuickWindow*w){if(!w)return;connect(w,&QWindow::visibilityChanged,this,[this](QWindow::Visibility v){if(v==QWindow::Minimized||v==QWindow::Hidden)timer.stop();else if(!m_paused){clock.restart();timer.start();if(m_live)QTimer::singleShot(0,this,&Mission::poll);}});});
- clock.start();timer.setInterval(50);connect(&timer,&QTimer::timeout,this,[this]{double dt=qMin(clock.restart()/1000.,.15);if(!m_paused&&isVisible()){m_elapsed+=dt*(m_reduced?.12:1.0);emit changed();update();}});timer.start();
+ clock.start();timer.setTimerType(Qt::PreciseTimer);timer.setInterval(motionIntervalMs);connect(&timer,&QTimer::timeout,this,[this]{double dt=qMin(clock.restart()/1000.,.15);if(!m_paused&&isVisible()){m_elapsed+=dt*(m_reduced?.12:1.0);emit changed();update();}});timer.start();
 }
 void Mission::setPaused(bool v){if(v==m_paused)return;m_paused=v;clock.restart();if(v)timer.stop();else timer.start();emit changed();update();}
-void Mission::setReduced(bool v){m_reduced=v;timer.setInterval(v?150:50);emit changed();update();}
+void Mission::setReduced(bool v){m_reduced=v;timer.setInterval(v?reducedIntervalMs:motionIntervalMs);emit changed();update();}
 void Mission::setTrails(bool v){m_trails=v;emit changed();update();}
 void Mission::setSelection(int v){if(v<0||v>1)return;m_selection=v;emit changed();update();}
 void Mission::setView(int v){if(v<0||v>2)return;m_view=v;emit changed();update();}
-void Mission::reset(){m_elapsed=0;m_textureTime=-100;emit changed();update();}
+void Mission::reset(){m_elapsed=0;emit changed();update();}
 QString Mission::detail()const{if(m_live){if(!feedFresh())return feedStatus();auto r=liveStation(m_selection);if(r.isEmpty())return name(m_selection)+" · No usable cached elements";double km=r["rangeKm"].toDouble();bool miles=frame["miles"].toBool();return name(m_selection)+QString(" / %1° bearing / %2° up / %3 %4 / elements %5 h old / ").arg(r["az"].toDouble(),0,'f',1).arg(r["el"].toDouble(),0,'f',1).arg(km/(miles?1.609344:1.),0,'f',0).arg(miles?"mi":"km").arg(r["ageHours"].toDouble(),0,'f',1)+(r["el"].toDouble()<0?"Below your horizon":r["potential"].toBool()?"Potential geometry; visibility unconfirmed":"Visibility uncertain");}return name(m_selection)+"  /  "+QString::number(238+int(m_elapsed*.7+m_selection*104)%100)+"° bearing  /  "+QString::number(32+int(m_elapsed*.4+m_selection*13)%27)+"° up  /  SAMPLE";}
 QPointF Mission::satellite(int i,double t,const QRectF&r)const{
  double a=t*.027+i*2.3-1.7;double radius=r.width()*.5;return r.center()+QPointF(sin(a)*radius*.79,-cos(a*.77)*radius*.58);
@@ -51,23 +59,64 @@ void Mission::drawSky(QPainter*p,QRectF area){
  label(p,disc.center()+QPointF(-6,-r-20),"N",17);label(p,disc.center()+QPointF(-6,r+29),"S",17);label(p,disc.center()+QPointF(-r-29,6),"W",17);label(p,disc.center()+QPointF(r+18,6),"E",17);
  label(p,disc.center()+QPointF(9,-r*.5-5),"45°",10,muted);
 }
-void Mission::bakeGlobe(){
- const int n=600;globe=QImage(n,n,QImage::Format_ARGB32_Premultiplied);globe.fill(Qt::transparent);
- double lon0=qDegreesToRadians(viewLongitude()),lat0=qDegreesToRadians(20.);double sl=sin(lat0),cl=cos(lat0);
- if(texture.isNull())return;
- for(int y=0;y<n;y++){auto line=reinterpret_cast<QRgb*>(globe.scanLine(y));double yy=-(y-(n-1)*.5)/(n*.5-1);
- for(int x=0;x<n;x++){double xx=(x-(n-1)*.5)/(n*.5-1),q=xx*xx+yy*yy;if(q>=1)continue;double z=sqrt(1-q);double lat=asin(yy*cl+z*sl),lon=lon0+atan2(xx,z*cl-yy*sl);
- int tx=int((lon/(2*M_PI)+.5)*texture.width())%texture.width();if(tx<0)tx+=texture.width();int ty=qBound(0,int((.5-lat/M_PI)*texture.height()),texture.height()-1);
- QColor c=texture.pixelColor(tx,ty);double light=qBound(.11,(-xx*.65+yy*.25+z*.60)*1.2,1.05);double rim=pow(1-z,4);
- line[x]=qRgba(qBound(0,int(c.red()*light+rim*9),255),qBound(0,int(c.green()*light+rim*50),255),qBound(0,int(c.blue()*light+rim*80),255),255);
- }}m_textureTime=m_elapsed;
+void Mission::prepareGlobe()
+{
+    if (texture.isNull()) return;
+    globe = QImage(globeSize, globeSize, QImage::Format_ARGB32_Premultiplied);
+    globe.fill(Qt::transparent);
+    const double tilt = qDegreesToRadians(20.);
+    const double sl = std::sin(tilt), cl = std::cos(tilt);
+    const double radius = globeSize * .5 - 1;
+    const double centre = (globeSize - 1) * .5;
+    globeProjection.reserve(globeSize * globeSize);
+    for (int y = 0; y < globeSize; ++y) {
+        const double yy = (centre - y) / radius;
+        for (int x = 0; x < globeSize; ++x) {
+            const double xx = (x - centre) / radius;
+            const double q = xx * xx + yy * yy;
+            if (q >= 1) continue;
+            const double z = std::sqrt(1 - q);
+            const double latitude = std::asin(yy * cl + z * sl);
+            const double longitude = std::atan2(xx, z * cl - yy * sl);
+            const int row = qBound(0, int((.5 - latitude / M_PI) * texture.height()), texture.height() - 1);
+            const float column = (longitude / (2 * M_PI) + .5) * texture.width();
+            const float light = qBound(.11, (-xx * .65 + yy * .25 + z * .60) * 1.2, 1.05);
+            const float rim = std::pow(1 - z, 4);
+            globeProjection.append(GlobePixel{y * globeSize + x, row, column, light, rim});
+        }
+    }
+}
+
+void Mission::bakeGlobe()
+{
+    const double longitude = viewLongitude();
+    if (globeProjection.isEmpty() || longitude == paintedLongitude) return;
+    const int width = texture.width();
+    const float offset = longitude / 360. * width;
+    auto *output = reinterpret_cast<QRgb *>(globe.bits());
+    for (const auto &pixel : globeProjection) {
+        float col = pixel.column + offset;
+        if (col < 0) col += width;
+        if (col >= width) col -= width;
+        const int left = int(col);
+        const int right = left + 1 == width ? 0 : left + 1;
+        const float fraction = col - left;
+        const auto *row = reinterpret_cast<const QRgb *>(texture.constScanLine(pixel.row));
+        const QRgb a = row[left], b = row[right];
+        auto shade = [&](int low, int high, float glow) {
+            return qBound(0, int((low + (high - low) * fraction) * pixel.light + pixel.rim * glow), 255);
+        };
+        output[pixel.destination] = qRgb(shade(qRed(a), qRed(b), 9),
+                                        shade(qGreen(a), qGreen(b), 50),
+                                        shade(qBlue(a), qBlue(b), 80));
+    }
+    paintedLongitude = longitude;
 }
 void Mission::drawEarth(QPainter*p,QRectF area){
  if(m_live){drawLiveEarth(p,area);return;}
  double r=qMin(area.width(),area.height())*.445;QPointF center=area.center();earthRect=QRectF(center-QPointF(r,r),QSizeF(r*2,r*2));
  QRadialGradient halo(center,r*1.12);halo.setColorAt(0,QColor(20,80,165,0));halo.setColorAt(.86,QColor(25,90,180,0));halo.setColorAt(.90,QColor(48,162,248,95));halo.setColorAt(1,Qt::transparent);p->setPen(Qt::NoPen);p->setBrush(halo);p->drawEllipse(center,r*1.12,r*1.12);
- // Keep the animated texture at five frames per second; markers use 20 fps.
- if(globe.isNull()||fabs(m_elapsed-m_textureTime)>.2){bakeGlobe();}
+ bakeGlobe();
  p->drawImage(earthRect,globe);
  p->setBrush(Qt::NoBrush);p->setPen(QPen(QColor(91,191,247,145),1.3));p->drawEllipse(earthRect);
  for(int i=1;i>=0;i--){QColor c=i==m_selection?cyan:amber;double phase=m_elapsed*.035+i*2.4;auto point=[&](double a){return center+QPointF(sin(a)*r*1.12,cos(a)*r*.33+sin(a)*r*.38*(i?-.6:1));};
@@ -110,7 +159,16 @@ QJsonObject Mission::liveStation(int i)const{
  if(epoch.isValid()&&age>=-21600000LL&&age<=172800000LL)return r;
  }}return {};
 }
-void Mission::applyFrame(QJsonObject data){frame=data;m_live=true;m_textureTime=-100;emit changed();update();}
+void Mission::applyFrame(QJsonObject data)
+{
+    const double longitude = data["observer"].toObject()["lon"].toDouble(std::numeric_limits<double>::quiet_NaN());
+    if (std::isfinite(longitude) && longitude >= -180 && longitude <= 180)
+        m_centreLongitude = longitude;
+    frame = data;
+    m_live = true;
+    emit changed();
+    update();
+}
 void Mission::startLive(QString runtime,QString bridge,QString state){
  m_live=true;runtimePath=runtime;bridgePath=bridge;statePath=state;
  timeout.setSingleShot(true);timeout.setInterval(12000);
@@ -126,7 +184,7 @@ void Mission::poll(){
  pending.clear();auto env=QProcessEnvironment::systemEnvironment();env.insert("PYTHONDONTWRITEBYTECODE","1");env.insert("OPENBLAS_NUM_THREADS","1");helper.setProcessEnvironment(env);helper.setWorkingDirectory(QFileInfo(bridgePath).absolutePath());helper.setProgram(runtimePath+"/.venv/bin/python");helper.setArguments({"-B",bridgePath,"--runtime",runtimePath,"--state",statePath});helper.start();timeout.start();
 }
 QPointF Mission::skyPoint(double az,double el,const QRectF&r)const{double a=qDegreesToRadians(az),radius=r.width()*.5*(90-el)/90.;return r.center()+QPointF(-sin(a)*radius,-cos(a)*radius);}
-double Mission::viewLongitude()const{return m_live?frame["observer"].toObject()["lon"].toDouble(-76.)+m_elapsed*.5:-76.+m_elapsed*.5;}
+double Mission::viewLongitude()const{return std::remainder(m_centreLongitude + m_elapsed*.5,360.);}
 QPointF Mission::globePoint(double lon,double lat,const QPointF&center,double r,double scale,double*front)const{
  double a=qDegreesToRadians(lon-viewLongitude()),b=qDegreesToRadians(lat),tilt=qDegreesToRadians(20.);
  double x=cos(b)*sin(a),y=sin(b)*cos(tilt)-cos(b)*cos(a)*sin(tilt),z=sin(b)*sin(tilt)+cos(b)*cos(a)*cos(tilt);
@@ -165,7 +223,7 @@ void Mission::drawLiveSky(QPainter*p,QRectF area){
 void Mission::drawLiveEarth(QPainter*p,QRectF area){
  double r=qMin(area.width(),area.height())*.445;QPointF center=area.center();QRectF disc(center-QPointF(r,r),QSizeF(r*2,r*2));
  QRadialGradient halo(center,r*1.12);halo.setColorAt(.86,Qt::transparent);halo.setColorAt(.90,QColor(48,162,248,90));halo.setColorAt(1,Qt::transparent);p->setPen(Qt::NoPen);p->setBrush(halo);p->drawEllipse(center,r*1.12,r*1.12);
- if(globe.isNull()||fabs(m_elapsed-m_textureTime)>.2){bakeGlobe();}
+ bakeGlobe();
  p->drawImage(disc,globe);
  if(!feedFresh())return;
  auto observer=frame["observer"].toObject();double z;QPointF home=globePoint(observer["lon"].toDouble(),observer["lat"].toDouble(),center,r,1,&z);

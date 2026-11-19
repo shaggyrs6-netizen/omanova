@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QVariantMap>
 #include <QDateTime>
+#include <limits>
 class Mission : public QQuickPaintedItem {
  Q_OBJECT
  Q_PROPERTY(bool paused READ paused WRITE setPaused NOTIFY changed)
@@ -38,7 +39,7 @@ public:
 signals:void changed();
 protected:void mousePressEvent(QMouseEvent*)override;
 private:
- bool m_paused=false,m_reduced=false,m_trails=true;int m_selection=0,m_view=0;double m_elapsed=0,m_textureTime=-100;
+ bool m_paused=false,m_reduced=false,m_trails=true;int m_selection=0,m_view=0;double m_elapsed=0,m_centreLongitude=-76.;
  bool m_live=false;QJsonObject frame;QProcess helper;QTimer refresh,timeout;QByteArray pending;QString runtimePath,bridgePath,statePath;
  void poll();
  QJsonObject liveStation(int i)const;
@@ -47,7 +48,10 @@ private:
  double viewLongitude()const;
  void drawLiveSky(QPainter*,QRectF);void drawLiveEarth(QPainter*,QRectF);
  QTimer timer;QElapsedTimer clock;QImage texture,globe;QVector<QPointF> stars;QVector<double> sizes;
+ struct GlobePixel {int destination,row;float column,light,rim;};
+ QVector<GlobePixel> globeProjection;
+ double paintedLongitude=std::numeric_limits<double>::quiet_NaN();
  QRectF skyRect,earthRect;QVector<QPointF> hits;
  QPointF satellite(int,double,const QRectF&)const;
- void drawSky(QPainter*,QRectF);void drawEarth(QPainter*,QRectF);void bakeGlobe();
+ void drawSky(QPainter*,QRectF);void drawEarth(QPainter*,QRectF);void prepareGlobe();void bakeGlobe();
 };
