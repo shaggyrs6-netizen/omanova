@@ -1,5 +1,5 @@
-import "./qml/Omanova" as App
-import "./qml/Omanova/Framing.js" as Framing
+import "../../qml/Omanova" as App
+import "../../qml/Omanova/Framing.js" as Framing
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

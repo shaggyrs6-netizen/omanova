@@ -1,5 +1,5 @@
-import "./qml/Omanova" as App
-import "./qml/Omanova/ObservationDraft.js" as Draft
+import "../../qml/Omanova" as App
+import "../../qml/Omanova/ObservationDraft.js" as Draft
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

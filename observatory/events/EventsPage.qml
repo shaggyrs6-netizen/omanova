@@ -1,4 +1,4 @@
-import "./qml/Omanova" as App
+import "../../qml/Omanova" as App
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts

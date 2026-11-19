@@ -1,6 +1,27 @@
-import "./qml/Omanova" as App
-import "./qml/Omanova/Navigation.js" as Navigation
-import "./qml/Omanova/ObservationDraft.js" as ObservationDraft
+import "../qml/Omanova" as App
+import "../qml/Omanova/Navigation.js" as Navigation
+import "../qml/Omanova/ObservationDraft.js" as ObservationDraft
+import ".." as Core
+import "./trips" as Trips
+import "./observing-log" as Log
+import "./follow" as Follow
+import "./equipment" as Equipment
+import "./calendar" as Calendar
+import "./offline" as Offline
+import "./my_night" as MyNight
+import "./field" as Finder
+import "./final_sky" as FinalSky
+import "./planets" as Planets
+import "./dark-sites" as Sites
+import "./aurora" as Aurora
+import "./trains" as Trains
+import "./satellites" as Satellites
+import "./plumes" as Plumes
+import "./eclipses" as Eclipses
+import "./comets" as Comets
+import "./meteors" as Meteors
+import "./moon" as Moon
+import "./orbit" as Orbit
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,10 +30,10 @@ import Quickshell.Io
 
 ShellRoot {
     id: shell
-    property SkyState stateModel: SkyState { id: sky;applyEquipmentProfile:true }
+    property Core.SkyState stateModel: Core.SkyState { id: sky;applyEquipmentProfile:true }
     readonly property bool settingsTrial: Quickshell.env("OMASKY_SETTINGS_PREVIEW") === "1" && stateModel.fixture
     property bool compactOpen: false
-    property MissionControlState wallpaper: MissionControlState {}
+    property Core.MissionControlState wallpaper: Core.MissionControlState {}
 
     LazyLoader {
         active: shell.settingsTrial && shell.compactOpen
@@ -24,7 +45,7 @@ ShellRoot {
             minimumSize: Qt.size(360, 360)
             onVisibleChanged: if (!visible) shell.compactOpen = false
             Shortcut { sequence: "Escape"; onActivated: shell.compactOpen = false }
-            SkyPanel {
+            Core.SkyPanel {
                 id: compact
                 anchors.fill: parent
                 anchors.margins: 16
@@ -401,7 +422,7 @@ ShellRoot {
                     Layout.fillHeight: true
                     visible: ui.pageId === "trips"
                     active: visible
-                    sourceComponent: Component { TripPage {} }
+                    sourceComponent: Component { Trips.TripPage {} }
                 }
                 Loader {
                     id: logLoader
@@ -416,7 +437,7 @@ ShellRoot {
                             contentWidth: availableWidth
                             clip: true
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                            ObservingLogPage {
+                            Log.ObservingLogPage {
                                 id: observationLog
                                 width: logScroll.availableWidth
                                 draftRequest: ui.logDraftRequest
@@ -430,39 +451,39 @@ ShellRoot {
                     visible:ui.pageId === "following"
                     // Retain monitoring when another Observatory tab is selected.
                     active: !sky.fixture || ui.pageId === "following" || !!item
-                    sourceComponent:Component { FollowPage {} }
+                    sourceComponent:Component { Follow.FollowPage {} }
                 }
                 Loader {
                     id: equipmentLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "equipment";active:visible
-                    sourceComponent:Component {EquipmentPage {}}
+                    sourceComponent:Component {Equipment.EquipmentPage {}}
                 }
                 Loader {
                     id: calendarLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "calendar";active:visible
-                    sourceComponent:Component {CalendarPage {}}
+                    sourceComponent:Component {Calendar.CalendarPage {}}
                 }
                 Loader {
                     id: offlineLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "offline";active:visible
-                    sourceComponent:Component {OfflinePage {}}
+                    sourceComponent:Component {Offline.OfflinePage {}}
                 }
                 Loader {
                     id: myNightLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "my-night";active:ui.extendedPages
-                    sourceComponent:Component {MyNightPage {sky:ui.skyModel;onOpenEquipment:ui.navigate("equipment");onRecordObservation:selected=>ui.startObservation(selected)}}
+                    sourceComponent:Component {MyNight.MyNightPage {sky:ui.skyModel;onOpenEquipment:ui.navigate("equipment");onRecordObservation:selected=>ui.startObservation(selected)}}
                 }
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {FieldPage {section:"sites";skyModel:sky}}}
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FieldPage {section:"finder";skyModel:sky;canAddToNight:ui.extendedPages;onOpenEquipment:ui.navigate("equipment");onAddToNight:key=>ui.addToNight("target",key)}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {Finder.FieldPage {section:"sites";skyModel:sky}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {Finder.FieldPage {section:"finder";skyModel:sky;canAddToNight:ui.extendedPages;onOpenEquipment:ui.navigate("equipment");onAddToNight:key=>ui.addToNight("target",key)}}}
                 Loader {
                     id: finalSkyLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:["star-chart","live-orbit","polar","transits"].includes(ui.pageId);active:visible
-                    sourceComponent:Component { FinalSkyPage {skyModel:sky;onOpenEquipment:ui.navigate("equipment");section:({"star-chart":"chart","live-orbit":"live",polar:"polar",transits:"transits"})[ui.pageId] || "chart"} }
+                    sourceComponent:Component { FinalSky.FinalSkyPage {skyModel:sky;onOpenEquipment:ui.navigate("equipment");section:({"star-chart":"chart","live-orbit":"live",polar:"polar",transits:"transits"})[ui.pageId] || "chart"} }
                 }
                 Loader {
                     id: planetLoader
@@ -470,38 +491,38 @@ ShellRoot {
                     Layout.fillHeight: true
                     visible: ui.showingPlanets
                     active: visible
-                    sourceComponent: Component { PlanetPage {} }
+                    sourceComponent: Component { Planets.PlanetPage {} }
                 }
             }
 
             Component {
                 id: darkSitesView
-                DarkSitesPage { formatDistance: sky.formatDistance }
+                Sites.DarkSitesPage { formatDistance: sky.formatDistance }
             }
 
             Component {
                 id: auroraView
-                AuroraPage {}
+                Aurora.AuroraPage {}
             }
 
             Component {
                 id: trainView
-                TrainPage {}
+                Trains.TrainPage {}
             }
 
             Component {
                 id: watchlistView
-                WatchlistPage {}
+                Satellites.WatchlistPage {}
             }
 
             Component {
                 id: plumeView
-                PlumePage {}
+                Plumes.PlumePage {}
             }
 
             Component {
                 id: settingsView
-                SettingsPage {
+                Core.SettingsPage {
                     sky: shell.stateModel
                     updateDraftBlocked:logLoader.item?.logPage?.dirty || false
                     wallpaper: shell.wallpaper
@@ -511,32 +532,32 @@ ShellRoot {
 
             Component {
                 id: eclipseView
-                EclipsePage {}
+                Eclipses.EclipsePage {}
             }
 
             Component {
                 id: cometView
-                CometPage {}
+                Comets.CometPage {}
             }
 
             Component {
                 id: meteorView
-                MeteorPage {}
+                Meteors.MeteorPage {}
             }
 
             Component {
                 id: moonView
-                MoonPage { formatDistance: sky.formatDistance }
+                Moon.MoonPage { formatDistance: sky.formatDistance }
             }
 
             Component {
                 id: orbitView
-                OrbitPage { formatDistance: sky.formatDistance }
+                Orbit.OrbitPage { formatDistance: sky.formatDistance }
             }
 
             Component {
                 id: eventsView
-                UnifiedEventsPage {
+                Core.UnifiedEventsPage {
                     sky: ui.skyModel
                     canAddToNight:ui.extendedPages
                     onAddToNight:key=>ui.addToNight("event",key)

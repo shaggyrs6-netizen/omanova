@@ -1,5 +1,6 @@
-import "./qml/Omanova" as App
-import "./qml/Omanova/Tonight.js" as Tonight
+import "../qml/Omanova" as App
+import "../qml/Omanova/Tonight.js" as Tonight
+import ".." as Core
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -91,7 +92,7 @@ ColumnLayout {
     }
     Repeater {
         model:page.picks
-        OpportunityCard {
+        Core.OpportunityCard {
             required property var modelData
             required property int index
             Layout.leftMargin:24;Layout.rightMargin:24

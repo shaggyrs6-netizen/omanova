@@ -29,6 +29,8 @@ with tarfile.open(fileobj=buffer, mode='a') as archive:
 raw=buffer.getvalue()
 with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
     names=[m.name for m in archive.getmembers() if m.isfile()]
+    if any(member.issym() for member in archive.getmembers()):
+        raise SystemExit('Omarchy plugins must not contain symbolic links')
     required=['install','setup-runtime','systemd/omanova-worker.service','observatory/trips/terrain.py',
               'observatory/trips/TripPage.qml','preview-terrain','RELEASE-READINESS.md','assets/terrain-attribution.txt',
               'observatory/final_sky/geometry.py','observatory/final_sky/stars.json',

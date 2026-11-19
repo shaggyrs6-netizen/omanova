@@ -1,4 +1,4 @@
-import "./qml/Omanova" as App
+import "../../qml/Omanova" as App
 import QtQuick
 import "CameraProjection.js" as Projection
 

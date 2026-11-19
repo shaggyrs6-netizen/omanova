@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.1.8 — upgrade and wallpaper recovery
+## 0.1.8 — install compatibility and recovery
 
+- Fix widget installation on Omarchy 4.5 by removing symbolic links from the plugin package.
 - Restore the previous Python environment after a failed guided setup, and restart a previously active worker when possible.
 - Before restoring a version without Mission Control, require wallpaper and its login startup to be off.
 - Document the in-place upgrade from marketplace 0.1.1 and how to stop Mission Control before removing OMANOVA.

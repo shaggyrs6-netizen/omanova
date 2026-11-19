@@ -2,6 +2,11 @@
 
 This maintenance release improves recovery during installation and clarifies how to switch back to a normal desktop. The hidden observing worker and Mission Control wallpaper have separate login settings, both Off by default on a fresh installation.
 
+## Omarchy 4.5 compatibility
+
+The widget package uses direct QML imports and contains no symbolic links.
+Omarchy 4.5 rejected the previous package when adding the widget.
+
 ## Upgrading from the marketplace's 0.1.1 snapshot
 
 Back up your OMANOVA data and stop the old foreground worker. Keep the original runtime checkout where it is, switch it to the new release tag, and run `./install` there. Refresh the Omarchy shell and reopen the Observatory. See the [in-place upgrade instructions](../README.md#upgrading-an-existing-installation). The listed 0.1.1 snapshot predates the updater. Newer managed installations can use **Settings → Check for updates** after the release is published.
