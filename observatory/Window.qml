@@ -2,26 +2,26 @@ import "../qml/Omanova" as App
 import "../qml/Omanova/Navigation.js" as Navigation
 import "../qml/Omanova/ObservationDraft.js" as ObservationDraft
 import ".." as Core
-import "./trips" as Trips
-import "./observing-log" as Log
-import "./follow" as Follow
-import "./equipment" as Equipment
-import "./calendar" as Calendar
-import "./offline" as Offline
-import "./my_night" as MyNight
-import "./field" as Finder
-import "./final_sky" as FinalSky
-import "./planets" as Planets
-import "./dark-sites" as Sites
-import "./aurora" as Aurora
-import "./trains" as Trains
-import "./satellites" as Satellites
-import "./plumes" as Plumes
-import "./eclipses" as Eclipses
-import "./comets" as Comets
-import "./meteors" as Meteors
-import "./moon" as Moon
-import "./orbit" as Orbit
+import "./trips" as TripsPages
+import "./observing-log" as LogPages
+import "./follow" as FollowPages
+import "./equipment" as EquipmentPages
+import "./calendar" as CalendarPages
+import "./offline" as OfflinePages
+import "./my_night" as MyNightPages
+import "./field" as FinderPages
+import "./final_sky" as FinalSkyPages
+import "./planets" as PlanetsPages
+import "./dark-sites" as SitesPages
+import "./aurora" as AuroraPages
+import "./trains" as TrainsPages
+import "./satellites" as SatellitesPages
+import "./plumes" as PlumesPages
+import "./eclipses" as EclipsesPages
+import "./comets" as CometsPages
+import "./meteors" as MeteorsPages
+import "./moon" as MoonPages
+import "./orbit" as OrbitPages
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -422,7 +422,7 @@ ShellRoot {
                     Layout.fillHeight: true
                     visible: ui.pageId === "trips"
                     active: visible
-                    sourceComponent: Component { Trips.TripPage {} }
+                    sourceComponent: Component { TripsPages.TripPage {} }
                 }
                 Loader {
                     id: logLoader
@@ -437,7 +437,7 @@ ShellRoot {
                             contentWidth: availableWidth
                             clip: true
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                            Log.ObservingLogPage {
+                            LogPages.ObservingLogPage {
                                 id: observationLog
                                 width: logScroll.availableWidth
                                 draftRequest: ui.logDraftRequest
@@ -451,39 +451,39 @@ ShellRoot {
                     visible:ui.pageId === "following"
                     // Retain monitoring when another Observatory tab is selected.
                     active: !sky.fixture || ui.pageId === "following" || !!item
-                    sourceComponent:Component { Follow.FollowPage {} }
+                    sourceComponent:Component { FollowPages.FollowPage {} }
                 }
                 Loader {
                     id: equipmentLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "equipment";active:visible
-                    sourceComponent:Component {Equipment.EquipmentPage {}}
+                    sourceComponent:Component {EquipmentPages.EquipmentPage {}}
                 }
                 Loader {
                     id: calendarLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "calendar";active:visible
-                    sourceComponent:Component {Calendar.CalendarPage {}}
+                    sourceComponent:Component {CalendarPages.CalendarPage {}}
                 }
                 Loader {
                     id: offlineLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "offline";active:visible
-                    sourceComponent:Component {Offline.OfflinePage {}}
+                    sourceComponent:Component {OfflinePages.OfflinePage {}}
                 }
                 Loader {
                     id: myNightLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:ui.pageId === "my-night";active:ui.extendedPages
-                    sourceComponent:Component {MyNight.MyNightPage {sky:ui.skyModel;onOpenEquipment:ui.navigate("equipment");onRecordObservation:selected=>ui.startObservation(selected)}}
+                    sourceComponent:Component {MyNightPages.MyNightPage {sky:ui.skyModel;onOpenEquipment:ui.navigate("equipment");onRecordObservation:selected=>ui.startObservation(selected)}}
                 }
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {Finder.FieldPage {section:"sites";skyModel:sky}}}
-                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {Finder.FieldPage {section:"finder";skyModel:sky;canAddToNight:ui.extendedPages;onOpenEquipment:ui.navigate("equipment");onAddToNight:key=>ui.addToNight("target",key)}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sites";active:visible;sourceComponent:Component {FinderPages.FieldPage {section:"sites";skyModel:sky}}}
+                Loader {Layout.fillWidth:true;Layout.fillHeight:true;visible:ui.pageId === "sky-finder";active:visible;sourceComponent:Component {FinderPages.FieldPage {section:"finder";skyModel:sky;canAddToNight:ui.extendedPages;onOpenEquipment:ui.navigate("equipment");onAddToNight:key=>ui.addToNight("target",key)}}}
                 Loader {
                     id: finalSkyLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:["star-chart","live-orbit","polar","transits"].includes(ui.pageId);active:visible
-                    sourceComponent:Component { FinalSky.FinalSkyPage {skyModel:sky;onOpenEquipment:ui.navigate("equipment");section:({"star-chart":"chart","live-orbit":"live",polar:"polar",transits:"transits"})[ui.pageId] || "chart"} }
+                    sourceComponent:Component { FinalSkyPages.FinalSkyPage {skyModel:sky;onOpenEquipment:ui.navigate("equipment");section:({"star-chart":"chart","live-orbit":"live",polar:"polar",transits:"transits"})[ui.pageId] || "chart"} }
                 }
                 Loader {
                     id: planetLoader
@@ -491,33 +491,33 @@ ShellRoot {
                     Layout.fillHeight: true
                     visible: ui.showingPlanets
                     active: visible
-                    sourceComponent: Component { Planets.PlanetPage {} }
+                    sourceComponent: Component { PlanetsPages.PlanetPage {} }
                 }
             }
 
             Component {
                 id: darkSitesView
-                Sites.DarkSitesPage { formatDistance: sky.formatDistance }
+                SitesPages.DarkSitesPage { formatDistance: sky.formatDistance }
             }
 
             Component {
                 id: auroraView
-                Aurora.AuroraPage {}
+                AuroraPages.AuroraPage {}
             }
 
             Component {
                 id: trainView
-                Trains.TrainPage {}
+                TrainsPages.TrainPage {}
             }
 
             Component {
                 id: watchlistView
-                Satellites.WatchlistPage {}
+                SatellitesPages.WatchlistPage {}
             }
 
             Component {
                 id: plumeView
-                Plumes.PlumePage {}
+                PlumesPages.PlumePage {}
             }
 
             Component {
@@ -532,27 +532,27 @@ ShellRoot {
 
             Component {
                 id: eclipseView
-                Eclipses.EclipsePage {}
+                EclipsesPages.EclipsePage {}
             }
 
             Component {
                 id: cometView
-                Comets.CometPage {}
+                CometsPages.CometPage {}
             }
 
             Component {
                 id: meteorView
-                Meteors.MeteorPage {}
+                MeteorsPages.MeteorPage {}
             }
 
             Component {
                 id: moonView
-                Moon.MoonPage { formatDistance: sky.formatDistance }
+                MoonPages.MoonPage { formatDistance: sky.formatDistance }
             }
 
             Component {
                 id: orbitView
-                Orbit.OrbitPage { formatDistance: sky.formatDistance }
+                OrbitPages.OrbitPage { formatDistance: sky.formatDistance }
             }
 
             Component {
