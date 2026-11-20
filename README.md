@@ -8,9 +8,9 @@ OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.8** improves installer recovery and documents upgrades and removal for Mission Control. Read the [release notes](docs/RELEASE-0.1.8.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).
+> **Version 0.1.8** fixes widget installation on Omarchy 4.5, improves installer recovery and adds battery-aware Mission Control wallpaper controls. Read the [release notes](docs/RELEASE-0.1.8.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).
 
-> **GitHub release only.** Marketplace update request #14863 was withdrawn while this newer build was tested. The existing marketplace listing is separate; it has not been updated by this release.
+> The Omarchy marketplace listing is managed separately from GitHub releases. See the [upgrade instructions](#upgrading-an-existing-installation) if you installed the marketplace version.
 
 ## Mission Control live wallpaper
 
@@ -20,6 +20,13 @@ wallpaper on**. **Start at login** is a separate opt-in and the wallpaper
 starts on the primary monitor. Choose **Turn wallpaper off** to restore your
 normal wallpaper and switch off Mission Control startup, or use **Restore
 desktop** in the Mission Control window for this session only.
+
+Choose Smooth (30 FPS), Balanced (15 FPS), Battery saver (5 FPS), or Still.
+The default battery limit caps animation at 5 FPS when a system battery is
+discharging. Still pauses animation and keeps live data refreshing.
+
+If you use the Omarchy Pulse live wallpaper and Mission Control opens with an
+empty background layer, stop Pulse before starting Mission Control again.
 
 On Omarchy, the optional setup needs the Qt build tools. If they are missing,
 you can install them yourself before using the setup button:
@@ -330,7 +337,7 @@ changes. Paused feeds may show cached data. External links open on demand. See
 
 ### Maintenance
 
-The dated comet catalogue expires on 12 December 2026 at 00:00 UTC. Dark-sky
+The dated comet catalogue expires on 2 January 2027 at 00:00 UTC. Dark-sky
 access and travel estimates need occasional review. Launch schedules may use
 cached data if a refresh fails. Weather and astronomy are estimates and
 local terrain or obstructions can change what you see.
@@ -560,8 +567,8 @@ Run `./preview-comets --live` for the saved observing point or
 `./preview-comets --fixture` for the frozen Nashville example. This
 standalone preview contains four selected targets. Its
 [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) geocentric position snapshot
-runs from 9 November 00:00 UTC through 12 December 00:00 UTC, 2026.
-Positions and qualified dated brightness reports were refreshed on 12 November.
+covers 18 November 2026 at 00:00 UTC through 2 January 2027 at 00:00 UTC.
+Positions and qualified dated brightness reports were refreshed on 18 November 2026.
 Fixture mode retains its separately frozen November catalogue.
 It uses two-hour observer tables (quantities 1 and 2) and interpolates
 coordinates locally. Observing windows require astronomical darkness and

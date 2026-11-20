@@ -1,10 +1,13 @@
 # Changelog
 
-## 0.1.8 — install compatibility and recovery
+## 0.1.8 — install compatibility, recovery and wallpaper controls
 
 - Fix widget installation on Omarchy 4.5 by removing symbolic links from the plugin package.
 - Restore the previous Python environment after a failed guided setup, and restart a previously active worker when possible.
 - Before restoring a version without Mission Control, require wallpaper and its login startup to be off.
+- Add 30, 15 and 5 FPS wallpaper modes and Still. Apply a 5 FPS cap by default on battery power. Still preserves live data refresh.
+- Document the Pulse wallpaper workaround for an empty Mission Control desktop layer.
+- Correct the documented comet catalogue coverage to match the packaged data.
 - Document the in-place upgrade from marketplace 0.1.1 and how to stop Mission Control before removing OMANOVA.
 
 See [full release notes](docs/RELEASE-0.1.8.md).
