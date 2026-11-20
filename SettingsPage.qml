@@ -180,7 +180,7 @@ ColumnLayout {
             spacing: 8
             Action {
                 visible: page.wallpaper?.canSetup === true
-                text: qsTr("Set up Mission Control")
+                text: page.wallpaper?.configured ? qsTr("Update Mission Control") : qsTr("Set up Mission Control")
                 enabled: !wallpaperSection.waiting
                 onClicked: page.wallpaper.request("setup")
             }
@@ -202,6 +202,13 @@ ColumnLayout {
                     return checkState
                 }
             }
+        }
+        Copy {
+            visible: page.wallpaper?.needsUpgrade === true
+            text: wallpaperSection.state?.running
+                ? qsTr("Use Restore desktop in Mission Control before updating it.")
+                : qsTr("Update Mission Control to get the new frame-rate controls.")
+            color: App.Palette.muted
         }
         Copy {
             visible: wallpaperSection.state?.frameRate !== undefined

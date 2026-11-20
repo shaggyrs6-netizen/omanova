@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build the optional per-user Mission Control wallpaper. Setup never starts it."""
+import ctypes
 import fcntl
 import json
 import os
@@ -12,10 +13,36 @@ import tempfile
 ROOT = Path(__file__).resolve().parent
 RENDERER = Path("build/omanova-mission-control-preview")
 FILES = ("bin/wallpaper", "startup_options.py", "live_bridge.py")
+POWER_MARKER = "wallpaper-power-v1"
 
 
 def executable(path):
     return path.is_file() and not path.is_symlink() and os.access(path, os.X_OK)
+
+
+def replace_stopped_component(stage, destination):
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}")
+    control = runtime/"omanova-mission-control-trial"
+    control.mkdir(mode=0o700, exist_ok=True)
+    with (control/"control.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            receipt = json.loads((control/"session.json").read_text())
+            pid = receipt["pid"]
+            if type(pid) is not int or pid < 1:
+                raise ValueError("Mission Control session state is unreadable.")
+            if os.readlink(f"/proc/{pid}/exe").removesuffix(" (deleted)") == str(destination/RENDERER):
+                raise ValueError("Use Restore desktop in Mission Control before updating it.")
+        except (FileNotFoundError, ProcessLookupError):
+            pass
+
+        # Swap complete directories atomically on Linux. The launcher path in
+        # any existing login entry stays valid, even if setup is interrupted.
+        rename_exchange = ctypes.CDLL(None, use_errno=True).renameat2
+        at_fdcwd, exchange = -100, 2
+        if rename_exchange(at_fdcwd, os.fsencode(stage), at_fdcwd, os.fsencode(destination), exchange):
+            error = ctypes.get_errno()
+            raise OSError(error, os.strerror(error))
 
 
 def install():
@@ -27,10 +54,12 @@ def install():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise ValueError("Another OMANOVA installation is running. Try again when it finishes.") from None
-        if destination.exists() or destination.is_symlink():
-            if not destination.is_symlink() and all(executable(destination/p) for p in (FILES[0], RENDERER)):
+        existing = destination.exists() or destination.is_symlink()
+        if existing:
+            if destination.is_symlink() or not all(executable(destination/p) for p in (FILES[0], RENDERER)):
+                raise ValueError("A Mission Control directory already exists. Preserve it before reviewing setup.")
+            if (destination/POWER_MARKER).is_file():
                 return {"installed": True, "existing": True}
-            raise ValueError("A Mission Control directory already exists. Preserve it before reviewing setup.")
         if not all(shutil.which(cmd) for cmd in ("qmake6", "make", "g++", "hyprctl")):
             raise ValueError("Mission Control needs Hyprland and the Qt build tools. See the release notes for dependencies.")
         with tempfile.TemporaryDirectory(prefix=".mission-control-", dir=state) as directory:
@@ -55,15 +84,22 @@ def install():
                 path = stage/name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(build/name, path)
-            stage.rename(destination)
-    return {"installed": True, "existing": False}
+            (stage/POWER_MARKER).touch()
+            if existing:
+                replace_stopped_component(stage, destination)
+            else:
+                stage.rename(destination)
+    return {"installed": True, "existing": False, "updated": existing}
 
 
 if __name__ == "__main__":
     os.umask(0o077)
     try:
         result = install()
-    except (OSError, ValueError, subprocess.SubprocessError) as error:
+    except BlockingIOError:
+        print(json.dumps({"error": "Mission Control is changing state. Try again after it settles."}))
+        sys.exit(1)
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(json.dumps({"error": str(error) if isinstance(error, ValueError) else
                           "Mission Control setup could not finish. See mission-control-build.log."}))
         sys.exit(1)

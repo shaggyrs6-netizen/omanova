@@ -19,6 +19,8 @@ The wallpaper is optional. **Set up Mission Control** builds the renderer locall
 
 In **Settings → Appearance → Mission Control wallpaper**, choose **Smooth** (30 FPS), **Balanced** (15 FPS), **Battery saver** (5 FPS), or **Still**. The default battery cap limits animation to 5 FPS while the battery is discharging. Still pauses continuous animation and keeps the sky data refreshing. On AC power the wallpaper returns to your usual setting.
 
+If you already set up Mission Control in 0.1.7, use **Restore desktop** in its control window if it is running, then choose **Update Mission Control** in Settings. This rebuilds the optional renderer and keeps your existing login preference.
+
 Mission Control draws on the primary monitor. If Omarchy Pulse is running and Mission Control opens with an empty background layer, stop Pulse before starting Mission Control again.
 
 Before removing OMANOVA or restoring an earlier version without Mission Control controls, turn off the wallpaper and its **Start at login** setting. The updater prompts for this when needed. The [removal instructions](../README.md#remove) also include a terminal command that stops the wallpaper and disables its login entry. The observing worker has its own startup setting.

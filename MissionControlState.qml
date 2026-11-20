@@ -7,7 +7,8 @@ QtObject {
     readonly property string helper: Quickshell.env("OMANOVA_WALLPAPER_HELPER")
     readonly property string setup: Quickshell.env("OMANOVA_WALLPAPER_SETUP")
     property bool configured: Quickshell.env("OMANOVA_WALLPAPER_READY") === "1"
-    readonly property bool canSetup: !configured && setup.length > 0
+    readonly property bool needsUpgrade: configured && state.available === true && state.frameRate === undefined
+    readonly property bool canSetup: setup.length > 0 && (!configured || (needsUpgrade && state.running === false))
     readonly property bool busy: runner.running || settling
     property bool settling: false
     property var state: ({message: configured ? qsTr("Checking wallpaper…") :

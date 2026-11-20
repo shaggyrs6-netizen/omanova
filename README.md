@@ -23,7 +23,9 @@ desktop** in the Mission Control window for this session only.
 
 Choose Smooth (30 FPS), Balanced (15 FPS), Battery saver (5 FPS), or Still.
 The default battery limit caps animation at 5 FPS when a system battery is
-discharging. Still pauses animation and keeps live data refreshing.
+discharging. Still pauses animation and keeps live data refreshing. Existing
+0.1.7 wallpaper installations can use **Update Mission Control** in Settings
+while the wallpaper is stopped. The login preference is preserved.
 
 If you use the Omarchy Pulse live wallpaper and Mission Control opens with an
 empty background layer, stop Pulse before starting Mission Control again.

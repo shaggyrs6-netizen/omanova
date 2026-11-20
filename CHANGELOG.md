@@ -6,6 +6,7 @@
 - Restore the previous Python environment after a failed guided setup, and restart a previously active worker when possible.
 - Before restoring a version without Mission Control, require wallpaper and its login startup to be off.
 - Add 30, 15 and 5 FPS wallpaper modes and Still. Apply a 5 FPS cap by default on battery power. Still preserves live data refresh.
+- Add an explicit Mission Control rebuild for existing wallpaper installations and preserve their login preference.
 - Document the Pulse wallpaper workaround for an empty Mission Control desktop layer.
 - Correct the documented comet catalogue coverage to match the packaged data.
 - Document the in-place upgrade from marketplace 0.1.1 and how to stop Mission Control before removing OMANOVA.
