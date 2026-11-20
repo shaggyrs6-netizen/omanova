@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QFile>
 #include <QFileInfo>
+#include <QTemporaryDir>
 #include <QPainter>
 #include <memory>
 #include <QDebug>
@@ -33,6 +34,8 @@ int main(int argc,char**argv){
  StartupOptions startup;
  QQmlApplicationEngine controller;
  if(wallpaper){
+  mission->configureWallpaperPower(
+   QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/omanova/wallpaper-power.json");
   window->setFlags(Qt::FramelessWindowHint|Qt::WindowTransparentForInput|Qt::WindowDoesNotAcceptFocus);
   auto layer=LayerShellQt::Window::get(window);if(!layer){qCritical("Layer shell unavailable; original desktop retained");return 13;}
   layer->setScope("omanova-mission-control-trial");layer->setLayer(LayerShellQt::Window::LayerBottom);
@@ -102,6 +105,43 @@ int main(int argc,char**argv){
   QTimer::singleShot(800,[=]{require(window->grabWindow().save(dir+"/wide.png"),"wide capture");mission->setSelection(1);mission->setView(2);});
   QTimer::singleShot(1500,[=]{require(window->grabWindow().save(dir+"/orbit.png"),"orbit capture");window->resize(780,850);mission->setView(0);});
   QTimer::singleShot(2300,[=]{require(window->grabWindow().save(dir+"/narrow.png"),"narrow capture");QFile out(dir+"/checks.json");require(out.open(QIODevice::WriteOnly),"report");out.write(QJsonDocument(QJsonObject{{"freshFrame",true},{"staleFutureFramesWithheld",true},{"staleFutureElementsWithheld",true},{"pauseWithholdsPositions",true},{"belowHorizonExplicit",true},{"noSampleFallback",true}}).toJson());QCoreApplication::quit();});
+  return app.exec();
+ }
+ if (args.contains("--qa-power")) {
+  QTemporaryDir fixture;
+  if (!fixture.isValid()) return 25;
+  const auto config = fixture.filePath("wallpaper-power.json");
+  const auto battery = fixture.filePath("BAT0");
+  const auto write = [](const QString &path, const QByteArray &data) {
+   QFile file(path);
+   return file.open(QIODevice::WriteOnly) && file.write(data) == data.size();
+  };
+  if (!QDir().mkpath(battery) || !write(battery+"/type", "Battery") ||
+      !write(battery+"/status", "Charging") ||
+      !write(config, R"({"frameRate":15,"batteryRate":5})")) return 25;
+  window->show();
+  mission->configureWallpaperPower(config, fixture.path());
+  if (mission->wallpaperFrameRate() != 15 || !mission->animationRunning()) return 26;
+  if (!write(battery+"/status", "Discharging")) return 25;
+  QTimer::singleShot(2300, &app, [&] {
+   if (mission->wallpaperFrameRate() != 5 || !mission->animationRunning()) {
+    app.exit(27); return;
+   }
+   if (!write(config, R"({"frameRate":15,"batteryRate":0})")) { app.exit(25); return; }
+   QTimer::singleShot(2100, &app, [&] {
+    if (mission->wallpaperFrameRate() != 0 || mission->animationRunning() || mission->paused()) {
+     app.exit(28); return;
+    }
+    mission->applyFrame(QJsonObject{{"mode","live"}, {"generated",QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)}});
+    if (!mission->feedFresh()) { app.exit(29); return; }
+    if (!write(battery+"/status", "Charging")) { app.exit(25); return; }
+    QTimer::singleShot(2100, &app, [&] {
+     const bool restored = mission->wallpaperFrameRate() == 15 && mission->animationRunning();
+     if (restored) qInfo("Wallpaper power QA: normal, saver, still, fresh data and AC restoration passed");
+     app.exit(restored ? 0 : 30);
+    });
+   });
+  });
   return app.exec();
  }
  int qa=args.indexOf("--qa");if(qa>=0){

@@ -30,6 +30,9 @@ public:
  QVariantMap liveData()const{return frame.toVariantMap();}
  void startLive(QString runtime,QString bridge,QString state);
  void applyFrame(QJsonObject data);
+ void configureWallpaperPower(const QString &config, const QString &supplies = "/sys/class/power_supply");
+ int wallpaperFrameRate() const { return m_wallpaperRate; }
+ bool animationRunning() const { return timer.isActive(); }
  bool paused()const{return m_paused;} bool reduced()const{return m_reduced;} bool trails()const{return m_trails;}
  int selection()const{return m_selection;} int view()const{return m_view;} double elapsed()const{return m_elapsed;}
  void setPaused(bool);void setReduced(bool);void setTrails(bool);void setSelection(int);void setView(int);
@@ -42,6 +45,11 @@ private:
  bool m_paused=false,m_reduced=false,m_trails=true;int m_selection=0,m_view=0;double m_elapsed=0,m_centreLongitude=-76.;
  bool m_live=false;QJsonObject frame;QProcess helper;QTimer refresh,timeout;QByteArray pending;QString runtimePath,bridgePath,statePath;
  void poll();
+ void refreshWallpaperPower();
+ void syncAnimationTimer();
+ QTimer powerTimer;
+ QString powerConfig, powerSupplies;
+ int m_wallpaperRate = -1;
  QJsonObject liveStation(int i)const;
  QPointF skyPoint(double az,double el,const QRectF&r)const;
  QPointF globePoint(double lon,double lat,const QPointF&center,double r,double scale,double *front=nullptr)const;

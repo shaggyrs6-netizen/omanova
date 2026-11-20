@@ -15,10 +15,18 @@ QtObject {
     property string error: ""
     property string action: "status"
 
+    property var powerArguments: []
+
+    function setPower(key, rate) {
+        if (busy || !configured || !["frameRate", "batteryRate"].includes(key)) return
+        powerArguments = [key, String(rate)]
+        request("power")
+    }
+
     function request(name) {
         if ((name === "setup" ? !canSetup : !configured) || runner.running ||
                 (settling && name !== "status") ||
-                !["status", "start", "normal", "login-on", "login-off", "setup"].includes(name))
+                !["status", "start", "normal", "login-on", "login-off", "setup", "power"].includes(name))
             return false
         action = name
         if (name !== "status") error = ""
@@ -29,7 +37,8 @@ QtObject {
     property Process worker: Process {
         id: runner
         command: root.action === "setup" ? [root.setup] : root.action.startsWith("login-") ?
-                     [root.helper, "startup", root.action.slice(6)] : [root.helper, root.action]
+                     [root.helper, "startup", root.action.slice(6)] : root.action === "power" ?
+                     [root.helper, "power"].concat(root.powerArguments) : [root.helper, root.action]
         environment: ({
             XDG_RUNTIME_DIR: Quickshell.env("OMANOVA_WALLPAPER_RUNTIME"),
             XDG_CONFIG_HOME: Quickshell.env("OMANOVA_WALLPAPER_CONFIG")

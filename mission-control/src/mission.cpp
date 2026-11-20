@@ -11,6 +11,8 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFileInfo>
+#include <QFile>
+#include <QDir>
 #include <QProcessEnvironment>
 #include <QFontMetricsF>
 namespace {
@@ -29,11 +31,95 @@ static void diamond(QPainter*p,QPointF pos,QColor color,bool selected){
 Mission::Mission(QQuickItem*p):QQuickPaintedItem(p){
  setAntialiasing(true);setAcceptedMouseButtons(Qt::LeftButton);texture.load(":/assets/earth.jpg");texture=texture.convertToFormat(QImage::Format_RGB32);prepareGlobe();
  QRandomGenerator rng(4261);for(int i=0;i<650;i++){stars<<QPointF(rng.generateDouble(),rng.generateDouble());sizes<<(.4+rng.generateDouble()*1.25);}
- connect(this,&QQuickItem::windowChanged,this,[this](QQuickWindow*w){if(!w)return;connect(w,&QWindow::visibilityChanged,this,[this](QWindow::Visibility v){if(v==QWindow::Minimized||v==QWindow::Hidden)timer.stop();else if(!m_paused){clock.restart();timer.start();if(m_live)QTimer::singleShot(0,this,&Mission::poll);}});});
- clock.start();timer.setTimerType(Qt::PreciseTimer);timer.setInterval(motionIntervalMs);connect(&timer,&QTimer::timeout,this,[this]{double dt=qMin(clock.restart()/1000.,.15);if(!m_paused&&isVisible()){m_elapsed+=dt*(m_reduced?.12:1.0);emit changed();update();}});timer.start();
+ connect(this, &QQuickItem::windowChanged, this, [this](QQuickWindow *window) {
+  if (!window) return;
+  connect(window, &QWindow::visibilityChanged, this, [this](QWindow::Visibility visibility) {
+   syncAnimationTimer();
+   if (m_live && !m_paused && visibility != QWindow::Minimized && visibility != QWindow::Hidden)
+    QTimer::singleShot(0, this, &Mission::poll);
+  });
+  syncAnimationTimer();
+ });
+ connect(this, &QQuickItem::visibleChanged, this, &Mission::syncAnimationTimer);
+ timer.setTimerType(Qt::PreciseTimer);
+ connect(&timer, &QTimer::timeout, this, [this] {
+  const double maxDelta = qMax(.15, timer.interval() * .002);
+  m_elapsed += qMin(clock.restart() / 1000., maxDelta) * (m_reduced ? .12 : 1.);
+  emit changed();
+  update();
+ });
+ syncAnimationTimer();
 }
-void Mission::setPaused(bool v){if(v==m_paused)return;m_paused=v;clock.restart();if(v)timer.stop();else timer.start();emit changed();update();}
-void Mission::setReduced(bool v){m_reduced=v;timer.setInterval(v?reducedIntervalMs:motionIntervalMs);emit changed();update();}
+
+void Mission::syncAnimationTimer() {
+ const auto visibility = window() ? window()->visibility() : QWindow::Hidden;
+ if (m_paused || m_wallpaperRate == 0 || !isVisible() ||
+     visibility == QWindow::Hidden || visibility == QWindow::Minimized) {
+  timer.stop();
+  return;
+ }
+ int interval = m_reduced ? reducedIntervalMs : motionIntervalMs;
+ if (m_wallpaperRate > 0)
+  interval = qMax(interval, qRound(1000. / m_wallpaperRate));
+ if (timer.isActive() && timer.interval() == interval) return;
+ clock.restart();
+ timer.start(interval);
+}
+
+void Mission::configureWallpaperPower(const QString &config, const QString &supplies) {
+ powerConfig = config;
+ powerSupplies = supplies;
+ connect(&powerTimer, &QTimer::timeout, this, &Mission::refreshWallpaperPower, Qt::UniqueConnection);
+ refreshWallpaperPower();
+ powerTimer.start(2000);
+}
+
+void Mission::refreshWallpaperPower() {
+ QFile file(powerConfig);
+ QJsonObject options;
+ if (file.open(QIODevice::ReadOnly) && file.size() <= 4096)
+  options = QJsonDocument::fromJson(file.read(4096)).object();
+ int frameRate = options["frameRate"].toInt(30);
+ int batteryRate = options["batteryRate"].toInt(5);
+ if (frameRate != 0 && frameRate != 5 && frameRate != 15 && frameRate != 30) frameRate = 30;
+ if (batteryRate != -1 && batteryRate != 0 && batteryRate != 5) batteryRate = 5;
+
+ const auto readSupply = [](const QDir &supply, const QString &field) {
+  QFile entry(supply.filePath(field));
+  return entry.open(QIODevice::ReadOnly) ? entry.read(64).trimmed() : QByteArray{};
+ };
+ const QDir directory(powerSupplies);
+ bool onBattery = false;
+ for (const QString &name : directory.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+  const QDir supply(directory.filePath(name));
+  if (readSupply(supply, "type") == "Battery" && readSupply(supply, "scope") != "Device" &&
+      readSupply(supply, "status") == "Discharging") {
+   onBattery = true;
+   break;
+  }
+ }
+ // Battery mode is a ceiling. A user-selected Still or slower rate stays in effect.
+ const int effectiveRate = onBattery && batteryRate >= 0 ? qMin(frameRate, batteryRate) : frameRate;
+ if (effectiveRate == m_wallpaperRate) return;
+ m_wallpaperRate = effectiveRate;
+ syncAnimationTimer();
+}
+
+void Mission::setPaused(bool paused) {
+ if (paused == m_paused) return;
+ m_paused = paused;
+ syncAnimationTimer();
+ if (!paused && m_live) QTimer::singleShot(0, this, &Mission::poll);
+ emit changed();
+ update();
+}
+
+void Mission::setReduced(bool reduced) {
+ m_reduced = reduced;
+ syncAnimationTimer();
+ emit changed();
+ update();
+}
 void Mission::setTrails(bool v){m_trails=v;emit changed();update();}
 void Mission::setSelection(int v){if(v<0||v>1)return;m_selection=v;emit changed();update();}
 void Mission::setView(int v){if(v<0||v>2)return;m_view=v;emit changed();update();}

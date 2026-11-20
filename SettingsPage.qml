@@ -204,6 +204,43 @@ ColumnLayout {
             }
         }
         Copy {
+            visible: wallpaperSection.state?.frameRate !== undefined
+            text: qsTr("Wallpaper frame rate")
+        }
+        ComboBox {
+            id: wallpaperRate
+            visible: wallpaperSection.state?.frameRate !== undefined
+            enabled: !wallpaperSection.waiting
+            Accessible.name: qsTr("Wallpaper frame rate")
+            palette.text: App.Palette.ink
+            palette.buttonText: App.Palette.ink
+            model: [qsTr("Smooth · 30 fps"), qsTr("Balanced · 15 fps"), qsTr("Battery saver · 5 fps"), qsTr("Still")]
+            readonly property var rates: [30, 15, 5, 0]
+            currentIndex: Math.max(0, rates.indexOf(wallpaperSection.state?.frameRate ?? 30))
+            onActivated: index => page.wallpaper.setPower("frameRate", rates[index])
+        }
+        Copy {
+            visible: wallpaperSection.state?.batteryRate !== undefined
+            text: qsTr("On battery")
+        }
+        ComboBox {
+            id: batteryRate
+            visible: wallpaperSection.state?.batteryRate !== undefined
+            enabled: !wallpaperSection.waiting
+            Accessible.name: qsTr("Wallpaper frame rate on battery")
+            palette.text: App.Palette.ink
+            palette.buttonText: App.Palette.ink
+            model: [qsTr("Use my usual setting"), qsTr("Battery saver · 5 fps"), qsTr("Still")]
+            readonly property var rates: [-1, 5, 0]
+            currentIndex: Math.max(0, rates.indexOf(wallpaperSection.state?.batteryRate ?? 5))
+            onActivated: index => page.wallpaper.setPower("batteryRate", rates[index])
+        }
+        Copy {
+            visible: wallpaperSection.state?.frameRate !== undefined
+            text: qsTr("Still stops continuous animation. The sky data still refreshes.")
+            color: App.Palette.muted
+        }
+        Copy {
             text: qsTr("Turning it off restores your normal wallpaper and disables Mission Control login startup.")
             color: App.Palette.muted
         }

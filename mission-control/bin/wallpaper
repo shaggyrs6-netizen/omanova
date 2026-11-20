@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Local wallpaper with explicit opt-in startup; never changes the normal theme."""
-import fcntl,json,os,shutil,signal,subprocess,sys,time
+import fcntl,json,os,shutil,signal,subprocess,sys,tempfile,time
 from pathlib import Path
 os.umask(0o077)
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -10,6 +10,32 @@ RUN=Path(os.environ.get('XDG_RUNTIME_DIR','/run/user/'+str(os.getuid())))/'omano
 RUN.mkdir(mode=0o700,exist_ok=True)
 RECEIPT=RUN/'session.json'
 BINARY=ROOT/'build/omanova-mission-control-preview'
+POWER_CONFIG = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home()/".config") / "omanova" / "wallpaper-power.json"
+RATES = {"frameRate": (0, 5, 15, 30), "batteryRate": (-1, 0, 5)}
+POWER_DEFAULTS = {"frameRate": 30, "batteryRate": 5}
+
+def power_settings():
+ try:
+  with POWER_CONFIG.open("rb") as stream:
+   raw = stream.read(4097)
+   values = json.loads(raw) if len(raw) <= 4096 else None
+ except (OSError, ValueError):
+  return POWER_DEFAULTS.copy()
+ if not isinstance(values, dict):
+  return POWER_DEFAULTS.copy()
+ return {key: values[key] if type(values.get(key)) is int and values[key] in rates else POWER_DEFAULTS[key]
+         for key, rates in RATES.items()}
+
+def configure_power(key, value):
+ if key not in RATES or value not in RATES[key]:
+  raise ValueError("Invalid wallpaper frame rate.")
+ POWER_CONFIG.parent.mkdir(parents=True, exist_ok=True)
+ values = power_settings()
+ values[key] = value
+ with tempfile.NamedTemporaryFile(mode="w", dir=POWER_CONFIG.parent, delete=False) as stream:
+  json.dump(values, stream)
+ os.replace(stream.name, POWER_CONFIG)
+ return values
 
 def starttime(pid):
  try:return (Path('/proc')/str(pid)/'stat').read_text().rsplit(')',1)[1].split()[19]
@@ -81,7 +107,14 @@ if login:
 with (RUN/'control.lock').open('a') as lock:
  fcntl.flock(lock,fcntl.LOCK_EX)
  action='start' if login else sys.argv[1] if len(sys.argv)>1 else 'start';r=read()
- if action=='status':print(json.dumps(wallpaper_status(r)));sys.exit(0)
+ if action=='status':print(json.dumps({**wallpaper_status(r), **power_settings()}));sys.exit(0)
+ if action=='power':
+  try:
+   if len(sys.argv) != 4:raise ValueError("Expected a wallpaper setting and frame rate.")
+   print(json.dumps(configure_power(sys.argv[2], int(sys.argv[3]))))
+  except (OSError, ValueError):
+   print(json.dumps({'error':'Could not save the wallpaper frame rate.'}));sys.exit(1)
+  sys.exit(0)
  if action=='stop':print(json.dumps(stop(r)));sys.exit(0)
  if action=='normal':
   try:

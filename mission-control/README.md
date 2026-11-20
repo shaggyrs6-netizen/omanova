@@ -30,7 +30,8 @@ is created, and no theme, wallpaper, bar or OMANOVA setting is written.
   highlights the same satellite in both views and changes the sample detail/card.
 - Combined, Sky and Orbit views; resizable layout, full-screen preview.
 - Pause/resume, reduced motion, trails and reset. Paused/minimised windows stop
-  the render timer. Rendering is capped at 20 fps; globe texture updates at 5 fps.
+  the animation timer. The normal preview targets approximately 30 fps.
+
 - Native readable navy/cyan controls, keyboard focus outlines, a Moon phase
   illustration, and explicit sample-data warnings. Fixed concept palette in
   this design preview, not a change to the desktop theme.
@@ -45,6 +46,20 @@ is created, and no theme, wallpaper, bar or OMANOVA setting is written.
 | Esc | Leave full screen / dismiss help |
 | ? | Keyboard help |
 | Q | Close preview |
+
+## Wallpaper frame rate
+
+In **Settings → Appearance → Mission Control wallpaper**, choose Smooth
+(30 fps), Balanced (15 fps), Battery saver (5 fps) or Still. On a
+discharging laptop battery, the default 5 fps limit applies automatically.
+Choose Still to stop continuous animation on battery, or Use my usual setting
+to keep your selected rate. Plugging in restores the ordinary limit after the
+next power check. Linux power status is read locally. If no discharging system
+battery is reported, the usual setting applies.
+
+Still keeps the wallpaper visible and redraws when live sky data refreshes.
+These choices apply to the wallpaper only. They do not alter the observing
+worker, desktop alerts or wallpaper login preference.
 
 ## Data / limits
 
