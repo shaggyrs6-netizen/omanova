@@ -219,8 +219,13 @@ ColumnLayout {
             visible: wallpaperSection.state?.frameRate !== undefined
             enabled: !wallpaperSection.waiting
             Accessible.name: qsTr("Wallpaper frame rate")
+            palette.base: App.Palette.surface
+            palette.button: App.Palette.button
             palette.text: App.Palette.ink
             palette.buttonText: App.Palette.ink
+            palette.window: App.Palette.surface
+            palette.windowText: App.Palette.ink
+            palette.highlight: App.Palette.button
             model: [qsTr("Smooth · 30 fps"), qsTr("Balanced · 15 fps"), qsTr("Battery saver · 5 fps"), qsTr("Still")]
             readonly property var rates: [30, 15, 5, 0]
             currentIndex: Math.max(0, rates.indexOf(wallpaperSection.state?.frameRate ?? 30))
@@ -235,8 +240,13 @@ ColumnLayout {
             visible: wallpaperSection.state?.batteryRate !== undefined
             enabled: !wallpaperSection.waiting
             Accessible.name: qsTr("Wallpaper frame rate on battery")
+            palette.base: App.Palette.surface
+            palette.button: App.Palette.button
             palette.text: App.Palette.ink
             palette.buttonText: App.Palette.ink
+            palette.window: App.Palette.surface
+            palette.windowText: App.Palette.ink
+            palette.highlight: App.Palette.button
             model: [qsTr("Use my usual setting"), qsTr("Battery saver · 5 fps"), qsTr("Still")]
             readonly property var rates: [-1, 5, 0]
             currentIndex: Math.max(0, rates.indexOf(wallpaperSection.state?.batteryRate ?? 5))
