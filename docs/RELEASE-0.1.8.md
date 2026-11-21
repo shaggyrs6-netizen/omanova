@@ -15,7 +15,7 @@ If guided dependency setup fails, the installer restores the previous Python env
 
 ## Mission Control
 
-The wallpaper is optional. **Set up Mission Control** builds the renderer locally for your user. The README lists Qt system packages that you may install separately. The wallpaper and **Start at login** stay Off after setup. [Mission Control instructions](../README.md#mission-control-live-wallpaper) · [Wallpaper screenshots](SCREENSHOTS-0.1.7.md)
+The wallpaper is optional. **Set up Mission Control** builds the renderer locally for your user. The README lists Qt system packages that you may install separately. The wallpaper and **Start at login** stay Off after setup. [Mission Control instructions](../README.md#mission-control-live-wallpaper) · [Wallpaper screenshots](SCREENSHOTS-0.1.8.md)
 
 In **Settings → Appearance → Mission Control wallpaper**, choose **Smooth** (30 FPS), **Balanced** (15 FPS), **Battery saver** (5 FPS), or **Still**. The default battery cap limits animation to 5 FPS while the battery is discharging. Still pauses continuous animation and keeps the sky data refreshing. On AC power the wallpaper returns to your usual setting.
 

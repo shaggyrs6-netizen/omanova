@@ -2,13 +2,13 @@
 
 ![OMANOVA: your local Observatory for Omarchy. Sky charts, ISS and Tiangong passes, launches, trip planning and terrain, polar alignment, transit candidates, equipment, offline guides and observing-log CSV export.](preview.png)
 
-*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.7.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.8.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.8** fixes widget installation on Omarchy 4.5, improves installer recovery and adds battery-aware Mission Control wallpaper controls. Read the [release notes](docs/RELEASE-0.1.8.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.7.md).
+> **Version 0.1.8** fixes widget installation on Omarchy 4.5, improves installer recovery and adds battery-aware Mission Control wallpaper controls. Read the [release notes](docs/RELEASE-0.1.8.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.8.md).
 
 > The Omarchy marketplace listing is managed separately from GitHub releases. See the [upgrade instructions](#upgrading-an-existing-installation) if you installed the marketplace version.
 
