@@ -216,6 +216,8 @@ ColumnLayout {
         }
         ComboBox {
             id: wallpaperRate
+            implicitContentWidthPolicy: ComboBox.WidestText
+            implicitWidth: Math.max(190, implicitContentWidth + leftPadding + rightPadding)
             visible: wallpaperSection.state?.frameRate !== undefined
             enabled: !wallpaperSection.waiting
             Accessible.name: qsTr("Wallpaper frame rate")
@@ -237,6 +239,8 @@ ColumnLayout {
         }
         ComboBox {
             id: batteryRate
+            implicitContentWidthPolicy: ComboBox.WidestText
+            implicitWidth: Math.max(190, implicitContentWidth + leftPadding + rightPadding)
             visible: wallpaperSection.state?.batteryRate !== undefined
             enabled: !wallpaperSection.waiting
             Accessible.name: qsTr("Wallpaper frame rate on battery")
