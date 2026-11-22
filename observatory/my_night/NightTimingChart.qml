@@ -28,7 +28,7 @@ Canvas {
         const a = Date.parse(data.start), b = Date.parse(data.end)
         if (!(b > a) || width < 110) return
         const left = 40, right = width - 12, top = 12, bottom = height - 36
-        const low = data.points.length ? Math.min(0, ...data.points.map(p=>p.el)) : 0
+        const low = 0
         function x(t) { return left + (Date.parse(t)-a)/(b-a)*(right-left) }
         function y(el) { return bottom - (el-low)/(90-low)*(bottom-top) }
         ctx.fillStyle = surface
@@ -63,7 +63,13 @@ Canvas {
         if (data.best && data.window.length && Date.parse(data.best)>=Date.parse(data.window[0]) &&
                 Date.parse(data.best)<=Date.parse(data.window[1])) {
             ctx.strokeStyle=foreground;ctx.lineWidth=1;ctx.setLineDash([2,4])
-            ctx.beginPath();ctx.moveTo(x(data.best),top);ctx.lineTo(x(data.best),bottom);ctx.stroke()
+            const peak = data.points.find(point=>point.time===data.best)
+            const peakY = peak ? y(peak.el) : top
+            ctx.beginPath();ctx.moveTo(x(data.best),peakY);ctx.lineTo(x(data.best),bottom);ctx.stroke()
+            if (peak) {
+                ctx.fillStyle=accent
+                ctx.beginPath();ctx.arc(x(data.best),peakY,4,0,2*Math.PI);ctx.fill()
+            }
         }
         ctx.restore()
         ctx.font="12px sans-serif";ctx.fillStyle=muted

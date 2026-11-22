@@ -212,7 +212,14 @@ def build(plan, context, data, fixture, now, selected):
     rows = [dict(id=p['id'], name=p['name'], kind=p['kind'],
                  extent=TARGETS.get(p['id'][2:], {}).get('extent') if p['kind']=='target' else None)
             for p in plan['picks']]
-    frame = {'plan': plan, 'rows': rows, 'chart': None, 'error': '', 'zone': '',
+    for pick, row in zip(plan['picks'], rows):
+        if pick['kind'] == 'target':
+            row['category'] = TARGETS[pick['id'][2:]]['kind']
+        else:
+            row['category'] = pick.get('event', {}).get('kind', pick['kind'])
+    if not any(r['id'] == selected for r in rows):
+        selected = rows[0]['id'] if rows else ''
+    frame = {'selected': selected, 'plan': plan, 'rows': rows, 'chart': None, 'error': '', 'zone': '',
              'catalogue': [dict(id=k,name=TARGETS[k]['name']) for k in PICKER_KEYS]}
     try:
         place, terrain = get_point(source, fixture, context[3])
@@ -265,19 +272,33 @@ def build(plan, context, data, fixture, now, selected):
                                'fetched':fetched if summary['weather'].startswith('Cached') else None})
                     row['reason'] = note+' '+summary['weather']+' '+row.get('reason','')
                     eligible_rows.append(row)
-            if pick['id']==selected or (selected not in {p['id'] for p in plan['picks']} and frame['chart'] is None):
+            if pick['id']==selected:
                 a,b = (utc(samples[0]['time']),utc(samples[-1]['time'])) if samples and pick['kind']=='event' else (start,end)
                 if row and pick['kind']=='event' and not samples:
                     a,b=max(start,utc(row['start'])-timedelta(minutes=20)),min(end,utc(row['end'])+timedelta(minutes=20))
+                if pick['kind']=='target' and samples:
+                    night_samples = [utc(p['time']) for p in samples if p['sun'] <= -6]
+                    if night_samples:
+                        a = max(start, night_samples[0] - timedelta(hours=1))
+                        b = min(end, night_samples[-1] + timedelta(hours=1))
                 sun_times=sample_times(a,b,timedelta(minutes=5))
                 _, sun = profile(eph,ts,site,sun_times)
+                local_zone = ZoneInfo(zone)
+                tick_times = [a+(b-a)*i/4 for i in range(5)]
+                if b-a >= timedelta(hours=8):
+                    tick = a.astimezone(local_zone).replace(minute=0,second=0,microsecond=0).astimezone(UTC)
+                    tick_times = []
+                    while tick <= b:
+                        if tick >= a and tick.astimezone(local_zone).hour % 3 == 0:
+                            tick_times.append(tick)
+                        tick += timedelta(hours=1)
                 frame['chart']={'id':pick['id'],'points':samples,'start':iso(a),'end':iso(b),
                     'from':local_stamp(a,zone),'to':local_stamp(b,zone),'note':weather_note,
                     'dark':[{'time':iso(t),'dark':float(s)<=-18} for t,s in zip(sun_times,sun)],
                     'clouds':[{'time':iso(t),'value':values['cloud_cover']} for t,values in sorted(clouds.items())
                               if t<b and t+timedelta(hours=1)>a and values['cloud_cover'] is not None],
                     'window':[row['start'],row['end']] if row else [],'best':(row or {}).get('look',{}).get('time',''),
-                    'ticks':[{'time':iso(a+(b-a)*i/4),'label':(a+(b-a)*i/4).astimezone(ZoneInfo(zone)).strftime('%H:%M')} for i in range(5)]}
+                    'ticks':[{'time':iso(t),'label':t.astimezone(local_zone).strftime('%H:%M')} for t in tick_times]}
     return frame,eligible_rows
 
 

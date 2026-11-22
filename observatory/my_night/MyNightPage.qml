@@ -15,6 +15,11 @@ Item {
     property string problem: ""
     property string notice: ""
     property string guide: ""
+    property bool configureOpen: false
+    property bool catalogueOpen: false
+    readonly property var pick: result?.rows?.find(r => r.id === selected) || null
+    function timeOf(stamp) { return stamp?.match(/· (\d{2}:\d{2})/)?.[1] || "—" }
+    function dayOf(stamp) { return stamp ? stamp.split(" · ")[0] : "" }
     property string selected: ""
     property string pending: ""
     property string action: ""
@@ -69,7 +74,7 @@ Item {
                     return
                 }
                 page.result=data
-                page.selected=data.chart?.id || ""
+                page.selected=data.selected || ""
                 if (!page.editing || page.action==="configure") {
                     dateField.text=data.plan.night
                     placeList.currentIndex=page.sources.findIndex(s=>s.id===data.plan.source)
@@ -119,10 +124,14 @@ Item {
                 Layout.fillWidth:true
                 Layout.margins:22
                 spacing:10
-                App.PageHeader {eyebrow:"PLAN";title:"My Night"}
-                Copy {text:"Pick targets for a night at home or away. Saved events keep their original place and time.";color:App.Palette.muted}
+                RowLayout {
+                    Layout.fillWidth:true
+                    Copy {text:"My Night";font.bold:true;font.pixelSize:30}
+                    App.ActionButton {text:page.configureOpen?"Hide settings":"Night & location";onClicked:page.configureOpen=!page.configureOpen}
+                }
+                Copy {text:[page.result?.place,page.result?.plan?.night,page.result?.zone].filter(Boolean).join("   ·   ");color:App.Palette.muted}
                 Flow {
-                    Layout.fillWidth:true;spacing:8
+                    visible:page.configureOpen;Layout.fillWidth:true;spacing:8
                     Choice {
                         id:placeList;width:180;model:page.sources;textRole:"label"
                         Accessible.name:"Observing location"
@@ -143,17 +152,80 @@ Item {
                     }
                     App.ActionButton {text:"Recalculate";enabled:!page.busy&&!page.editing;onClicked:page.request("view")}
                 }
-                Copy {visible:!!page.result?.period&&!page.editing;text:(page.result?.place||"")+" · "+(page.result?.zone||"")+"\n"+(page.result?.period||"")+" · Checked "+(page.result?.checked||"");color:App.Palette.accent}
+                Copy {visible:page.configureOpen&&!!page.result?.period&&!page.editing;text:(page.result?.place||"")+" · "+(page.result?.zone||"")+"\n"+(page.result?.period||"")+" · Checked "+(page.result?.checked||"");color:App.Palette.accent}
                 Copy {visible:page.editing;text:"Press Set night to apply these changes.";color:App.Palette.warning}
                 Copy {
                     visible:text.length>0
                     text:page.problem||page.result?.error||page.notice||(page.busy?"Calculating locally…":"")
                     color:page.problem||page.result?.error ? App.Palette.warning : App.Palette.accent
                 }
+            }
+            GridLayout {
+                id: grid
+                Layout.fillWidth:true;Layout.leftMargin:18;Layout.rightMargin:18
+                columns:width>=750?2:1;columnSpacing:12;rowSpacing:12
+                App.ViewPanel {
+                    appearance:"mission";Layout.fillWidth:true;Layout.preferredWidth:285
+                    Layout.fillHeight:grid.columns===2;Layout.alignment:Qt.AlignTop;implicitHeight:listBody.implicitHeight+28
+                    ColumnLayout {
+                        id:listBody;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:9
+                        RowLayout {
+                            Layout.fillWidth:true
+                            Copy {text:"Observing list";font.bold:true;font.pixelSize:21}
+                            Copy {Layout.fillWidth:false;text:(page.result?.rows?.length||0)+" picks";color:App.Palette.muted}
+                        }
+                        Copy {visible:!page.result?.rows?.length;text:"Add a target here or save a pick from the Star Chart.";color:App.Palette.muted}
+                        ListView {
+                            id:list
+                            Layout.fillWidth:true;Layout.preferredHeight:Math.min(contentHeight,grid.columns===1?185:340)
+                            clip:true;spacing:5;model:page.result?.rows||[]
+                            ScrollBar.vertical:ScrollBar {}
+                            delegate:Button {
+                                id:pickButton
+                                required property var modelData
+                                width:list.width;height:65;hoverEnabled:true
+                                readonly property bool chosen:modelData.id===page.selected
+                                Accessible.name:modelData.name
+                                enabled:!page.busy&&!page.editing
+                                onClicked:page.showPick(modelData.id)
+                                background:Rectangle {
+                                    color:pickButton.chosen?App.Palette.hover:pickButton.hovered?App.Palette.field:"transparent"
+                                    radius:5;border.color:pickButton.activeFocus||pickButton.chosen?App.Palette.accent:App.Palette.line
+                                }
+                                contentItem:RowLayout {
+                                    spacing:10
+                                    Canvas {
+                                        Layout.preferredWidth:31;Layout.preferredHeight:31
+                                        property color ink:pickButton.chosen?App.Palette.accent:App.Palette.muted
+                                        property string kind:pickButton.modelData.category || ""
+                                        onInkChanged:requestPaint()
+                                        onKindChanged:requestPaint()
+                                        onPaint:{
+                                            const c=getContext("2d")
+                                            c.reset();c.translate(width/2,height/2)
+                                            c.fillStyle=ink;c.strokeStyle=ink;c.lineWidth=1.6
+                                            if(kind==="planet" || kind==="moon") {
+                                                c.beginPath();c.arc(0,0,7,0,2*Math.PI);c.fill()
+                                                if(pickButton.modelData.id==="t:Saturn"){c.rotate(-.42);c.beginPath();c.ellipse(-14,-3,28,6);c.stroke()}
+                                            } else if(kind==="deep-sky") {
+                                                for(const p of [[-9,1],[0,-5],[7,5],[9,-5],[-4,8]]){c.beginPath();c.arc(p[0],p[1],1.7,0,2*Math.PI);c.fill()}
+                                            } else {
+                                                c.beginPath();c.moveTo(0,-11);c.lineTo(2,-2);c.lineTo(10,0);c.lineTo(2,2);c.lineTo(0,11);c.lineTo(-2,2);c.lineTo(-10,0);c.lineTo(-2,-2);c.closePath();c.fill()
+                                            }
+                                        }
+                                    }
+                                    Column {Layout.fillWidth:true;spacing:4
+                                    Text {width:parent.width-16;elide:Text.ElideRight;text:pickButton.modelData.name;color:App.Palette.ink;font.bold:true;font.pixelSize:17}
+                                    Text {width:parent.width-16;elide:Text.ElideRight;text:pickButton.modelData.best?"Best "+page.timeOf(pickButton.modelData.best)+" · "+page.dayOf(pickButton.modelData.best):pickButton.modelData.kind==="reference"?"Reference pick":"No best time";color:App.Palette.muted;font.pixelSize:13}
+                                    }
+                                }
+                            }
+                        }
+                        App.ActionButton {text:page.catalogueOpen?"Hide catalogue":"Add target";onClicked:page.catalogueOpen=!page.catalogueOpen}
                 Flow {
-                    Layout.fillWidth:true;spacing:8
+                    visible:page.catalogueOpen;Layout.fillWidth:true;spacing:8
                     Choice {
-                        id:target;width:Math.min(310,scroll.availableWidth-45);model:page.result?.catalogue||[];textRole:"name"
+                        id:target;width:Math.min(255,parent.width);model:page.result?.catalogue||[];textRole:"name"
                         Accessible.name:"Catalogue target"
                     }
                     App.ActionButton {
@@ -161,8 +233,57 @@ Item {
                         onClicked:page.add("target",target.model[target.currentIndex].id)
                     }
                 }
+                    }
+                }
+                App.ViewPanel {
+                    appearance:"mission";Layout.fillWidth:true;Layout.preferredWidth:670
+                    Layout.alignment:Qt.AlignTop;implicitHeight:body.implicitHeight+30
+                    ColumnLayout {
+                        id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:15;spacing:9
+                        RowLayout {
+                            Layout.fillWidth:true
+                            Copy {text:page.pick?.name || "Timing chart";font.pixelSize:27;font.bold:true}
+                            App.ActionButton {
+                                visible:!!page.pick?.logPlace;text:"I saw it";enabled:page.ready
+                                onClicked:page.recordObservation({name:page.pick.name,place:page.pick.logPlace,assessment:"From My Night"})
+                            }
+                        }
+                        Copy {visible:!page.pick;text:"Select a saved pick to see its timing.";color:App.Palette.muted}
+                        RowLayout {
+                            visible:!!page.pick?.begin && !page.editing && !page.problem;Layout.fillWidth:true
+                            Repeater {
+                                model:[["Begin",page.pick?.begin],["Best time",page.pick?.best],["End",page.pick?.end]]
+                                ColumnLayout {
+                                    required property var modelData;Layout.fillWidth:true;Layout.preferredWidth:1
+                                    Copy {text:modelData[0];color:App.Palette.muted}
+                                    Copy {text:page.timeOf(modelData[1]);font.pixelSize:25;font.bold:true;color:modelData[0]==="Best time"?App.Palette.accent:App.Palette.ink}
+                                    Copy {text:page.dayOf(modelData[1]);font.pixelSize:12;color:App.Palette.muted}
+                                }
+                            }
+                        }
+                        Copy {visible:!!page.pick?.direction&&!page.editing&&!page.problem;text:"At best time · "+(page.pick?.direction||"");color:App.Palette.accent}
+                        Copy {visible:timing.visible;text:"Altitude through the night";font.bold:true;font.pixelSize:17}
+                        NightTimingChart {
+                            id:timing;Layout.fillWidth:true;Layout.preferredHeight:165
+                            visible:!!page.result?.chart && page.result.chart.id===page.selected&&!page.editing&&!page.problem
+                            data:visible?page.result.chart:null
+                        }
+                        Copy {visible:timing.visible;text:"Solid: altitude   ·   Dashed: saved horizon   ·   Shading: darkness and viewing window";font.pixelSize:12;color:App.Palette.muted}
+                        Copy {visible:!!page.pick && !page.editing;text:[page.pick?.weather,page.pick?.note].filter(Boolean).join("  ");font.pixelSize:13;color:App.Palette.muted}
+                        Flow {
+                            visible:!!page.pick;Layout.fillWidth:true;spacing:6
+                            App.ActionButton {visible:!!page.pick?.extent;text:page.framingId===page.selected?"Hide field of view":"Show field of view";onClicked:page.framingId=page.framingId===page.selected?"":page.selected}
+                            App.ActionButton {text:"Remove";enabled:!page.busy&&!page.editing;Accessible.name:"Remove "+(page.pick?.name||"");onClicked:page.request("remove",{selected:page.selected})}
+                        }
+                        Loader {
+                            id:framingLoader;Layout.fillWidth:true;visible:!!page.pick?.extent && page.selected===page.framingId;active:visible
+                            sourceComponent:Component {App.FieldOfView {skyModel:page.sky;extentDeg:page.pick?.extent || 0;onOpenEquipment:page.openEquipment()}}
+                        }
+                    }
+                }
+            }
                 Flow {
-                    Layout.fillWidth:true;spacing:8
+                    Layout.leftMargin:18;Layout.fillWidth:true;spacing:8
                     App.ActionButton {
                         text:"Save offline guide ("+(page.result?.exportable||0)+")"
                         enabled:page.ready&&(page.result?.exportable||0)>0
@@ -173,74 +294,6 @@ Item {
                         onClicked:Qt.openUrlExternally("file://"+page.guide.split("/").map(encodeURIComponent).join("/"))
                     }
                 }
-                Copy {visible:!page.result?.rows?.length;text:"Nothing saved yet. Add a target above or use Add to My Night on Tonight, Events or Sky Finder.";color:App.Palette.muted}
-            }
-            Repeater {
-                id:pickCards
-                model:page.result?.rows||[]
-                delegate:Rectangle {
-                    id:card
-                    required property var modelData
-                    readonly property var framing:framingLoader.item
-                    readonly property bool expanded:page.result?.chart?.id===modelData.id && !page.editing
-                    Layout.fillWidth:true;Layout.leftMargin:22;Layout.rightMargin:22
-                    implicitHeight:body.implicitHeight+28
-                    radius:10;color:App.Palette.surface;border.color:expanded?App.Palette.accent:App.Palette.line
-                    ColumnLayout {
-                        id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
-                        Copy {text:card.modelData.name;font.pixelSize:21;font.bold:true}
-                        Copy {text:card.modelData.note||"Timing unavailable.";color:App.Palette.muted}
-                        Copy {
-                            visible:!!card.modelData.begin&&!page.editing&&!page.problem
-                            text:"Begin  "+card.modelData.begin+"\nBest  "+(card.modelData.best||"Not established")+
-                                 (card.modelData.direction?" · "+card.modelData.direction:"")+"\nEnd  "+card.modelData.end
-                        }
-                        Copy {visible:!!card.modelData.best&&!page.editing&&!page.problem;text:card.modelData.weather||"";color:App.Palette.muted}
-                        Flow {
-                            Layout.fillWidth:true;spacing:8
-                            App.ActionButton {visible:card.modelData.kind!=="reference";text:card.expanded?"Refresh timing chart":"Show timing chart";enabled:!page.busy&&!page.editing;onClicked:page.showPick(card.modelData.id)}
-                            App.ActionButton {
-                                text:"I saw it";enabled:!page.busy&&!page.editing&&!!card.modelData.logPlace
-                                onClicked:page.recordObservation({name:card.modelData.name,place:card.modelData.logPlace,assessment:"From My Night"})
-                            }
-                            App.ActionButton {
-                                visible:!!card.modelData.extent
-                                text:page.framingId===card.modelData.id?"Hide field-of-view overlay":"Show field-of-view overlay"
-                                onClicked:page.framingId=page.framingId===card.modelData.id?"":card.modelData.id
-                            }
-                            App.ActionButton {text:"Remove";enabled:!page.busy;Accessible.name:"Remove "+card.modelData.name;onClicked:page.request("remove",{selected:card.modelData.id})}
-                        }
-                        Loader {
-                            id:framingLoader
-                            Layout.fillWidth:true;visible:page.framingId===card.modelData.id;active:visible
-                            sourceComponent:Component {
-                                App.FieldOfView {
-                                    skyModel:page.sky
-                                    extentDeg:card.modelData.extent
-                                    onOpenEquipment:page.openEquipment()
-                                }
-                            }
-                        }
-                        NightTimingChart {
-                            Layout.fillWidth:true;Layout.preferredHeight:185
-                            visible:card.expanded&&!page.problem
-                            data:visible?page.result.chart:null
-                        }
-                        Copy {
-                            visible:card.expanded&&!page.problem
-                            text:page.result.chart.from+" to "+page.result.chart.to
-                            color:App.Palette.muted
-                        }
-                        Copy {
-                            visible:card.expanded&&!page.problem
-                            text:(page.result.chart.points.length?"Solid: altitude. Dashed: saved horizon. ":"")
-                                +"Faint shading: astronomical darkness. Bright shading: selected window. Dotted marker: best time. Cloud bars show cached hourly cover where available. "
-                                +page.result.chart.note
-                            color:App.Palette.muted
-                        }
-                    }
-                }
-            }
             Item {Layout.preferredHeight:24}
         }
     }
@@ -255,15 +308,14 @@ Item {
             if (!page.sky.fixture) return false
             if(verb==="target"||verb==="event")return page.add(verb,key)
             if(verb==="configure")return page.request(verb,{night:key,source:"active"})
-            if(verb==="framing"){page.framingId=key;return true}
+            if(verb==="framing"){page.showPick(key);page.framingId=key;return true}
             if(verb==="remove")return page.request(verb,{selected:key})
             if(verb==="export")return page.request(verb)
             return false
         }
         function fixtureFraming(name:string, switchSetup:bool):string {
             if (!page.sky.fixture) return ""
-            const index=(page.result?.rows || []).findIndex(row=>row.id===page.framingId)
-            const panel=pickCards.itemAt(index)?.framing
+            const panel=framingLoader.item
             if (!panel) return ""
             if (switchSetup) return JSON.stringify(panel.selectSetup(name || null))
             return JSON.stringify({status:panel.comparison.status, field:panel.fieldDeg, setup:panel.activeName,
