@@ -1,6 +1,10 @@
 # OMANOVA — release validation and maintenance
 
-## Local candidate: 0.1.8 — upgrade and wallpaper recovery
+## Local candidate: 0.1.9 — Observatory redesign
+
+Validate the versioned archive with the stock Omarchy validator, a clean install, an upgrade from public 0.1.8 and rollback. Exercise the supported 0.1.1 in-place installer path separately. Check saved data, login choices, bar clicks and all Observatory routes in isolated fixtures. [Release notes](docs/RELEASE-0.1.9.md).
+
+## Release: 0.1.8 — upgrade and wallpaper recovery
 
 See [release notes](docs/RELEASE-0.1.8.md). Test an in-place upgrade from the
 recorded 0.1.1 marketplace snapshot, guided setup failure, and an update and

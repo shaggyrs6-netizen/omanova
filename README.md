@@ -2,13 +2,13 @@
 
 ![OMANOVA: your local Observatory for Omarchy. Sky charts, ISS and Tiangong passes, launches, trip planning and terrain, polar alignment, transit candidates, equipment, offline guides and observing-log CSV export.](preview.png)
 
-*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.8.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.9.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.8** fixes widget installation on Omarchy 4.5, improves installer recovery and adds battery-aware Mission Control wallpaper controls. Read the [release notes](docs/RELEASE-0.1.8.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.8.md).
+> **Version 0.1.9** redesigns all 29 Observatory pages, connects Tonight to the selected Orbit pass, and lets you save targets from the Star Chart to My Night. Read the [release notes](docs/RELEASE-0.1.9.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.9.md).
 
 > The Omarchy marketplace listing is managed separately from GitHub releases. See the [upgrade instructions](#upgrading-an-existing-installation) if you installed the marketplace version.
 
@@ -194,7 +194,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.8 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.9 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```

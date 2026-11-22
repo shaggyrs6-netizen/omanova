@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.9 — Observatory redesign
+
+- Follow Tonight’s selected pass directly into Orbit and save chart selections to My Night.
+- Browse the observing list, timing chart, log, equipment and settings in responsive panels.
+- Bring pass weather, sky catalogues, launch tools and trip planning into the same layout.
+- Recognise the known legacy worker configuration during in-app updates.
+
+See the [release notes](docs/RELEASE-0.1.9.md) and [screenshot gallery](docs/SCREENSHOTS-0.1.9.md).
+
 ## 0.1.8 — install compatibility, recovery and wallpaper controls
 
 - Fix widget installation on Omarchy 4.5 by removing symbolic links from the plugin package.
