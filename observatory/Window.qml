@@ -485,7 +485,7 @@ ShellRoot {
                     id: finalSkyLoader
                     Layout.fillWidth:true;Layout.fillHeight:true
                     visible:["star-chart","live-orbit","polar","transits"].includes(ui.pageId);active:visible
-                    sourceComponent:Component { FinalSkyPages.FinalSkyPage {skyModel:sky;onOpenEquipment:ui.navigate("equipment");section:({"star-chart":"chart","live-orbit":"live",polar:"polar",transits:"transits"})[ui.pageId] || "chart"} }
+                    sourceComponent:Component { FinalSkyPages.FinalSkyPage {skyModel:sky;onOpenMyNight:ui.navigate("my-night");onOpenEquipment:ui.navigate("equipment");section:({"star-chart":"chart","live-orbit":"live",polar:"polar",transits:"transits"})[ui.pageId] || "chart"} }
                 }
                 Loader {
                     id: planetLoader

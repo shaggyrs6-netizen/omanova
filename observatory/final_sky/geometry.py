@@ -207,6 +207,12 @@ def build(request,state,fixture=False):
         if kind=='chart':
             when=now if request.get('satellites') is True else when
             data=sky_chart(eph,ts,p,terrain,when)
+            # Format each tick in the observing site’s zone, including DST changes.
+            offset = max(-180, min(180, int(request.get('chartOffset', 0))))
+            anchor = when - timedelta(minutes=offset)
+            zone = ZoneInfo(p['timezone'])
+            data['chartTimes'] = [(anchor + timedelta(minutes=m)).astimezone(zone).strftime('%H:%M')
+                                  for m in range(-180, 181, 15)]
             if request.get('satellites') is True:
                 from observatory.final_sky.satellite_layer import cached_rows,calculate
                 cached,catalog=cached_rows(state,fixture,ROOT)

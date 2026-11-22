@@ -4,7 +4,16 @@ import "CameraProjection.js" as CameraProjection
 Rectangle {
  id:root
  property var dataSet:null
- property string selection:""
+ property string objectName: ""
+ property int starId: 0
+ readonly property var selectedObject: {
+  if (selectedSatellite) return satellites.find(o => o.id === selectedSatellite) || null
+  if (starId) return dataSet?.stars?.find(o => o.id === starId) || null
+  if (objectName) return dataSet?.objects?.find(o => o.name === objectName) || null
+  return dataSet?.objects?.find(o => o.name === "Saturn") || dataSet?.objects?.[0] || dataSet?.stars?.[0] || null
+ }
+ readonly property string selection: selectedObject ? describe(selectedObject) : ""
+ onSelectedObjectChanged: canvas.requestPaint()
  property var hits:[]
  property bool framing:false
  property var cameraCentre:null
@@ -20,23 +29,89 @@ Rectangle {
  onSatellitesChanged:canvas.requestPaint()
  color:App.Palette.field;radius:8;border.color:App.Palette.border
  Accessible.name:framing?"Whole sky chart. Tap the sky to centre the camera frame.":"Whole sky chart, north up and east left. Tap a star or planet for bearing and elevation."
+ function chooseObject(item, satellite) {
+  selectedSatellite = satellite ? item.id : 0
+  starId = satellite ? 0 : item.id || 0
+  objectName = item.name
+ }
  function describe(s){return s.name+" · "+s.az.toFixed(1)+"° true bearing · "+s.el.toFixed(1)+"° up"+(s.clear?"":" · saved horizon blocked")+(s.satellite||s.id===selectedSatellite?" · "+root.formatDistance(s.rangeKm,0)+" slant range · elements "+s.ageHours.toFixed(1)+" h old · "+s.status:"")}
  function xy(az,el) {let a=az*Math.PI/180,r=(Math.min(width,canvas.height)-80)/2*(90-el)/90;return Qt.point(width/2-r*Math.sin(a),canvas.height/2-r*Math.cos(a))}
- onDataSetChanged:{if(!selectedSatellite)selection="";canvas.requestPaint()}
- Canvas {id:canvas;anchors.fill:parent;anchors.bottomMargin:selectionText.visible?selectionText.implicitHeight+18:0;onWidthChanged:requestPaint();onHeightChanged:requestPaint()
+ onDataSetChanged:{canvas.requestPaint()}
+ Canvas {id:canvas;anchors.fill:parent;onWidthChanged:requestPaint();onHeightChanged:requestPaint()
   Connections {target:App.Palette;function onResolvedChanged(){canvas.requestPaint()}function onObservingModeChanged(){canvas.requestPaint()}}
   onPaint:{
-   let c=getContext("2d");c.reset();let r=(Math.min(width,height)-80)/2,x=width/2,y=height/2;
-   c.strokeStyle=App.Palette.border;c.lineWidth=1;c.font="12px sans-serif";c.textAlign="center";c.fillStyle=App.Palette.muted;
-   for(let alt of [0,30,60]){c.beginPath();c.arc(x,y,r*(90-alt)/90,0,Math.PI*2);c.stroke();c.fillText(alt+"°",x+8,y-r*(90-alt)/90+14)}
-   for(let v of [["N",x,y-r-14],["S",x,y+r+23],["E",x-r-18,y],["W",x+r+18,y]])c.fillText(v[0],v[1],v[2]);
+   const c=getContext("2d")
+   c.reset()
+   const r=(Math.min(width,height)-80)/2,x=width/2,y=height/2
+   if(r<8)return
+   const atlasColours=!App.Palette.themed
+   const background=c.createRadialGradient(x,y,0,x,y,r)
+   background.addColorStop(0,atlasColours?"#10283c":App.Palette.surface)
+   background.addColorStop(1,atlasColours?"#0a1426":App.Palette.field)
+   c.fillStyle=background
+   c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill()
+   c.strokeStyle=atlasColours?"#3a5378":App.Palette.border
+   c.lineWidth=1;c.font="12px sans-serif";c.textAlign="center";c.fillStyle=App.Palette.muted
+   c.setLineDash([3,5])
+   for(let az=0;az<360;az+=30){
+    const p=root.xy(az,0)
+    c.beginPath();c.moveTo(x,y);c.lineTo(p.x,p.y);c.stroke()
+   }
+   for(const alt of [30,60]){
+    c.beginPath();c.arc(x,y,r*(90-alt)/90,0,Math.PI*2);c.stroke()
+    c.fillText(alt+"°",x+10,y-r*(90-alt)/90+13)
+   }
+   c.setLineDash([])
+   c.strokeStyle=atlasColours?"#87dded":App.Palette.accent
+   c.lineWidth=1.8;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.stroke()
+   c.fillStyle=App.Palette.ink;c.font="bold 14px sans-serif"
+   for(const v of [["N",x,y-r-14],["S",x,y+r+23],["E",x-r-18,y+4],["W",x+r+18,y+4]])c.fillText(v[0],v[1],v[2]);
    if(!root.dataSet?.stars||!root.dataSet?.horizon)return;
    c.beginPath();for(let a=0;a<=360;a++){let p=root.xy(a,root.dataSet.horizon[a%360]||0);if(a===0)c.moveTo(p.x,p.y);else c.lineTo(p.x,p.y)}c.closePath();c.strokeStyle=App.Palette.warning;c.setLineDash([3,4]);c.stroke();c.setLineDash([]);
    let stars=root.dataSet.stars,by={};for(let s of stars)by[s.id]=s;
-   c.strokeStyle=App.Palette.border;c.lineWidth=1.2;
-   for(let l of root.dataSet.lines){let a=by[l.a],b=by[l.b];if(!a||!b)continue;let p=root.xy(a.az,a.el),q=root.xy(b.az,b.el);c.beginPath();c.moveTo(p.x,p.y);c.lineTo(q.x,q.y);c.stroke()}
-   let hits=[];
-   for(let s of stars){let p=root.xy(s.az,s.el);c.beginPath();c.arc(p.x,p.y,Math.max(1,3.6-s.mag*.48),0,Math.PI*2);c.fillStyle=s.clear?App.Palette.ink:App.Palette.muted;c.globalAlpha=s.clear?1:.35;c.fill();c.globalAlpha=1;hits.push(Object.assign({},s,{x:p.x,y:p.y}));if(s.mag<1.4&&s.clear){c.fillStyle=App.Palette.muted;c.font="11px sans-serif";c.fillText(s.name,p.x,p.y-8)}}
+   const constellations=new Map()
+   c.strokeStyle=atlasColours?"#688fa6":App.Palette.violet;c.lineWidth=1.15
+   for(const line of root.dataSet.lines){
+    const a=by[line.a],b=by[line.b]
+    if(!a||!b)continue
+    const p=root.xy(a.az,a.el),q=root.xy(b.az,b.el)
+    c.globalAlpha=(a.clear&&b.clear) ? .8 : .32
+    c.beginPath();c.moveTo(p.x,p.y);c.lineTo(q.x,q.y);c.stroke()
+    if(line.name&&a.clear&&b.clear){
+     const group=constellations.get(line.name)||[]
+     group.push(p,q)
+     constellations.set(line.name,group)
+    }
+   }
+   const hits=[], labels=[]
+   for(const star of stars){
+    const p=root.xy(star.az,star.el)
+    c.beginPath();c.arc(p.x,p.y,Math.max(.65,2.55-star.mag*.4),0,Math.PI*2)
+    c.fillStyle=star.clear?App.Palette.ink:App.Palette.muted
+    c.globalAlpha=star.clear?Math.max(.42,1-star.mag*.11):.24
+    c.fill()
+    hits.push(Object.assign({},star,{x:p.x,y:p.y}))
+   }
+   c.globalAlpha=1
+   function label(name,x,y,colour){
+    if(!name||labels.some(p=>Math.abs(p.x-x)<57&&Math.abs(p.y-y)<15))return
+    labels.push({x,y})
+    c.lineWidth=3;c.strokeStyle=App.Palette.field;c.strokeText(name,x,y)
+    c.fillStyle=colour;c.fillText(name,x,y)
+   }
+   if(r>100){
+    c.font="bold 12px sans-serif"
+    for(const [name,points] of constellations){
+     if(points.length<4)continue
+     const sum=points.reduce((p,q)=>({x:p.x+q.x,y:p.y+q.y}),{x:0,y:0})
+     label(name,sum.x/points.length,sum.y/points.length-9,atlasColours?"#c5d9e6":App.Palette.violet)
+    }
+   }
+   c.font="11px sans-serif"
+   for(const star of stars.filter(s=>s.mag<1.25&&s.clear).sort((a,b)=>a.mag-b.mag)){
+    const p=root.xy(star.az,star.el)
+    label(star.name,p.x,p.y-9,App.Palette.ink)
+   }
    c.font="13px sans-serif";
    for(let s of root.dataSet.objects){let p=root.xy(s.az,s.el);c.beginPath();c.arc(p.x,p.y,5,0,Math.PI*2);c.fillStyle=s.name==="Sun"?App.Palette.warning:App.Palette.accent;c.fill();c.fillText(s.name,p.x,p.y-10);hits.push(Object.assign({},s,{x:p.x,y:p.y}))}
    for(let s of root.satellites){
@@ -67,7 +142,11 @@ Rectangle {
     c.restore();
    }
    root.hits=hits;
-   if(root.selectedSatellite){let s=root.satellites.find(o=>o.id===root.selectedSatellite);root.selection=s?root.describe(s):"Selected satellite is below the horizon, filtered or unavailable"}
+   if(root.selectedObject) {
+    const point=root.xy(root.selectedObject.az, root.selectedObject.el)
+    c.strokeStyle=App.Palette.accent;c.lineWidth=2;c.beginPath()
+    c.arc(point.x,point.y,9,0,2*Math.PI);c.stroke()
+   }
 
   }
  }
@@ -87,9 +166,8 @@ Rectangle {
     }
     return;
    }
-   root.selectedSatellite=nearest?.satellite?nearest.id:0;
-   root.selection=nearest?root.describe(nearest):"Tap closer to a star or planet";
+   if (!nearest) return
+   root.chooseObject(nearest, !!nearest.satellite)
   }
  }
- Text {id:selectionText;visible:!root.framing&&!!root.selection;anchors.bottom:parent.bottom;anchors.horizontalCenter:parent.horizontalCenter;anchors.bottomMargin:8;width:parent.width-20;horizontalAlignment:Text.AlignHCenter;wrapMode:Text.Wrap;text:root.selection;textFormat:Text.PlainText;color:App.Palette.ink;font.pixelSize:13}
 }
