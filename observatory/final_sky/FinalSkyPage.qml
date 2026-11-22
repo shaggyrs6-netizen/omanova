@@ -10,6 +10,9 @@ import "CameraProjection.js" as CameraProjection
 Item {
  id: root
  required property var skyModel
+ property var nightEditor: null
+ property bool chartSavePending: false
+ property string chartSaveError: ""
  property bool controlsOpen: false
  property bool queuedRequest: false
  property string section: "chart"
@@ -52,6 +55,20 @@ Item {
  function chartClock(minutes) {
   if (!chartAnchor) return "—"
   return dataSet?.chartTimes?.[(minutes+180)/15] || "—"
+ }
+ Connections {
+  target:root.nightEditor
+  function onResultChanged() {
+   if (!root.chartSavePending) return
+   root.chartSavePending=false
+   myNight.reload()
+  }
+  function onProblemChanged() {
+   if (root.chartSavePending && root.nightEditor.problem) {
+    root.chartSaveError=root.nightEditor.problem
+    root.chartSavePending=false
+   }
+  }
  }
  FileView {
   id:myNight
@@ -248,6 +265,10 @@ Item {
        ColumnLayout {
         id:details;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:16;spacing:7
         readonly property var item:skyChart.selectedObject
+        readonly property bool referenceOnly: !!skyChart.selectedSatellite || item?.name === "Sun"
+        readonly property string pickKey: !item ? "" : skyChart.selectedSatellite ? String(item.id) : item.myNightKey || item.name
+        readonly property bool saved: root.myNightPicks.some(p=>p.id===(referenceOnly?"r:":"t:")+pickKey)
+        onPickKeyChanged:root.chartSaveError=""
         Copy {text:qsTr("Selected object");color:App.Palette.muted}
         RowLayout {
          Layout.fillWidth:true
@@ -277,6 +298,17 @@ Item {
          Copy {text:details.item?Math.round(details.item.az)%360+"° "+["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(details.item.az/22.5)%16]:"";font.bold:true;font.pixelSize:20}
          Copy {text:details.item?Math.round(details.item.el)+"° up":"";font.bold:true;font.pixelSize:20}
         }
+        App.ActionButton {
+         visible:!!root.nightEditor && !!details.item
+         text:details.saved?qsTr("In My Night"):root.chartSavePending?qsTr("Saving…"):qsTr("Add to My Night")
+         enabled:!!details.pickKey && !details.saved && !root.nightEditor?.busy && !root.chartSavePending
+         onClicked:{
+          if (!enabled) return
+          root.chartSaveError=""
+          root.chartSavePending=root.nightEditor.add(details.referenceOnly?"reference":"target",details.pickKey)
+         }
+        }
+        Copy {visible:!!root.chartSaveError;text:root.chartSaveError;color:App.Palette.warning}
         Copy {visible:details.item?.clear===false;text:qsTr("Blocked by saved horizon");color:App.Palette.warning}
         Copy {visible:!!skyChart.selectedSatellite && !!details.item;text:skyChart.selectedSatellite && details.item?root.skyModel.formatDistance(details.item.rangeKm,0)+" · "+qsTr("elements %1 h old").arg(details.item.ageHours.toFixed(1))+" · "+details.item.status:"";color:App.Palette.muted}
        }

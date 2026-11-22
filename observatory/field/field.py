@@ -17,6 +17,13 @@ LIVE_STATE=DATA/'omanova-field'
 CAT=json.loads((Path(__file__).parent/'catalog.json').read_text())
 SITES=json.loads((Path(__file__).parent/'sites.json').read_text())
 
+LANDMARK_IDS = {item['id'] for item in CAT['landmarks']}
+
+def chart_star_key(star):
+    name = star['name'].lower()
+    return name if name in LANDMARK_IDS else f"hip-{star['id']}"
+
+
 def distance(lat1,lon1,lat2,lon2):
     a,b=math.radians(lat1),math.radians(lat2);c=math.sin((b-a)/2)**2+math.cos(a)*math.cos(b)*math.sin(math.radians(lon2-lon1)/2)**2
     return 6371.0088*2*math.asin(min(1,math.sqrt(max(0,c))))

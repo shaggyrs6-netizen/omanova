@@ -13,10 +13,11 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from astronomy import DIRECTIONS, iso, utc
+from astronomy import DIRECTIONS, STATIONS, iso, utc
 from observing_context import trip_state
 from observatory.equipment.equipment import clean_row
-from observatory.field.field import CAT, point
+from observatory.field.field import CAT, chart_star_key, point
+from observing_preferences import preferences
 from observatory.night_context import cached_clouds
 from observatory.offline import offline
 from observatory.trips.horizon import place_key
@@ -32,6 +33,11 @@ TARGETS = {t['id']: {**t, 'kind': kind} for kind, entries in
            (('landmark', CAT['landmarks']), ('deep-sky', CAT['targets'])) for t in entries}
 TARGETS.update({name: {'name': name, 'body': body, 'kind': 'planet',
                       'source': 'https://ssd.jpl.nasa.gov/'} for name, body in PLANETS.items()})
+PICKER_KEYS = tuple(TARGETS)
+TARGETS['Moon'] = {'name': 'Moon', 'body': 'moon', 'kind': 'moon'}
+for star in json.loads((ROOT/'observatory/final_sky/stars.json').read_text())['stars']:
+    TARGETS.setdefault(chart_star_key(star), {**star, 'kind': 'landmark', 'source': 'HYG v4.0'})
+
 LIMIT = 24
 
 
@@ -85,7 +91,8 @@ def target_chart(key, place, terrain, start, end, now, eph, ts, site):
     spec = TARGETS[key]
     times = sample_times(start, end, timedelta(minutes=5))
     obs, sun = profile(eph, ts, site, times)
-    body = eph[spec['body']] if 'body' in spec else Star(ra_hours=spec['ra'], dec_degrees=spec['dec'])
+    body = eph[spec['body']] if 'body' in spec else Star(ra_hours=spec['ra'], dec_degrees=spec['dec'],
+        ra_mas_per_year=spec.get('pmra',0), dec_mas_per_year=spec.get('pmdec',0))
     el, az, _ = obs.observe(body).apparent().altaz()
     horizon = combined_altitude(az.degrees, place.get('horizon', []), terrain)
     points = [timing_sample(*values) for values in zip(times, el.degrees, az.degrees, horizon, sun)]
@@ -206,7 +213,7 @@ def build(plan, context, data, fixture, now, selected):
                  extent=TARGETS.get(p['id'][2:], {}).get('extent') if p['kind']=='target' else None)
             for p in plan['picks']]
     frame = {'plan': plan, 'rows': rows, 'chart': None, 'error': '', 'zone': '',
-             'catalogue': [dict(id=k,name=t['name']) for k,t in TARGETS.items()]}
+             'catalogue': [dict(id=k,name=TARGETS[k]['name']) for k in PICKER_KEYS]}
     try:
         place, terrain = get_point(source, fixture, context[3])
     except (ValueError, OSError, TypeError, KeyError):
@@ -226,6 +233,10 @@ def build(plan, context, data, fixture, now, selected):
     eligible_rows = []
     with closing(load_file(str(ROOT/'assets/de440s.bsp'))) as eph:
         for pick, summary in zip(plan['picks'],rows):
+            if pick['kind']=='reference':
+                summary['note'] = ('Solar observing requires purpose-made solar filters.' if pick['id']=='r:Sun'
+                                   else 'Saved satellite. Check current pass predictions before observing.')
+                continue
             if pick['kind']=='target':
                 samples,row,note,eligible=target_chart(pick['id'][2:],place,terrain,start,end,now,eph,ts,site)
                 if not row:
@@ -287,6 +298,12 @@ def run(state,data,offline_state,fixture,request,now):
             key=request.get('key')
             if kind=='target' and key in TARGETS:
                 item={'id':'t:'+key,'kind':'target','name':TARGETS[key]['name']}
+            elif kind=='reference':
+                refs = {'Sun': 'Sun', **{str(r['number']): r['name'] for r in preferences(context[0])['watchlist']},
+                        **{str(number): name for number,name in STATIONS.items()}}
+                if key not in refs:
+                    raise ValueError('This chart object is no longer available.')
+                item={'id':'r:'+key,'kind':'reference','name':refs[key]}
             elif kind=='event':
                 match=next((r for r in context[2].get('events',[]) if r.get('id')==key),None)
                 event=clean_row(match)

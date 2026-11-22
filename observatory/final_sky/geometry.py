@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from astronomy import iso, utc, station_rows, STATIONS, pass_ranges
 from worker import read, DEMO_NOW
-from observatory.field.field import CAT as FINDER_CATALOGUE, point
+from observatory.field.field import CAT as FINDER_CATALOGUE, chart_star_key, point
 from observatory.trips.terrain import combined_altitude
 
 CAT_PATH = Path(__file__).with_name('stars.json')
@@ -71,7 +71,7 @@ def sky_chart(eph,ts,p,terrain,when):
                ra_mas_per_year=np.array([s['pmra'] for s in stars]),dec_mas_per_year=np.array([s['pmdec'] for s in stars]))
     alt,az,_=observer.observe(model).apparent().altaz()
     mask=combined_altitude(az.degrees,p.get('horizon',[]),terrain)
-    rows=[{**s,'el':float(el),'az':float(a),'clear':bool(el>h)} for s,el,a,h in zip(stars,alt.degrees,az.degrees,mask) if el>=0]
+    rows=[{**s,'myNightKey':chart_star_key(s),'el':float(el),'az':float(a),'clear':bool(el>h)} for s,el,a,h in zip(stars,alt.degrees,az.degrees,mask) if el>=0]
     objects=[]
     for key,label in [('sun','Sun'),('moon','Moon'),('mercury','Mercury'),('venus','Venus'),('mars barycenter','Mars'),('jupiter barycenter','Jupiter'),('saturn barycenter','Saturn')]:
         el,a,_=observer.observe(eph[key]).apparent().altaz()
