@@ -15,6 +15,7 @@ Item {
     property string operation:""
     property string requestedMode:"sample"
     property bool onlyFavourites:false
+    property bool showPreferences:false
     property bool historyOnly:false
     readonly property string base:Quickshell.env("OMANOVA_FOLLOW_ROOT")
     readonly property string runtime:Quickshell.env("OMANOVA_FOLLOW_RUNTIME")
@@ -53,23 +54,26 @@ Item {
                 palette.windowText:App.Palette.ink;palette.text:App.Palette.ink;palette.buttonText:App.Palette.ink;palette.highlight:App.Palette.accent
                 enabled:!!root.dataSet&&!helper.running
             }
-            ColumnLayout {
-                anchors.fill:parent;spacing:0
+            ScrollView {
+                id:scroll;anchors.fill:parent;clip:true;contentWidth:availableWidth;ScrollBar.horizontal.policy:ScrollBar.AlwaysOff
+                ColumnLayout {
+                width:scroll.availableWidth;spacing:10
                 ColumnLayout {
                     Layout.fillWidth:true;Layout.margins:22;spacing:8
-                    App.PageHeader {eyebrow:"SATELLITES & LAUNCHES";title:qsTr("Follow a launch")}
+                    App.PageHeader {eyebrow:"SATELLITES & LAUNCHES";title:qsTr("Launch Following")}
                     Copy {text:qsTr("Favourite missions and follow schedule changes or webcasts. These alerts do not mean a launch is visible from your location.");color:App.Palette.muted}
-                    RowLayout {
-                        Layout.fillWidth:true
+                    Flow {
+                        Layout.fillWidth:true;spacing:8
                         ComboBox {
-                            id:modeChoice;visible:!root.deployed;Layout.preferredWidth:300;Layout.minimumWidth:120;model:["Sample missions · offline","Live schedule · opt-in"]
+                            id:modeChoice;visible:!root.deployed;width:Math.min(260,parent.width);model:["Sample missions · offline","Live schedule · opt-in"]
                             enabled:!helper.running;palette.button:App.Palette.button;palette.buttonText:App.Palette.ink
                             onActivated:{root.mode=currentIndex===0?"sample":"live";root.dataSet=null;root.result="";root.historyOnly=false}
                         }
                         Toggle {text:qsTr("Favourites only");checked:root.onlyFavourites;onClicked:root.onlyFavourites=checked}
-                        Copy {text:(root.dataSet?.prefs?.favourites?.length||0)+" / 5 followed";color:App.Palette.muted}
+                        Copy {width:100;text:(root.dataSet?.prefs?.favourites?.length||0)+" / 5 followed";color:App.Palette.muted}
                     }
-                    Flow {
+                    Action {text:root.showPreferences?qsTr("Hide download and alert settings"):qsTr("Download and alert settings");onClicked:root.showPreferences=!root.showPreferences}
+                    Flow {visible:root.showPreferences;
                         Layout.fillWidth:true;spacing:12
                         Toggle {text:qsTr("Allow live launch downloads");enabled:root.mode==="live"&&!!root.dataSet&&!helper.running;checked:root.dataSet?.prefs?.downloads===true;onClicked:root.preference("downloads",checked)}
                         Toggle {text:qsTr("Opt into desktop alerts");checked:root.dataSet?.prefs?.alerts===true;onClicked:root.preference("alerts",checked)}
@@ -94,17 +98,16 @@ Item {
                     Copy {visible:!!root.dataSet?.error;text:root.dataSet?.error||"";color:App.Palette.warning}
                 }
                 Rectangle {Layout.fillWidth:true;implicitHeight:1;color:App.Palette.line}
-                ScrollView {
-                    id:scroll;Layout.fillWidth:true;Layout.fillHeight:true;clip:true;contentWidth:availableWidth
-                    ColumnLayout {
-                        width:scroll.availableWidth;spacing:14
+                ColumnLayout {
+                    Layout.fillWidth:true;spacing:14
                         Copy {Layout.margins:20;visible:root.rows.length===0;text:root.mode==="live"&&!root.dataSet?.rows?.length?qsTr("Enable downloads and check the schedule. No observing location is requested."):qsTr("No matching launches. Favourites removed from the feed remain inspectable.")}
-                        Repeater {
-                            model:root.historyOnly?[]:root.rows
-                            Rectangle {
+                        App.ToolBrowser {
+                            heading:qsTr("Launch schedule");entries:root.historyOnly?[]:root.rows
+                            subtitle:row=>row.timeLabel
+                            detail:App.ViewPanel {appearance:"mission";
                                 required property var modelData
-                                Layout.fillWidth:true;Layout.leftMargin:20;Layout.rightMargin:20
-                                implicitHeight:card.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:modelData.favourite?App.Palette.accent:App.Palette.line
+                                Layout.fillWidth:true;Layout.minimumWidth:0
+                                implicitHeight:card.implicitHeight+28;border.color:modelData.favourite?App.Palette.accent:App.Palette.line
                                 ColumnLayout {
                                     id:card;anchors.fill:parent;anchors.margins:14;spacing:8
                                     RowLayout {
@@ -116,7 +119,8 @@ Item {
                                     Copy {text:modelData.timeLabel;font.bold:true}
                                     Copy {text:modelData.status+" · "+(!modelData.available?"Missing from latest feed — status unconfirmed":modelData.fresh?"Recent source snapshot":"Cached/stale source — recheck");color:App.Palette.warning}
                                     Copy {text:qsTr("Local visibility unconfirmed. This is a schedule/webcast favourite, separate from observing alerts.");color:App.Palette.muted}
-                                    RowLayout {
+                                    Flow {
+                                        Layout.fillWidth:true;spacing:6
                                         Action {text:root.mode==="sample"?qsTr("Sample webcast link"):qsTr("Open webcast");enabled:!!modelData.stream;onClicked:Qt.openUrlExternally(modelData.stream)}
                                         Action {text:qsTr("Provider record");visible:root.mode==="live";onClicked:Qt.openUrlExternally(modelData.source)}
                                         Copy {visible:!modelData.stream;text:qsTr("No webcast supplied by the source.");color:App.Palette.muted}

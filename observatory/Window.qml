@@ -91,7 +91,8 @@ ShellRoot {
             property string selectedEventId: ""
             property var logDraftRequest: null
             property int logDraftSequence: 0
-            readonly property var event: sky.events.find(row => row.id === selectedEventId) || sky.featured || null
+            readonly property var event: sky.events.find(row => row.id === selectedEventId) || sky.featured ||
+                (pageId === "conditions" ? sky.events.find(row => !!sky.bestWindow(row)) : null)
             readonly property bool staleOrbit: event?.confidence === "Stale orbit"
             readonly property var viewing: sky.bestWindow(event)
             readonly property var forecast: viewing ? viewing.conditions : null
@@ -256,17 +257,11 @@ ShellRoot {
                 }
                 Copy { text: layer.amount === null ? "—" : layer.amount + "%"; Layout.preferredWidth: 44; horizontalAlignment: Text.AlignRight }
             }
-            component Scope: Rectangle {
+            component Scope: App.ViewPanel {
+                appearance:"mission"
                 id: scope
                 property string label
                 property var marker: null
-                radius: 12
-                color: ui.surface
-                border.color: ui.line
-                gradient: Gradient {
-                    GradientStop { position: 0; color: App.Palette.surface }
-                    GradientStop { position: 1; color: App.Palette.background }
-                }
                 implicitHeight: ui.width < 620 ? 320 : 395
                 ColumnLayout {
                     anchors.fill: parent
@@ -290,7 +285,8 @@ ShellRoot {
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                         color: ui.muted
-                        text: "Solid · potential viewing window     Dashed · geometric path"
+                        text: "Solid · potential viewing window     Dashed · geometric path" +
+                            (!App.Palette.themed && App.Palette.observingMode==="normal" ? "     Illustrative stars" : "")
                         font.pixelSize: 12
                     }
                 }
@@ -599,8 +595,8 @@ ShellRoot {
                         Layout.fillWidth: true
                         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
                         rowSpacing: 18; columnSpacing: 25
-                        Scope { Layout.fillWidth: true; Layout.preferredWidth: 470; label: "HORIZON → ZENITH"; marker: ui.predicted }
-                        ColumnLayout {
+                        Scope { Layout.fillWidth: true; Layout.preferredWidth: 470; label: ui.event?.name || "Local sky"; marker: ui.predicted }
+                        App.InstrumentCard {
                             Layout.fillWidth: true
                             Layout.preferredWidth: 290
                             spacing: 9
@@ -628,7 +624,7 @@ ShellRoot {
                             }
                         }
                     }
-                    ColumnLayout {
+                    App.InstrumentCard {
                         Layout.fillWidth: true
                         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter; Layout.bottomMargin: ui.gutter
                         Copy { text: "Scrub predicted pass" }
@@ -653,7 +649,79 @@ ShellRoot {
                 ColumnLayout {
                     spacing: 18
                     App.PageHeader {Layout.leftMargin:ui.gutter;Layout.rightMargin:ui.gutter;Layout.topMargin:ui.gutter;eyebrow:"TONIGHT";title:"Conditions"}
-                    ColumnLayout {
+                    App.ViewPanel {
+                        appearance:"mission"
+                        Layout.fillWidth: true
+                        Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
+                        implicitHeight: verdictText.implicitHeight + 28
+                        Rectangle { width: 2; height: parent.height; color: ui.verdictColor }
+                        ColumnLayout {
+                            id: verdictText
+                            width: parent.width - 30
+                            x: 15; y: 14
+                            spacing: 6
+                            Tag { Layout.fillWidth: true; text: (ui.event?.name ? ui.event.name+"  ·  " : "") + ui.verdict + (sky.fixture ? " · SAMPLE FORECAST" : " · VIEWING CONDITIONS"); color: ui.verdictColor }
+                            Copy { Layout.fillWidth: true; text: ui.snapshotStale ? "Data stale · Refresh or check the worker."
+                                : ui.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
+                                : ui.forecast ? ui.forecast.reason : "No forecast for a viewing window";
+                                font.pixelSize: 22; font.weight: Font.DemiBold }
+                            Copy { Layout.fillWidth: true; color: ui.muted; text: ui.viewing
+                                ? ui.clock(ui.viewing.start.time) + "–" + ui.clock(ui.viewing.end.time) + " local"
+                                    + (ui.forecast?.fetched ? (sky.fixture ? " · Sample forecast " : " · Forecast fetched ") + ui.clock(ui.forecast.fetched) : "")
+                                : "Forecast unavailable" }
+                        }
+                    }
+                    GridLayout {
+                        columns: width < 580 ? 1 : 2
+                        Layout.fillWidth: true
+                        Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
+                        rowSpacing: 12; columnSpacing: 12
+                        App.InstrumentCard {
+                            Layout.fillWidth: true; Layout.preferredWidth: 1
+                            spacing: 9
+                            Tag { Layout.fillWidth: true; text: "CLOUD PROFILE · HIGHEST FORECAST VALUES" }
+                            Copy { Layout.fillWidth: true; text: ui.metric(ui.aggregate("cloud_cover", false), "% total");
+                                font.pixelSize: 28; font.weight: Font.DemiBold }
+                            CloudLayer { Layout.fillWidth: true; caption: "High"; amount: ui.aggregate("cloud_cover_high", false) }
+                            CloudLayer { Layout.fillWidth: true; caption: "Mid"; amount: ui.aggregate("cloud_cover_mid", false) }
+                            CloudLayer { Layout.fillWidth: true; caption: "Low"; amount: ui.aggregate("cloud_cover_low", false) }
+                        }
+                        App.InstrumentCard {
+                            Layout.fillWidth: true; Layout.preferredWidth: 1
+                            spacing: 10
+                            Tag {text:"VIEWING WINDOW"}
+                            Fact { Layout.fillWidth: true; caption: "Sky darkness"; value: !ui.viewing ? "Unavailable" : ui.viewing.peak.sky_dark ? "Dark enough" : "Too bright" }
+                            Rule {}
+                            Fact { Layout.fillWidth: true; caption: "Visibility · lowest"; value: {
+                                const metres = ui.aggregate("visibility", true)
+                                return metres === null ? "Unavailable" : sky.formatDistance(metres / 1000, 1)
+                            } }
+                            Rule {}
+                            Fact { Layout.fillWidth: true; caption: "Precipitation · highest"; value: ui.metric(ui.aggregate("precipitation", false), " mm") }
+                            Rule {}
+                            Fact { Layout.fillWidth: true; caption: "Wind · highest"; value: ui.metric(ui.aggregate("wind_speed_10m", false), " km/h") }
+                        }
+                    }
+                    App.InstrumentCard {
+                        Layout.leftMargin:ui.gutter;Layout.rightMargin:ui.gutter
+                        visible:ui.hours.length>0
+                        Tag {text:qsTr("FORECAST HOURS · LOCAL TIME")}
+                        Flow {
+                            Layout.fillWidth:true;spacing:12
+                            Repeater {
+                                model:ui.hours
+                                Copy {required property var modelData
+                                    text:ui.clock(modelData.time)+"  ·  "+(Number.isFinite(modelData.cloud_cover)?modelData.cloud_cover+"% cloud":qsTr("Cloud unknown"))
+                                }
+                            }
+                        }
+                    }
+                    App.ActionButton {
+                        Layout.leftMargin:ui.gutter
+                        visible:ui.extendedPages&&!sky.fixture&&!ui.hours.length
+                        text:qsTr("Weather download settings");onClicked:ui.navigate("settings")
+                    }
+                    App.InstrumentCard {
                         visible: !sky.fixture
                         Layout.fillWidth: true
                         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
@@ -674,59 +742,6 @@ ShellRoot {
                             visible: !!sky.message
                             text: sky.message
                             color: ui.muted
-                        }
-                    }
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
-                        implicitHeight: verdictText.implicitHeight + 28
-                        radius: 8
-                        color: ui.surface
-                        Rectangle { width: 2; height: parent.height; color: ui.verdictColor }
-                        ColumnLayout {
-                            id: verdictText
-                            width: parent.width - 30
-                            x: 15; y: 14
-                            spacing: 6
-                            Tag { Layout.fillWidth: true; text: "●  " + ui.verdict + (sky.fixture ? " · SAMPLE FORECAST" : " · VIEWING CONDITIONS"); color: ui.verdictColor }
-                            Copy { Layout.fillWidth: true; text: ui.snapshotStale ? "Data stale · Refresh or check the worker."
-                                : ui.staleOrbit ? "Orbital elements are too old for a viewing recommendation."
-                                : ui.forecast ? ui.forecast.reason : "No forecast for a viewing window";
-                                font.pixelSize: 22; font.weight: Font.DemiBold }
-                            Copy { Layout.fillWidth: true; color: ui.muted; text: ui.viewing
-                                ? ui.clock(ui.viewing.start.time) + "–" + ui.clock(ui.viewing.end.time) + " local"
-                                    + (ui.forecast?.fetched ? (sky.fixture ? " · Sample forecast " : " · Forecast fetched ") + ui.clock(ui.forecast.fetched) : "")
-                                : "Forecast unavailable" }
-                        }
-                    }
-                    GridLayout {
-                        columns: width < 580 ? 1 : 2
-                        Layout.fillWidth: true
-                        Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
-                        rowSpacing: 22; columnSpacing: 26
-                        ColumnLayout {
-                            Layout.fillWidth: true; Layout.preferredWidth: 1
-                            spacing: 9
-                            Tag { Layout.fillWidth: true; text: "CLOUD PROFILE · HIGHEST FORECAST VALUES" }
-                            Copy { Layout.fillWidth: true; text: ui.metric(ui.aggregate("cloud_cover", false), "% total");
-                                font.pixelSize: 28; font.weight: Font.DemiBold }
-                            CloudLayer { Layout.fillWidth: true; caption: "High"; amount: ui.aggregate("cloud_cover_high", false) }
-                            CloudLayer { Layout.fillWidth: true; caption: "Mid"; amount: ui.aggregate("cloud_cover_mid", false) }
-                            CloudLayer { Layout.fillWidth: true; caption: "Low"; amount: ui.aggregate("cloud_cover_low", false) }
-                        }
-                        ColumnLayout {
-                            Layout.fillWidth: true; Layout.preferredWidth: 1
-                            spacing: 10
-                            Fact { Layout.fillWidth: true; caption: "Sky darkness"; value: !ui.viewing ? "Unavailable" : ui.viewing.peak.sky_dark ? "Dark enough" : "Too bright" }
-                            Rule {}
-                            Fact { Layout.fillWidth: true; caption: "Visibility · lowest"; value: {
-                                const metres = ui.aggregate("visibility", true)
-                                return metres === null ? "Unavailable" : sky.formatDistance(metres / 1000, 1)
-                            } }
-                            Rule {}
-                            Fact { Layout.fillWidth: true; caption: "Precipitation · highest"; value: ui.metric(ui.aggregate("precipitation", false), " mm") }
-                            Rule {}
-                            Fact { Layout.fillWidth: true; caption: "Wind · highest"; value: ui.metric(ui.aggregate("wind_speed_10m", false), " km/h") }
                         }
                     }
                     Copy { Layout.fillWidth: true; Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter; Layout.bottomMargin: ui.gutter;

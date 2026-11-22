@@ -89,18 +89,18 @@ ColumnLayout {
         }
     }
 
-    Repeater {
-        model: page.visibleSites
-        delegate: Rectangle {
+    App.ToolBrowser {
+        heading: qsTr("Regional sites")
+        entries: page.visibleSites
+        subtitle: row => row.area
+        detail: App.ViewPanel {
+            appearance:"mission"
             id: card
             required property var modelData
             Layout.fillWidth: true
-            Layout.leftMargin: 22
-            Layout.rightMargin: 22
+            Layout.leftMargin:0;Layout.rightMargin:0
             implicitHeight: details.implicitHeight + 34
-            color: App.Palette.surface
-            border.color: App.Palette.line
-            radius: 12
+
 
             ColumnLayout {
                 id: details

@@ -117,19 +117,18 @@ ColumnLayout {
         }
     }
 
-    Repeater {
-        model: page.catalog?.batches ?? []
-        delegate: Rectangle {
+    App.ToolBrowser {
+        heading: qsTr("Starlink launches")
+        entries: page.catalog?.batches ?? []
+        detail: App.ViewPanel {
+            appearance:"mission"
             id: card
             required property var modelData
             readonly property var windows: page.activeWindows(modelData)
             Layout.fillWidth: true
-            Layout.leftMargin: 22
-            Layout.rightMargin: 22
+            Layout.leftMargin:0;Layout.rightMargin:0
             implicitHeight: details.implicitHeight + 34
-            color: App.Palette.surface
-            border.color: App.Palette.line
-            radius: 12
+
 
             ColumnLayout {
                 id: details

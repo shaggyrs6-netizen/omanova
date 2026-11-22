@@ -53,13 +53,12 @@ ColumnLayout {
             border.color: action.visualFocus ? App.Palette.accent : App.Palette.border
         }
     }
-    component Card: Rectangle {
+    component Card: App.ViewPanel {
+        appearance:"mission"
         Layout.fillWidth: true
         Layout.leftMargin: 22
         Layout.rightMargin: 22
-        color: App.Palette.surface
-        border.color: App.Palette.line
-        radius: 12
+
     }
 
     Timer {
@@ -179,9 +178,12 @@ ColumnLayout {
             color: App.Palette.muted
         }
     }
-    Repeater {
-        model: page.catalog?.nights ?? []
-        delegate: Card {
+    App.ToolBrowser {
+        heading: qsTr("Dark-sky windows")
+        entries: page.catalog?.nights ?? []
+        label: row => page.span(row.start,row.end)
+        detail: Card {
+            Layout.leftMargin:0;Layout.rightMargin:0
             id: night
             required property var modelData
             implicitHeight: nightDetails.implicitHeight + 32

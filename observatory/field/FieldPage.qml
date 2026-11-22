@@ -48,7 +48,7 @@ Item {
  }
  ScrollView {id:scroll;anchors.fill:parent;clip:true;contentWidth:availableWidth
   ColumnLayout {width:scroll.availableWidth;spacing:14
-   ColumnLayout {Layout.fillWidth:true;Layout.margins:24;spacing:10
+   App.InstrumentCard {Layout.fillWidth:true;Layout.margins:18;spacing:10
     App.PageHeader {eyebrow:root.section==="sites"?"PLAN":"SKY";title:root.section==="sites"?"Destination Sites":"Sky Finder"}
     Copy {text:root.section==="sites"?"A curated starting list near your active or Trip Planner location. Distance is straight-line, not driving distance or permission to access the site.":"Find clusters, nebulae, galaxies and constellation landmarks. The finder uses your saved horizon to estimate viewing windows. Brightness and weather stay unconfirmed.";color:App.Palette.muted}
     Flow {Layout.fillWidth:true;spacing:10
@@ -82,8 +82,11 @@ Item {
     Copy {text:root.result;color:App.Palette.muted}
     Copy {visible:root.detailsOpen;text:root.dataSet?.limits||"";color:App.Palette.muted}
    }
+   GridLayout {
+    Layout.fillWidth:true;Layout.leftMargin:18;Layout.rightMargin:18
+    columns:width>=920 && !root.framingId?2:1;rowSpacing:12;columnSpacing:12
    Repeater {id:cards;model:root.shownRows
-    Rectangle {id:card;required property var modelData;readonly property var framing:overlay.item;Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24;implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:App.Palette.line
+    App.ViewPanel {appearance:"mission";id:card;required property var modelData;readonly property var framing:overlay.item;Layout.fillWidth:true;Layout.preferredWidth:1;Layout.minimumWidth:0;Layout.alignment:Qt.AlignTop;implicitHeight:body.implicitHeight+28;border.color:App.Palette.line
      ColumnLayout {id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
       Copy {text:card.modelData.name;font.pixelSize:22;font.bold:true}
       Copy {visible:root.section==="sites";text:(card.modelData.area||"")+" · "+(root.useMiles?((card.modelData.distanceKm||0)/1.609344).toFixed(0)+" mi":(card.modelData.distanceKm||0).toFixed(0)+" km")+" straight-line";color:App.Palette.accent}
@@ -125,6 +128,7 @@ Item {
       }
      }
     }
+   }
    }
    Copy {Layout.margins:24;visible:root.section==="sites"&&!!root.dataSet&&!(root.dataSet.rows||[]).some(r=>!root.nearby||r.distanceKm<=500);text:"No curated sites within this range. Show all examples or use official local park guidance; absence is not a claim that no dark sites exist.";color:App.Palette.warning}
   }

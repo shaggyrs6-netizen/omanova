@@ -39,13 +39,12 @@ ColumnLayout {
         font.pixelSize: 23
         font.bold: true
     }
-    component Card: Rectangle {
+    component Card: App.ViewPanel {
+        appearance:"mission"
         Layout.fillWidth: true
         Layout.leftMargin: 22
         Layout.rightMargin: 22
-        color: App.Palette.surface
-        border.color: App.Palette.line
-        radius: 12
+
     }
 
     component ViewTab: TabButton {
@@ -140,9 +139,11 @@ ColumnLayout {
                     : qsTr("Close approaches within 5° for two planets or 8° for a Moon–planet pair. The closest approach is measured from Earth’s centre. Local windows use your observing point and the same darkness and height limits."))
             }
 
-            Repeater {
-                model: page.section === 0 ? page.dataSet?.highlights ?? [] : []
-                delegate: Card {
+            App.ToolBrowser {
+                heading: qsTr("Planets")
+                entries: page.section === 0 ? page.dataSet?.highlights ?? [] : []
+                detail: Card {
+                    Layout.leftMargin:0;Layout.rightMargin:0
                     id: planet
                     required property var modelData
                     implicitHeight: planetDetails.implicitHeight + 32
@@ -179,9 +180,12 @@ ColumnLayout {
                 }
             }
 
-            Repeater {
-                model: page.section === 1 ? page.dataSet?.pairings ?? [] : []
-                delegate: Card {
+            App.ToolBrowser {
+                heading: qsTr("Conjunctions")
+                entries: page.section === 1 ? page.dataSet?.pairings ?? [] : []
+                subtitle: row => page.stamp(row.peak)
+                detail: Card {
+                    Layout.leftMargin:0;Layout.rightMargin:0
                     id: pairing
                     required property var modelData
                     readonly property var viewing: modelData.window

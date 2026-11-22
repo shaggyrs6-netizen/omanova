@@ -8,6 +8,7 @@ import Quickshell.Io
 ColumnLayout {
     id: page
     required property var sky
+    property bool embeddedInTimeline:false
     property int mode: 0
     property var launchFeed: null
     signal inspect(string eventId)
@@ -136,7 +137,7 @@ ColumnLayout {
         Layout.margins: page.gutter
         Layout.bottomMargin: 0
         spacing: 8
-        App.PageHeader { eyebrow:"SATELLITES & LAUNCHES"; title:"Events" }
+        App.PageHeader { visible:!page.embeddedInTimeline; eyebrow:"SATELLITES & LAUNCHES"; title:"Events" }
         Copy {
             text: "Local station passes and worldwide launches"
             color: page.muted
@@ -183,9 +184,13 @@ ColumnLayout {
         color: page.muted
     }
 
-    Repeater {
-        model: page.rows
-        delegate: Rectangle {
+    App.ToolBrowser {
+        heading: qsTr("Schedule")
+        entries: page.rows
+        label: row => row.event?.name || row.name
+        subtitle: row => row.event ? page.when(row.window?.start.time || row.event.start,false) : page.launchTime(row)
+        detail: App.ViewPanel {
+            appearance:"mission"
             id: card
             required property var modelData
             readonly property bool launch: page.mode === 2
@@ -193,12 +198,9 @@ ColumnLayout {
             readonly property var event: launch ? null : row.event
             readonly property var view: launch ? null : row.window
             Layout.fillWidth: true
-            Layout.leftMargin: page.gutter
-            Layout.rightMargin: page.gutter
+            Layout.leftMargin:0;Layout.rightMargin:0
             implicitHeight: details.implicitHeight + 28
-            radius: 9
-            color: App.Palette.surface
-            border.color: page.line
+
             ColumnLayout {
                 id: details
                 x: 14; y: 14

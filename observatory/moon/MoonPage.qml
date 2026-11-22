@@ -126,13 +126,12 @@ ColumnLayout {
         columns: width < 600 ? 1 : 2
         columnSpacing: 22
         rowSpacing: 18
-        Rectangle {
+        App.ViewPanel {
+            appearance:"mission"
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             implicitHeight: 295
-            radius: 10
-            color: App.Palette.surface
-            border.color: App.Palette.line
+
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 13
@@ -163,7 +162,7 @@ ColumnLayout {
                 }
             }
         }
-        ColumnLayout {
+        App.InstrumentCard {
             Layout.fillWidth: true
             Layout.preferredWidth: 1
             spacing: 7
@@ -207,7 +206,7 @@ ColumnLayout {
                     (ui.lunar?.horizon?.set ? " · " + ui.lunar.horizon.set.direction : "") }
         }
     }
-    ColumnLayout {
+    App.InstrumentCard {
         Layout.fillWidth: true
         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
         spacing: 8
@@ -220,14 +219,14 @@ ColumnLayout {
             font.pixelSize: 12
         }
     }
-    ColumnLayout {
+    App.InstrumentCard {
         Layout.fillWidth: true
         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
         spacing: 8
         Tag { text: "NEXT DARKER-SKY WINDOWS"; color: ui.cyan }
         ViewingList { Layout.fillWidth: true; windows: ui.lunar?.nextWindows || [] }
     }
-    ColumnLayout {
+    App.InstrumentCard {
         Layout.fillWidth: true
         Layout.leftMargin: ui.gutter; Layout.rightMargin: ui.gutter
         spacing: 7

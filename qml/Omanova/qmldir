@@ -7,3 +7,5 @@ PassSlider 1.0 PassSlider.qml
 FieldOfView 1.0 FieldOfView.qml
 ViewPanel 1.0 ViewPanel.qml
 StateSwitch 1.0 StateSwitch.qml
+InstrumentCard 1.0 InstrumentCard.qml
+ToolBrowser 1.0 ToolBrowser.qml

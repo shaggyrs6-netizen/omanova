@@ -1,4 +1,5 @@
 import "../qml/Omanova" as App
+import "../qml/Omanova/StationGlyph.js" as StationGlyph
 import QtQuick
 
 Item {
@@ -17,6 +18,8 @@ Item {
         return Qt.point(width / 2 + distance * Math.sin(az),
                         height / 2 - distance * Math.cos(az))
     }
+    readonly property bool drawStars: App.Palette.observingMode === "normal" && !App.Palette.themed
+    onDrawStarsChanged: chart.requestPaint()
     onPathChanged: chart.requestPaint()
     onViewingChanged: chart.requestPaint()
     onRadiusChanged: chart.requestPaint()
@@ -28,11 +31,20 @@ Item {
         anchors.fill: parent
         onWidthChanged: requestPaint()
         onHeightChanged: requestPaint()
+        readonly property url stars:Qt.resolvedUrl("assets/mission-control-stars.jpg")
+        onAvailableChanged:if(available)loadImage(stars)
+        onImageLoaded:requestPaint()
         onPaint: {
             const ctx = getContext("2d")
             ctx.reset()
             const x = width / 2, y = height / 2, r = plot.radius
             if (r < 5) return
+            if (plot.drawStars && isImageLoaded(stars)) {
+                ctx.save()
+                ctx.beginPath();ctx.arc(x,y,r,0,2*Math.PI);ctx.clip()
+                ctx.drawImage(stars,x-r,y-r,2*r,2*r)
+                ctx.restore()
+            }
             ctx.strokeStyle = App.Palette.line
             ctx.lineWidth = 1
             for (let ring = 1; ring <= 3; ring++) {
@@ -99,16 +111,22 @@ Item {
         }
     }
 
-    Rectangle {
+    Canvas {
+        id: marker
         readonly property point projected: plot.position ? plot.project(plot.position) : Qt.point(0, 0)
         visible: plot.position !== null
-        width: 15
+        width: 28
         height: width
-        radius: width / 2
         x: projected.x - width / 2
         y: projected.y - height / 2
-        color: "transparent"
-        border.width: 2
-        border.color: plot.violet
+        property color ink:plot.accent
+        property color outline:App.Palette.background
+        onInkChanged:requestPaint()
+        onOutlineChanged:requestPaint()
+        onPaint:{
+            const ctx=getContext("2d")
+            ctx.reset()
+            StationGlyph.draw(ctx,width/2,height/2,width-2,ink,outline)
+        }
     }
 }

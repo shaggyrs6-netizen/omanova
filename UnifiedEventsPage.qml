@@ -51,13 +51,17 @@ ColumnLayout {
     Copy { visible: page.sky.plannerStale; text: qsTr("Planning data is missing or stale. Inspect cached geometry below; recommendations and alerts are withheld."); color: App.Palette.warning }
     Copy { visible: (page.sky.planning?.issues || []).length > 0; text: (page.sky.planning?.issues || []).join(" · "); color: App.Palette.warning }
     Copy { visible: !page.stationDetail && !page.rows.length; text: qsTr("No events in this selection. Try a longer range or another type.") }
-    Repeater {
-        model: page.stationDetail ? [] : page.rows.slice(0,100)
-        OpportunityCard { Layout.leftMargin: 22; Layout.rightMargin: 22; required property var modelData; event: modelData; sky: page.sky; canAddToNight:page.canAddToNight; onAddToNight:key=>page.addToNight(key); onInspect: selected => page.inspect(selected); onRecordObservation:selected => page.recordObservation(selected) }
+    App.ToolBrowser {
+        heading:qsTr("Observing timeline")
+        entries:page.stationDetail ? [] : page.rows.slice(0,100)
+        subtitle:row => Qt.formatDateTime(new Date(row.start),"ddd d MMM · HH:mm") + " · " +
+            (row.visibility==="stale"?qsTr("Stale"):row.kind==="launch"?qsTr("Unconfirmed"):row.kind)
+        detail: OpportunityCard { required property var modelData; event: modelData; sky: page.sky; canAddToNight:page.canAddToNight; onAddToNight:key=>page.addToNight(key); onInspect: selected => page.inspect(selected); onRecordObservation:selected => page.recordObservation(selected) }
     }
     Copy { visible: !page.stationDetail && page.rows.length > 100; text: qsTr("Showing the first 100 events. Filter by type to narrow the list.") }
     EventComponents.EventsPage {
         id: detailed
+        embeddedInTimeline:true
         visible: page.stationDetail; Layout.fillWidth: true; sky: page.sky
         onInspect: eventId => page.inspect({ kind: "station", station_id: eventId, page: 1 })
     }

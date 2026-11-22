@@ -57,7 +57,8 @@ ColumnLayout {
             }
         }
     }
-    component EclipseCard: Rectangle {
+    component EclipseCard: App.ViewPanel {
+            appearance:"mission"
         id: card
         required property var modelData
         property bool solar: false
@@ -65,9 +66,7 @@ ColumnLayout {
         Layout.leftMargin: 22
         Layout.rightMargin: 22
         implicitHeight: details.implicitHeight + 36
-        color: App.Palette.surface
-        border.color: App.Palette.line
-        radius: 12
+
 
         ColumnLayout {
             id: details
@@ -188,9 +187,12 @@ ColumnLayout {
             }
         }
     }
-    Repeater {
-        model: page.catalog?.solar ?? []
-        delegate: EclipseCard { solar: true }
+    App.ToolBrowser {
+        heading: qsTr("Solar dates")
+        entries: page.catalog?.solar ?? []
+        label: row => page.phaseName(row.kind)
+        subtitle: row => page.when(row.peak,"ddd d MMM yyyy")
+        detail: EclipseCard { Layout.leftMargin:0;Layout.rightMargin:0;solar:true }
     }
     Copy {
         Layout.leftMargin: 22
@@ -206,9 +208,12 @@ ColumnLayout {
         text: qsTr("Lunar eclipses are safe to watch with the naked eye.")
         color: App.Palette.muted
     }
-    Repeater {
-        model: page.catalog?.lunar ?? []
-        delegate: EclipseCard {}
+    App.ToolBrowser {
+        heading: qsTr("Lunar dates")
+        entries: page.catalog?.lunar ?? []
+        label: row => page.phaseName(row.kind)
+        subtitle: row => page.when(row.peak,"ddd d MMM yyyy")
+        detail: EclipseCard { Layout.leftMargin:0;Layout.rightMargin:0 }
     }
     Copy {
         Layout.leftMargin: 22

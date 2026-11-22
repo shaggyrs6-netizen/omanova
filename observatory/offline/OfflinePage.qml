@@ -60,9 +60,12 @@ Item {
                 id:scroll;anchors.fill:parent;clip:true;contentWidth:availableWidth
                 ColumnLayout {
                     width:scroll.availableWidth;spacing:14
-                    ColumnLayout {
-                        Layout.fillWidth:true;Layout.margins:24;spacing:10
-                        App.PageHeader {eyebrow:"PLAN";title:root.saved?"Your saved night guide":"A night’s viewing, ready to take with you"}
+                    App.PageHeader {Layout.leftMargin:18;Layout.topMargin:16;eyebrow:"PLAN";title:root.saved?"Saved observing guide":"Offline Cards"}
+                    GridLayout {
+                        Layout.fillWidth:true;Layout.leftMargin:16;Layout.rightMargin:16
+                        columns:width>=930?2:1;rowSpacing:10;columnSpacing:12
+                    App.InstrumentCard {
+                        Layout.fillWidth:true;Layout.preferredWidth:425;Layout.minimumWidth:0;spacing:10
                         Copy {text:root.saved?"This is a saved snapshot. Opening it reads only your saved guide and the device clock; predictions and forecasts are not refreshed. It belongs to the observing location used when saved, even if your active location has since changed.":"Choose a night, select cards and save a guide with times, directions and equipment. Live mode uses the active location’s existing predictions.";color:App.Palette.muted}
                         Flow {
                             Layout.fillWidth:true;spacing:10
@@ -108,29 +111,38 @@ Item {
                         Copy {visible:!!root.dataSet?.deck?.issues?.length;text:(root.dataSet?.deck?.issues||[]).join("\n");color:App.Palette.warning}
                         Copy {text:"Timing snapshots need rechecking within two hours or an earlier source expiry. Weather has a separate six-hour age limit. Those are maximum recheck limits, not promises that conditions stay unchanged. Trip sources use saved comparison windows with manual/terrain clipping; active sources do not. Equipment preferences apply to new selections; saved guides never change with your profile.";color:App.Palette.muted}
                     }
-                    Repeater {
-                        model:root.dataSet?.deck?.rows||[]
-                        Rectangle {
-                            id:card;required property var modelData
-                            Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24
-                            implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:root.selected.includes(modelData.id)?App.Palette.accent:App.Palette.line
-                            ColumnLayout {
-                                id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
-                                Toggle {visible:!root.saved;text:card.modelData.name;checked:root.selected.includes(card.modelData.id);enabled:!helper.running&&root.selectable(card.modelData)&&(checked||root.selected.length<50);onClicked:root.choose(card.modelData.id,checked)}
-                                Heading {visible:root.saved;text:card.modelData.name;font.pixelSize:22}
-                                Copy {text:card.modelData.kind.toUpperCase()+" · "+card.modelData.visibility+" · "+(card.modelData.solar?"Safety review required":"Visibility not guaranteed");color:App.Palette.warning;font.bold:true}
-                                Copy {text:card.modelData.status;color:App.Palette.warning}
-                                Copy {text:card.modelData.when+"\nUTC: "+card.modelData.segmentStart+" — "+card.modelData.segmentEnd+"\n"+card.modelData.directionText;font.bold:true}
-                                Copy {visible:!!card.modelData.segmentNote;text:card.modelData.segmentNote;color:App.Palette.muted}
-                                Copy {text:"Equipment: "+(card.modelData.equipment.join(", ")||"Capability unknown / review required")+"\n"+card.modelData.equipmentNote;color:App.Palette.muted}
-                                Copy {text:"Weather at capture: "+card.modelData.conditions.label+" · "+card.modelData.weatherStatus+"\nForecast fetched: "+(card.modelData.conditions.fetched||"unknown")+" · expires: "+(card.modelData.weatherExpires||"unknown");color:App.Palette.muted}
-                                Copy {text:"Source checked: "+(card.modelData.sourceGenerated||"unknown")+" · recheck by: "+card.modelData.recheckAt;color:App.Palette.muted}
-                                Copy {text:card.modelData.unsupported||card.modelData.reason;color:App.Palette.muted}
-                                Copy {visible:!!card.modelData.safety;text:card.modelData.safety;color:App.Palette.warning}
+                    ColumnLayout {
+                        Layout.fillWidth:true;Layout.minimumWidth:0;Layout.preferredWidth:620;Layout.alignment:Qt.AlignTop
+                        Copy {text:root.saved?"Saved cards":"Observing cards";font.pixelSize:19;font.bold:true}
+                    GridLayout {
+                        Layout.fillWidth:true;Layout.minimumWidth:0
+                        columns:width>=860?2:1;columnSpacing:12;rowSpacing:12
+                        Repeater {
+                            model:root.dataSet?.deck?.rows||[]
+                            App.ViewPanel {appearance:"mission";
+                                id:card;required property var modelData
+                                Layout.fillWidth:true;Layout.preferredWidth:1;Layout.minimumWidth:0;Layout.alignment:Qt.AlignTop
+                                implicitHeight:body.implicitHeight+28;border.color:root.selected.includes(modelData.id)?App.Palette.accent:App.Palette.line
+                                ColumnLayout {
+                                    id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
+                                    Toggle {visible:!root.saved;text:card.modelData.name;checked:root.selected.includes(card.modelData.id);enabled:!helper.running&&root.selectable(card.modelData)&&(checked||root.selected.length<50);onClicked:root.choose(card.modelData.id,checked)}
+                                    Heading {visible:root.saved;text:card.modelData.name;font.pixelSize:22}
+                                    Copy {text:card.modelData.kind.toUpperCase()+" · "+card.modelData.visibility+" · "+(card.modelData.solar?"Safety review required":"Visibility not guaranteed");color:App.Palette.warning;font.bold:true}
+                                    Copy {text:card.modelData.status;color:App.Palette.warning}
+                                    Copy {text:card.modelData.when+"\nUTC: "+card.modelData.segmentStart+" — "+card.modelData.segmentEnd+"\n"+card.modelData.directionText;font.bold:true}
+                                    Copy {visible:!!card.modelData.segmentNote;text:card.modelData.segmentNote;color:App.Palette.muted}
+                                    Copy {text:"Equipment: "+(card.modelData.equipment.join(", ")||"Capability unknown / review required")+"\n"+card.modelData.equipmentNote;color:App.Palette.muted}
+                                    Copy {text:"Weather at capture: "+card.modelData.conditions.label+" · "+card.modelData.weatherStatus+"\nForecast fetched: "+(card.modelData.conditions.fetched||"unknown")+" · expires: "+(card.modelData.weatherExpires||"unknown");color:App.Palette.muted}
+                                    Copy {text:"Source checked: "+(card.modelData.sourceGenerated||"unknown")+" · recheck by: "+card.modelData.recheckAt;color:App.Palette.muted}
+                                    Copy {text:card.modelData.unsupported||card.modelData.reason;color:App.Palette.muted}
+                                    Copy {visible:!!card.modelData.safety;text:card.modelData.safety;color:App.Palette.warning}
+                                }
                             }
                         }
                     }
                     Copy {Layout.margins:24;visible:!root.dataSet?.deck?.rows?.length;text:"No events available for this night. Try a night covered by the current catalogue; offline mode cannot invent missing predictions."}
+                    }
+                    }
                 }
             }
         }

@@ -63,9 +63,12 @@ Item {
                 id:scroll;anchors.fill:parent;clip:true;contentWidth:availableWidth
                 ColumnLayout {
                     width:scroll.availableWidth;spacing:14
-                    ColumnLayout {
-                        Layout.fillWidth:true;Layout.margins:24;spacing:10
-                        App.PageHeader {eyebrow:"PLAN";title:"Take your observing plans with you"}
+                    App.PageHeader {Layout.leftMargin:18;Layout.topMargin:16;eyebrow:"PLAN";title:"Calendar Export"}
+                    GridLayout {
+                        Layout.fillWidth:true;Layout.leftMargin:16;Layout.rightMargin:16
+                        columns:width>=930?2:1;rowSpacing:10;columnSpacing:12
+                    App.InstrumentCard {
+                        Layout.fillWidth:true;Layout.preferredWidth:425;Layout.minimumWidth:0;spacing:10
                         Copy {text:"Choose events and save an iCalendar (.ics) file. Import it into your calendar yourself. Nothing is sent to a calendar account.";color:App.Palette.muted}
                         Flow {
                             Layout.fillWidth:true;spacing:10
@@ -123,23 +126,32 @@ Item {
                         }
                         Copy {text:"One-off snapshot: times, weather and visibility can change. Exports do not update or cancel themselves. Re-import may create duplicates depending on your calendar. Use a separate test calendar for the simulated examples.";color:App.Palette.muted}
                     }
-                    Repeater {
-                        model:root.rows
-                        Rectangle {
-                            id:card;required property var modelData
-                            Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24
-                            implicitHeight:body.implicitHeight+28;radius:10;color:App.Palette.surface;border.color:root.selected.includes(modelData.id)?App.Palette.accent:App.Palette.line
-                            ColumnLayout {
-                                id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
-                                Toggle {text:card.modelData.name;checked:root.selected.includes(card.modelData.id);enabled:!helper.running&&root.selectable(card.modelData)&&(checked||root.selected.length<50);onClicked:root.choose(card.modelData.id,checked)}
-                                Copy {text:card.modelData.kind.toUpperCase()+" · "+card.modelData.label+(card.modelData.blocked?" · Unavailable":"");color:card.modelData.caution||card.modelData.blocked?App.Palette.warning:App.Palette.accent}
-                                Copy {text:(card.modelData.displayStart||root.when(card.modelData.start))+" – "+(card.modelData.displayEnd||Qt.formatDateTime(new Date(card.modelData.end),"ddd d MMM · HH:mm"))+"\nUTC: "+card.modelData.start+" – "+card.modelData.end}
-                                Copy {text:card.modelData.blocked||card.modelData.notes.join("\n");color:App.Palette.muted}
+                    ColumnLayout {
+                        Layout.fillWidth:true;Layout.minimumWidth:0;Layout.preferredWidth:620;Layout.alignment:Qt.AlignTop
+                        Copy {text:root.rows.length+" events";font.pixelSize:19;font.bold:true}
+                    GridLayout {
+                        Layout.fillWidth:true;Layout.minimumWidth:0
+                        columns:width>=860?2:1;columnSpacing:12;rowSpacing:12
+                        Repeater {
+                            model:root.rows
+                            App.ViewPanel {appearance:"mission";
+                                id:card;required property var modelData
+                                Layout.fillWidth:true;Layout.preferredWidth:1;Layout.minimumWidth:0;Layout.alignment:Qt.AlignTop
+                                implicitHeight:body.implicitHeight+28;border.color:root.selected.includes(modelData.id)?App.Palette.accent:App.Palette.line
+                                ColumnLayout {
+                                    id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
+                                    Toggle {text:card.modelData.name;checked:root.selected.includes(card.modelData.id);enabled:!helper.running&&root.selectable(card.modelData)&&(checked||root.selected.length<50);onClicked:root.choose(card.modelData.id,checked)}
+                                    Copy {text:card.modelData.kind.toUpperCase()+" · "+card.modelData.label+(card.modelData.blocked?" · Unavailable":"");color:card.modelData.caution||card.modelData.blocked?App.Palette.warning:App.Palette.accent}
+                                    Copy {text:(card.modelData.displayStart||root.when(card.modelData.start))+" – "+(card.modelData.displayEnd||Qt.formatDateTime(new Date(card.modelData.end),"ddd d MMM · HH:mm"))+"\nUTC: "+card.modelData.start+" – "+card.modelData.end}
+                                    Copy {text:card.modelData.blocked||card.modelData.notes.join("\n");color:App.Palette.muted}
+                                }
                             }
                         }
                     }
                     Copy {Layout.margins:24;visible:!root.rows.length;text:"No matching events. Change the date/type filters, inspect unavailable entries or refresh the list."}
                     Copy {Layout.margins:24;text:"At most 500 catalogue entries are listed and 50 exported at once. Trip Planner destinations are not exported; this view does not connect/sync a calendar account.";color:App.Palette.muted}
+                    }
+                    }
                 }
             }
         }

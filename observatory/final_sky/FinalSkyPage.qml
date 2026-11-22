@@ -21,6 +21,7 @@ Item {
  property string pending: ""
  property string result: ""
  property double clock: Date.now()
+ property bool flatEarth:false
  property int stationIndex: 0
  property bool satellitesOn:false
  property string fixtureTime:""
@@ -369,25 +370,50 @@ Item {
      color:App.Palette.muted
     }
     Copy {visible:root.section==="chart"&&!!root.dataSet;text:"920 bright catalogue stars + Sun, Moon and five planets (above the geometric horizon only). Dotted/dim stars are behind your saved horizon. Some constellation guide lines only. "+((root.dataSet?.sunAltitude??-90)>-6?"DAYLIGHT / BRIGHT TWILIGHT: chart objects may be invisible.":"Weather, glare and equipment still affect visibility.");color:App.Palette.muted}
-    ColumnLayout {visible:root.section==="polar"&&!!root.dataSet;Layout.fillWidth:true;spacing:10
+    GridLayout {
+     visible:root.section==="polar"&&!!root.dataSet;Layout.fillWidth:true
+     columns:width>=680?2:1;columnSpacing:12;rowSpacing:10
+     App.InstrumentCard {
+      Copy {text:qsTr("Pole orientation");font.bold:true;font.pixelSize:18}
+      PoleChart {Layout.fillWidth:true;Layout.preferredHeight:240;dataSet:root.dataSet}
+     }
+     App.InstrumentCard {
+      Copy {text:qsTr("Mount alignment");font.bold:true;font.pixelSize:18}
      Copy {text:"Aim true "+(root.dataSet?.north?"north":"south")+" · "+(root.dataSet?.bearing??0)+"° bearing · pole "+Number(root.dataSet?.poleAltitude??0).toFixed(1)+"° above level horizon";font.pixelSize:19;font.bold:true}
      Copy {text:(root.dataSet?.reference||"")+" is "+Number(root.dataSet?.offset??0).toFixed(3)+"° from the pole · reference star "+Number(root.dataSet?.starAltitude??0).toFixed(1)+"° up"}
      Copy {visible:root.dataSet?.referenceClear===false;text:"Reference star is below the level or saved horizon. This diagram is orientation only.";color:App.Palette.warning}
      Copy {visible:root.dataSet?.nearEquator||false;text:"Near the equator, the pole is close to the horizon. This simple orientation guide is not a practical precision alignment solution.";color:App.Palette.warning}
-     PoleChart {Layout.fillWidth:true;Layout.preferredHeight:300;dataSet:root.dataSet}
+
      Copy {text:"1. Level the mount and set its latitude scale to the pole altitude above.\n2. Aim the tracking axis towards the TRUE pole, using your mount manual.\n3. Use the reference star’s offset for orientation only, then use the manufacturer’s alignment procedure.\nThis upright sky diagram is NOT a polar-scope reticle. Optics can mirror, invert or rotate it. Saved trees/terrain can block the reference star; confirm the view outdoors."}
     }
-    ColumnLayout {visible:root.section==="live"&&!!root.dataSet;Layout.fillWidth:true;spacing:10
+    }
+    App.InstrumentCard {visible:root.section==="live"&&!!root.dataSet;Layout.fillWidth:true;spacing:10
      Flow {Layout.fillWidth:true;spacing:8
       Repeater {model:["ISS","Tiangong"];Action {required property string modelData;required property int index;text:(root.stationIndex===index?"● ":"")+modelData;onClicked:root.stationIndex=index}}
      }
-     OrbitComponents.GroundMap {Layout.fillWidth:true;observer:root.dataSet?.observer||null;sample:root.station?.usable&&!root.expired?root.station:null;selected:root.station?.usable?{track:root.station.track,pass:[]}:null}
+     RowLayout {
+      App.ActionButton {text:qsTr("Globe");enabled:root.flatEarth;onClicked:root.flatEarth=false}
+      App.ActionButton {text:qsTr("Flat map");enabled:!root.flatEarth;onClicked:root.flatEarth=true}
+     }
+     OrbitComponents.OrbitGlobe {visible:!root.flatEarth;Layout.fillWidth:true;Layout.preferredHeight:270
+      observer:root.dataSet?.observer||null;sample:root.station?.usable&&!root.expired?root.station:null
+      selected:root.station?.usable?{track:root.station.track,pass:[]}:null
+     }
+     OrbitComponents.GroundMap {visible:root.flatEarth;Layout.fillWidth:true;observer:root.dataSet?.observer||null;sample:root.station?.usable&&!root.expired?root.station:null;selected:root.station?.usable?{track:root.station.track,pass:[]}:null}
      Copy {text:!root.station?"No cached station positions.":!root.station.usable?root.station.name+" · stale / future elements: current marker withheld.":root.station.name+" · "+Number(root.station.el).toFixed(1)+"° up · "+Number(root.station.az).toFixed(1)+"° true bearing · "+root.skyModel.formatDistance(root.station.slant,0)+" slant range\n"+(root.station.el>0?"Above geometric horizon":"Below geometric horizon")+" · "+(root.station.sunlit?"station sunlit":"station in shadow")+" · "+(root.station.skyDark?"sky dark enough":"sky bright")+" · visibility unconfirmed";color:root.expired?App.Palette.warning:App.Palette.ink}
      Copy {text:root.station?"Element epoch "+root.station.epoch+" · age "+Number(root.station.ageHours).toFixed(1)+" h":"";color:App.Palette.muted}
     }
-    Copy {visible:root.section==="transits"&&!!root.dataSet;text:(root.dataSet?.events?.length||0)+" close approaches / candidate crossings.\n"+(root.dataSet?.coverage||[]).join("\n");color:App.Palette.muted}
+    App.InstrumentCard {
+     visible:root.section==="transits"&&!root.dataSet
+     Copy {text:qsTr("Sun and Moon crossings");font.bold:true;font.pixelSize:19}
+     Copy {text:qsTr("Select the observing location above, then search the next 24 hours for station crossings and close approaches.");color:App.Palette.muted}
+    }
+    App.InstrumentCard {visible:root.section==="transits"&&!!root.dataSet
+     Copy {font.bold:true;font.pixelSize:19;text:qsTr("Search results")}
+     Copy {text:(root.dataSet?.events?.length||0)+" close approaches / candidate crossings.\n"+(root.dataSet?.coverage||[]).join("\n");color:App.Palette.muted}
+    }
     Repeater {model:root.section==="transits"?(root.dataSet?.events||[]):[]
-     Rectangle {required property var modelData;Layout.fillWidth:true;implicitHeight:card.implicitHeight+28;radius:8;color:App.Palette.surface;border.color:App.Palette.border
+     App.ViewPanel {appearance:"mission";required property var modelData;Layout.fillWidth:true;implicitHeight:card.implicitHeight+28
       ColumnLayout {id:card;anchors.fill:parent;anchors.margins:14;spacing:8
        Copy {text:modelData.station+" / "+modelData.target+" · "+modelData.status;font.bold:true;color:App.Palette.warning}
        Copy {text:"Model closest approach: "+modelData.localTime+" · "+(root.dataSet?.zone||"")+"\nUTC "+modelData.time}
