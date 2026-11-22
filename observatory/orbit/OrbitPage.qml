@@ -1,4 +1,5 @@
 import "../../qml/Omanova" as App
+import "../.." as Core
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,6 +10,7 @@ ColumnLayout {
     id: ui
     property var formatDistance: (km, digits) => km.toLocaleString(Qt.locale(), 'f', digits) + " km"
     spacing: 13
+    property bool useTonightTracks: false
     property var orbitData: null
     property var initialTarget: null
     signal targetConsumed()
@@ -28,14 +30,20 @@ ColumnLayout {
         }
         targetConsumed()
     }
-    onOrbitDataChanged: Qt.callLater(applyTarget)
+
+    property bool flatMap: false
     property int stationIndex: 0
     property int passIndex: 0
     property int sampleIndex: 0
     readonly property var station: orbitData ? orbitData.stations[stationIndex] : null
     readonly property var selected: station ? (station.passes[passIndex] || null) : null
     readonly property var sample: selected ? (selected.pass[sampleIndex] || null) : null
-    readonly property color accent: stationIndex === 0 ? App.Palette.accent : App.Palette.violet
+    readonly property var localTrack: (selected?.pass || []).map(point => ({
+        az: point.az, el: point.el,
+        visible: selected.confidence !== "Stale orbit" &&
+                 selected.windows.some(window => point.time >= window.start && point.time <= window.end)
+    }))
+    readonly property color accent: stationIndex === 0 ? App.Palette.accent : App.Palette.warning
     readonly property color ink: App.Palette.ink
     readonly property color muted: App.Palette.muted
     readonly property color line: App.Palette.line
@@ -108,8 +116,9 @@ ColumnLayout {
     FileView {
         id: snapshot
         printErrors: false
-        path: Quickshell.env("OMASKY_ORBIT")
+        path: ui.useTonightTracks ? "" : Quickshell.env("OMASKY_ORBIT")
         onLoaded: {
+            if (ui.useTonightTracks) return
             try { ui.orbitData = JSON.parse(text()) }
             catch (error) { ui.orbitData = null }
         }
@@ -118,7 +127,11 @@ ColumnLayout {
     readonly property string tool: Quickshell.env("OMASKY_ORBIT_TOOL")
     property string loadMessage: ""
     Component.onCompleted: {
-        if (tool && snapshot.path) calculate.running = true
+        if (initialTarget?.tracks) {
+            useTonightTracks = true
+            orbitData = initialTarget.tracks
+            applyTarget()
+        } else if (tool && snapshot.path) calculate.running = true
     }
     Process {
         id: calculate
@@ -142,40 +155,95 @@ ColumnLayout {
         Layout.margins: ui.margin
         Layout.bottomMargin: 0
         spacing: 5
-        App.PageHeader { eyebrow:"SKY"; title:"Orbit" }
-        Copy { text: "Ground tracks and the view from your observing point"; color: ui.muted }
+        App.PageHeader { eyebrow:"MISSION CONTROL"; title:"Orbit"; description:qsTr("Compare the ground track with the sky at your observing point.") }
     }
-    RowLayout {
-        Layout.fillWidth: true
-        Layout.leftMargin: ui.margin; Layout.rightMargin: ui.margin
-        spacing: 8
-        Repeater { model: ["ISS", "Tiangong"]; delegate: StationButton {} }
-        Item { Layout.fillWidth: true }
+    Flow {
+        Layout.fillWidth:true
+        Layout.leftMargin:ui.margin;Layout.rightMargin:ui.margin
+        spacing:8
+        Repeater {model:["ISS","Tiangong"];delegate:StationButton {}}
+        ComboBox {
+            width:Math.min(390,parent.width)
+            height:39
+            model:ui.station ? ui.station.passes.map(pass =>
+                ui.time(pass.rise,"ddd d MMM · HH:mm") + " local · " +
+                (pass.confidence === "Stale orbit" ? "stale orbit" : pass.windows.length ? "viewing window" : "geometric pass")) : []
+            currentIndex:count?ui.passIndex:-1
+            Accessible.name:qsTr("Upcoming station pass")
+            onActivated:index=>ui.passIndex=index
+            palette.button:App.Palette.button;palette.buttonText:ui.ink
+            palette.base:App.Palette.surface;palette.text:ui.ink
+            palette.window:App.Palette.surface;palette.windowText:ui.ink
+        }
     }
-    ComboBox {
-        Layout.fillWidth: true
-        Layout.leftMargin: ui.margin; Layout.rightMargin: ui.margin
-        model: ui.station ? ui.station.passes.map(pass =>
-            ui.time(pass.rise, "ddd d MMM · HH:mm") + " local · " +
-            (pass.confidence === "Stale orbit" ? "stale orbit" : pass.windows.length ? "viewing window" : "geometric pass")) : []
-        currentIndex: count ? ui.passIndex : -1
-        Accessible.name: "Upcoming station pass"
-        onActivated: index => ui.passIndex = index
-        palette.button: App.Palette.surface; palette.buttonText: ui.ink
-        palette.base: App.Palette.surface; palette.text: ui.ink
-    }
-    GroundMap {
-        Layout.fillWidth: true
-        Layout.leftMargin: ui.margin; Layout.rightMargin: ui.margin
-        observer: ui.orbitData?.observer || null
-        selected: ui.selected
-        sample: ui.sample
-        accent: ui.accent
-    }
-    Copy {
-        Layout.leftMargin: ui.margin; Layout.rightMargin: ui.margin
-        text: "◆ Your observing point    ● Station footprint    ━ Selected pass    ┄ Surrounding orbit"
-        font.pixelSize: 12; color: ui.muted
+    GridLayout {
+        Layout.fillWidth:true;Layout.leftMargin:ui.margin;Layout.rightMargin:ui.margin
+        columns:width>=720?2:1;columnSpacing:14;rowSpacing:14
+        App.ViewPanel {
+            appearance:"mission"
+            Layout.fillWidth:true;Layout.fillHeight:true;Layout.preferredWidth:1
+            implicitHeight:localBody.implicitHeight+28
+            ColumnLayout {
+                id:localBody
+                anchors.top:parent.top;anchors.left:parent.left;anchors.right:parent.right;anchors.margins:14
+                spacing:8
+                Copy {text:qsTr("Local sky");font.pixelSize:19;font.bold:true}
+                Core.Compass {
+                    id: skyCompass
+                    Layout.fillWidth:true;Layout.preferredHeight:270
+                    accent:ui.accent
+                    points:ui.localTrack
+                    marker:ui.sample
+                    instrument:true
+                }
+                Copy {
+                    text:ui.sample ? qsTr("Look %1 · %2° up").arg(ui.direction(ui.sample.az)).arg(ui.sample.el) : qsTr("Select a pass to plot its path.")
+                    color:ui.accent;font.bold:true
+                }
+                Copy {
+                    visible: skyCompass.hasStarBackdrop
+                    text: qsTr("Illustrative star field")
+                    color: ui.muted
+                    font.pixelSize: 12
+                }
+            }
+        }
+        App.ViewPanel {
+            appearance:"mission"
+            Layout.fillWidth:true;Layout.fillHeight:true;Layout.preferredWidth:1
+            implicitHeight:earthBody.implicitHeight+28
+            ColumnLayout {
+                id:earthBody
+                anchors.top:parent.top;anchors.left:parent.left;anchors.right:parent.right;anchors.margins:14
+                spacing:8
+                RowLayout {
+                    Layout.fillWidth:true
+                    Copy {text:qsTr("Ground track");font.pixelSize:19;font.bold:true}
+                    App.ActionButton {
+                        text:ui.flatMap?qsTr("Globe"):qsTr("Flat map")
+                        onClicked:ui.flatMap=!ui.flatMap
+                    }
+                }
+                Item {
+                    Layout.fillWidth:true;Layout.preferredHeight:250
+                    OrbitGlobe {
+                        id:earthGlobe
+                        anchors.fill:parent
+                        observer:ui.orbitData?.observer || null;selected:ui.flatMap?null:ui.selected
+                        sample:ui.flatMap?null:ui.sample;accent:ui.accent
+                    }
+                    GroundMap {
+                        anchors.fill:parent;visible:ui.flatMap
+                        observer:ui.orbitData?.observer || null;selected:visible?ui.selected:null
+                        sample:visible?ui.sample:null;accent:ui.accent
+                    }
+                }
+                Copy {
+                    text:qsTr("◆ Observing point    ·    Station symbol marks the footprint")
+                    color:ui.muted;font.pixelSize:13
+                }
+            }
+        }
     }
     ColumnLayout {
         Layout.fillWidth: true
@@ -216,4 +284,21 @@ ColumnLayout {
             (ui.orbitData ? "Computed " + ui.time(ui.orbitData.generated, "HH:mm:ss") + " local · " : "") + "Made with Natural Earth."
         font.pixelSize: 12; color: ui.muted
     }
+    IpcHandler {
+        target: "omanova-orbit-preview"
+        function sampleState(): string {
+            if (Quickshell.env("OMASKY_FIXTURE") !== "1") return ""
+            return JSON.stringify({station:ui.station?.name, passes:ui.station?.passes.length ?? 0,
+                                   time:ui.sample?.time, flatMap:ui.flatMap, textured:earthGlobe.textured,
+                                   starBackdrop:skyCompass.hasStarBackdrop, samples:ui.selected?.pass.length ?? 0})
+        }
+        function sampleControls(station:int, sample:int, flat:bool): bool {
+            if (Quickshell.env("OMASKY_FIXTURE") !== "1" || station < 0 || station > 1) return false
+            ui.stationIndex=station
+            ui.sampleIndex=Math.min(Math.max(sample,0),Math.max(0,(ui.selected?.pass.length ?? 0)-1))
+            ui.flatMap=flat
+            return true
+        }
+    }
+
 }

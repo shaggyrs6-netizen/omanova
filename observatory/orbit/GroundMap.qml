@@ -1,4 +1,5 @@
 import "../../qml/Omanova" as App
+import "../../qml/Omanova/StationGlyph.js" as StationGlyph
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -142,12 +143,7 @@ Rectangle {
                     ctx.stroke()
                 }
                 ctx.setLineDash([])
-                ctx.beginPath()
-                ctx.arc(sub.x, sub.y, 5, 0, Math.PI * 2)
-                ctx.fillStyle = App.Palette.violet
-                ctx.fill()
-                ctx.strokeStyle = App.Palette.background
-                ctx.stroke()
+                StationGlyph.draw(ctx, sub.x, sub.y, 23, map.accent, App.Palette.background)
             }
             ctx.beginPath()
             ctx.moveTo(home.x, home.y - 7)

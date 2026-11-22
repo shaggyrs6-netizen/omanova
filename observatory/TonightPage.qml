@@ -14,7 +14,7 @@ ColumnLayout {
     signal recordObservation(var selected)
     signal openEvents()
     signal openSettings()
-    signal openOrbit(string station, string rise, string time)
+    signal openOrbit(var target)
     readonly property bool weatherCurrent: sky.data?.settings?.weather === true && !!strip?.weatherFetched &&
         sky.now >= Date.parse(strip.weatherFetched) && sky.now - Date.parse(strip.weatherFetched) < 21600000
     spacing: 14
@@ -33,7 +33,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.topMargin: 8
         sky: page.sky; strip: page.strip; weatherCurrent: page.weatherCurrent
-        onOpenOrbit: (station,rise,time) => page.openOrbit(station,rise,time)
+        onOpenOrbit: target => page.openOrbit(target)
     }
     App.PageHeader {
         Layout.margins:24;Layout.bottomMargin:0

@@ -62,7 +62,7 @@ ShellRoot {
     FloatingWindow {
         id: window
         title: "OMANOVA Observatory · " + (shell.settingsTrial ? (Quickshell.env("OMANOVA_THEME_TRIAL")==="1" ? "Theme preview" : "Settings preview") : sky.fixture ? "Fixture preview" : "Live data")
-        color: ui.pageId === "overview" && !App.Palette.themed ? "#060e19" : App.Palette.background
+        color: (ui.pageId === "overview" || ui.pageId === "orbit") && !App.Palette.themed ? "#060e19" : App.Palette.background
         implicitWidth: 1050
         implicitHeight: 700
         minimumSize: Qt.size(360, 400)
@@ -583,7 +583,7 @@ ShellRoot {
                         if (selected.station_id) ui.selectedEventId = selected.station_id
                         ui.changeScreen(selected.page)
                     }
-                    onOpenOrbit: (station,rise,time) => { ui.orbitTarget = {station,rise,time}; ui.navigate("orbit") }
+                    onOpenOrbit: target => { ui.orbitTarget = target; ui.navigate("orbit") }
                     onOpenEvents: ui.navigate("events")
                     onOpenSettings: ui.navigate("settings")
                 }

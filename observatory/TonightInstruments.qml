@@ -13,7 +13,7 @@ ColumnLayout {
     required property var sky
     required property var strip
     required property bool weatherCurrent
-    signal openOrbit(string station, string rise, string time)
+    signal openOrbit(var target)
     spacing: 10
 
     readonly property var event: sky.snapshotStale ? null : sky.events.find(e =>
@@ -29,6 +29,7 @@ ColumnLayout {
         return Number.isFinite(hour?.cloud) ? hour.cloud : null
     }
     readonly property string timeLabel: marker ? Qt.formatDateTime(new Date(marker.time), "HH:mm") : ""
+    property var trackData: null
     property var groundPass: null
     function loadTrack() {
         if (!key || !Quickshell.env("OMASKY_ORBIT_TOOL") || !Quickshell.env("OMASKY_ORBIT")) return
@@ -36,7 +37,7 @@ ColumnLayout {
         calculate.requestKey = key
         calculate.running = true
     }
-    onKeyChanged: { groundPass = null; refresh.restart() }
+    onKeyChanged: { trackData = null; groundPass = null; refresh.restart() }
     Timer { id: refresh; interval: 75; onTriggered: hero.loadTrack() }
     FileView {
         id: tracks
@@ -47,6 +48,7 @@ ColumnLayout {
             try {
                 const data = JSON.parse(text())
                 if (data.observer.lat !== hero.place?.lat || data.observer.lon !== hero.place?.lon) return
+                hero.trackData = data
                 const station = data.stations.find(s => s.name === hero.event.name)
                 hero.groundPass = station?.passes.find(p => p.confidence !== "Stale orbit" &&
                     Math.abs(Date.parse(p.rise) - Date.parse(hero.event.start)) <= 5000) || null
@@ -147,7 +149,8 @@ ColumnLayout {
             App.ActionButton {
                 anchors { top: parent.top; right: parent.right; margins: 7 }
                 text: qsTr("Open Orbit"); enabled: !!hero.footprint
-                onClicked: hero.openOrbit(hero.event.name, hero.groundPass.rise, hero.marker.time)
+                onClicked: hero.openOrbit({station: hero.event.name, rise: hero.groundPass.rise,
+                                           time: hero.footprint.time, tracks: hero.trackData})
             }
         }
     }
