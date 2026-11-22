@@ -1260,7 +1260,8 @@ login-startup preference are preserved, and only an already-active managed
 worker is restarted. The known older alias-based worker unit is supported with
 the default data directory and is kept as-is. A foreground worker, custom
 worker unit, or service override still requires review. A check reports a worker
-configuration blocker before offering the install. No privilege elevation or automatic uv/package-manager install occurs.
+configuration blocker before offering the install. No privilege elevation or
+automatic uv/package-manager install occurs.
 Checksums are integrity checks, not independent publisher signatures.
 
 Failures after activation restore the former alias/widget. An interrupted
@@ -1303,7 +1304,9 @@ reopening Observatory. The existing service and login startup setting are
 preserved. Use the in-app updater for later releases. A customised install or
 worker service still needs review.
 
-**Live satellites:** open Sky → Star Chart and switch **Live satellites · Off**
+### Live satellites
+
+Open Sky → Star Chart and switch **Live satellites · Off**
 to **On**. It uses current time, recalculating every five seconds while the chart
 is open. Switch between **Potentially visible only** and **All above horizon**.
 Tap a diamond for true bearing/elevation, slant range in your preferred units,

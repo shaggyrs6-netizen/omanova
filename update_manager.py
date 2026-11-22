@@ -136,9 +136,9 @@ class Services:
 
     def uses_default_data_home(self):
         result = self.call('show-environment', check=False)
-        return result.returncode == 0 and all(
-            not line.startswith('XDG_DATA_HOME=') or line == f'XDG_DATA_HOME={Path.home()/".local/share"}'
-            for line in result.stdout.splitlines()
+        environment = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+        return result.returncode == 0 and environment.get('XDG_DATA_HOME', '') in (
+            '', str(Path.home()/'.local/share')
         )
 
     def healthy(self,state,revision,started):
