@@ -168,7 +168,17 @@ ColumnLayout {
             model:ui.station ? ui.station.passes.map(pass =>
                 ui.time(pass.rise,"ddd d MMM · HH:mm") + " local · " +
                 (pass.confidence === "Stale orbit" ? "stale orbit" : pass.windows.length ? "viewing window" : "geometric pass")) : []
-            currentIndex:count?ui.passIndex:-1
+            id: passChoice
+            function syncSelection() {
+                currentIndex = ui.selected ? ui.passIndex : -1
+            }
+            // Qt resets the selection while installing a new station's model.
+            onModelChanged: Qt.callLater(syncSelection)
+            Connections {
+                target: ui
+                function onPassIndexChanged() { passChoice.syncSelection() }
+            }
+            displayText: ui.selected ? model[ui.passIndex] || "" : qsTr("No upcoming pass")
             Accessible.name:qsTr("Upcoming station pass")
             onActivated:index=>ui.passIndex=index
             palette.button:App.Palette.button;palette.buttonText:ui.ink
