@@ -1,6 +1,6 @@
 # OMANOVA
 
-![OMANOVA: your local Observatory for Omarchy. Sky charts, ISS and Tiangong passes, launches, trip planning and terrain, polar alignment, transit candidates, equipment, offline guides and observing-log CSV export.](preview.png)
+![OMANOVA 0.1.9 Observatory redesign. An illustrated space station above Earth at night.](docs/screenshots/0.1.9/omanova-0.1.9.png)
 
 *Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.9.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
