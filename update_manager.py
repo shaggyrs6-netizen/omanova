@@ -20,6 +20,10 @@ API=f'https://api.github.com/repos/{REPO}/releases/latest'
 IDS=('io.github.shaggyrs6-netizen.omanova','local.omasky')
 KERNEL_SHA='c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2'
 KERNEL_URL='https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de440s.bsp'
+# The original direct-path worker is equivalent to this stock unit only with
+# the default data layout. Recognise exact contents so local edits stay guarded.
+LEGACY_WORKER_SHA='483c3af252aa1ac7b97b14ed273b22b55f012a48562435f5f8be596e924ec59a'
+STOCK_WORKER_SHA='04d45e88a0e17ecbe8576ca37975e663e5f3cd644871dfcc9acf55d3396a301d'
 WIDGET_FILES=('BarWidget.qml','SkyState.qml','SkyPanel.qml','Compass.qml','SettingsPage.qml','ObservingPreferences.qml')
 
 
@@ -122,6 +126,21 @@ class Services:
     def active(self):return self.call('is-active','--quiet','omanova-worker.service',check=False).returncode==0
     def stop(self):self.call('stop','omanova-worker.service')
     def start(self):self.call('start','omanova-worker.service')
+    def uses_unit(self, path):
+        result = self.call('show', 'omanova-worker.service', '--property=FragmentPath,DropInPaths,NeedDaemonReload',
+                           check=False)
+        fields = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+        return result.returncode == 0 and fields.get('FragmentPath') == str(path) and (
+            fields.get('DropInPaths') == '' and fields.get('NeedDaemonReload') == 'no'
+        )
+
+    def uses_default_data_home(self):
+        result = self.call('show-environment', check=False)
+        return result.returncode == 0 and all(
+            not line.startswith('XDG_DATA_HOME=') or line == f'XDG_DATA_HOME={Path.home()/".local/share"}'
+            for line in result.stdout.splitlines()
+        )
+
     def healthy(self,state,revision,started):
         for _ in range(60):
             try:
@@ -145,6 +164,23 @@ def preflight(state):
         dirty=subprocess.check_output(['git','-C',str(runtime),'status','--porcelain','--untracked-files=no'],text=True,timeout=15)
         if dirty.strip():raise ValueError('Runtime checkout has uncommitted changes')
     return managed
+
+
+def check_worker_unit(state, runtime, services):
+    unit = Path.home()/'.config/systemd/user/omanova-worker.service'
+    bundled = runtime/'systemd/omanova-worker.service'
+    message = 'The worker service differs from the supported setup. Review it before installing this update.'
+    if not unit.is_file() or unit.is_symlink() or not bundled.is_file() or bundled.is_symlink():
+        raise ValueError(message)
+    installed_hash, bundled_hash = digest(unit), digest(bundled)
+    known_legacy = (installed_hash == LEGACY_WORKER_SHA and bundled_hash == STOCK_WORKER_SHA
+                    and state.resolve() == (Path.home()/'.local/share/omasky').resolve())
+    if installed_hash != bundled_hash and not known_legacy:
+        raise ValueError(message)
+    if not services.uses_unit(unit):
+        raise ValueError('The user service manager has a worker override or pending reload. Review it before updating.')
+    if known_legacy and not services.uses_default_data_home():
+        raise ValueError('The older worker service needs the default data directory in the user service manager.')
 
 
 def unpack(blob,destination,v):
@@ -322,11 +358,12 @@ def install(state,ticket,services=None,prepare_fn=prepare):
             raise ValueError('An interrupted update needs Restore previous installation first')
         previous=preflight(state)
         if version(ticket['version'])<=version(previous['version']):raise ValueError('No newer stable release; local changes are not a release update')
+        check_worker_unit(state, Path(previous['runtime']), services)
         runtime,widget,revision=prepare_fn(state,ticket,previous)
         # Revalidate after potentially slow downloads/environment preparation.
-        assert preflight(state)==previous
-        unit=Path.home()/'.config'/'systemd/user/omanova-worker.service'
-        if not unit.is_file() or unit.is_symlink() or unit.read_bytes()!=(runtime/'systemd/omanova-worker.service').read_bytes():raise ValueError('Worker unit differs; use reviewed manual setup')
+        if preflight(state) != previous:
+            raise ValueError('The installed build changed while preparing this update. Check again.')
+        check_worker_unit(state, runtime, services)
         plugin=Path(previous['plugin']);backup=state/'updates/backups'/runtime.parent.name/'widget';backup.parent.mkdir(parents=True,exist_ok=False,mode=0o700)
         j={'phase':'prepared','previous':previous,'backup':str(backup),'wasActive':services.active(),'candidate':str(runtime),'pid':os.getpid(),'processStart':process_start(os.getpid())}
         write(journal,j)
@@ -380,10 +417,23 @@ def dispatch(action,state,fixture=False):
         installed=read((state/'runtime').resolve()/'manifest.json')['version']
         newer=version(ticket['version'])>version(installed)
         note='New stable release available.' if newer else 'You have the latest public release version. This local build may include unreleased changes.'
-        try:preflight(state);managed=True
-        except (OSError,ValueError,KeyError):managed=False
-        return {**ticket,'status':'available' if newer else 'current','installed':installed,'canInstall':newer and managed,
-                'message':note+('' if managed else ' Automatic installation needs a registered, unmodified installation.')}
+        can_install = False
+        if newer:
+            try:
+                managed = preflight(state)
+            except (OSError, ValueError, KeyError):
+                note += ' Automatic installation needs a registered, unmodified installation.'
+            else:
+                try:
+                    check_worker_unit(state, Path(managed['runtime']), Services())
+                except ValueError as exc:
+                    note += ' ' + str(exc)
+                except (OSError, subprocess.SubprocessError):
+                    note += ' Could not verify the worker service. Try checking again.'
+                else:
+                    can_install = True
+        return {**ticket,'status':'available' if newer else 'current','installed':installed,'canInstall':can_install,
+                'message':note}
     if action in ('launch','restore'):
         if status(state).get('status')=='running':raise ValueError('An update is already running')
         # One detached child survives the UI closing; install.lock serialises writes.
@@ -391,7 +441,10 @@ def dispatch(action,state,fixture=False):
         if action=='launch':
             ticket=read(p)
             if not timedelta(0)<=datetime.now(UTC)-datetime.fromisoformat(ticket['checked'])<=timedelta(minutes=30):raise ValueError('Check for updates again before installing')
-            preflight(state)
+            managed = preflight(state)
+            if version(ticket['version']) <= version(managed['version']):
+                raise ValueError('No newer stable release; check for updates again.')
+            check_worker_unit(state, Path(managed['runtime']), Services())
         write(state/'updates/result.json',{'status':'running','message':'Preparing update… Keep this session signed in. Installation runs independently of this window.'})
         log=(state/'updates/update.log').open('ab')
         try:

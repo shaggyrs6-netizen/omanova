@@ -10,6 +10,8 @@ class FakeServices:
  def stop(self):self.running=False;self.calls.append('stop')
  def start(self):self.running=True;self.calls.append('start')
  def healthy(self,*args):return self.ok
+ def uses_unit(self,path):return True
+ def uses_default_data_home(self):return True
 
 class UpdateTests(unittest.TestCase):
  def setUp(self):
@@ -18,6 +20,7 @@ class UpdateTests(unittest.TestCase):
   self.env=patch.dict(os.environ,{'HOME':str(self.root),'XDG_CONFIG_HOME':str(self.config)});self.env.start();self.addCleanup(self.env.stop)
   (self.runtime/'manifest.json').write_text('{"version":"0.1.4"}');(self.runtime/'worker.py').write_text('old code')
   (self.plugin/'manifest.json').write_text('{"id":"local.omasky","version":"0.1.4"}');(self.plugin/'BarWidget.qml').write_text('old widget')
+  (self.runtime/'systemd').mkdir();(self.runtime/'systemd/omanova-worker.service').write_text('owned unit')
   (self.state/'runtime').symlink_to(self.runtime);self.unit=self.config/'systemd/user/omanova-worker.service';self.unit.parent.mkdir(parents=True);self.unit.write_text('owned unit')
   (self.state/'settings.json').write_text('PRIVATE LOCATION');(self.state/'observations.json').write_text('PRIVATE LOG')
   u.register(self.state,self.runtime,self.plugin)
@@ -52,8 +55,83 @@ class UpdateTests(unittest.TestCase):
   for v in ('0.1.4','0.1.3'):
    with self.assertRaises(ValueError):u.install(self.state,{'version':v},FakeServices(),lambda *a:self.fail('No prepare'))
   self.unit.write_text('custom unit');service=FakeServices()
-  with self.assertRaises(ValueError):u.install(self.state,{'version':'0.1.5'},service,self.prepare)
+  with self.assertRaisesRegex(ValueError,'worker service differs'):
+   u.install(self.state,{'version':'0.1.5'},service,lambda *a:self.fail('No prepare'))
   self.assertEqual(service.calls,[]);self.assertEqual((self.state/'runtime').resolve(),self.runtime)
+ def use_known_legacy_service(self):
+  bundled = u.ROOT/'systemd/omanova-worker.service'
+  stock = bundled.read_bytes()
+  legacy = b'\n'.join(
+   b'ExecStart=%h/.local/share/omasky/runtime/.venv/bin/python -u %h/.local/share/omasky/runtime/worker.py watch'
+   if line.startswith(b'ExecStart=') else line for line in stock.split(b'\n'))
+  self.unit.write_bytes(legacy)
+  self.assertEqual(u.digest(self.unit), u.LEGACY_WORKER_SHA)
+  shutil.copyfile(bundled, self.runtime/'systemd/omanova-worker.service')
+  default_state = self.root/'.local/share/omasky'
+  default_state.parent.mkdir(parents=True)
+  self.state.rename(default_state)
+  self.state = default_state
+  u.register(self.state,self.runtime,self.plugin)
+  return bundled
+
+ def test_legacy_worker_can_upgrade_and_restore_without_changing_unit_or_login(self):
+  bundled = self.use_known_legacy_service()
+  login = self.unit.parent/'default.target.wants'/self.unit.name
+  login.parent.mkdir()
+  login.symlink_to(self.unit)
+  source = self.unit.read_bytes()
+  def prepare(*args):
+   runtime,widget,revision = self.prepare(*args)
+   shutil.copyfile(bundled, runtime/'systemd/omanova-worker.service')
+   return runtime, widget, revision
+  service = FakeServices()
+  self.assertEqual(u.install(self.state,{'version':'0.1.5'},service,prepare)['status'],'installed')
+  self.assertEqual((self.state/'settings.json').read_text(),'PRIVATE LOCATION')
+  self.assertEqual((self.state/'observations.json').read_text(),'PRIVATE LOG')
+  self.assertEqual(service.calls,['stop','start'])
+  u.restore(self.state,service)
+  self.assertEqual(self.unit.read_bytes(),source)
+  self.assertEqual(login.readlink(),self.unit)
+  self.assertEqual((self.state/'runtime').resolve(),self.runtime)
+
+ def test_legacy_mode_requires_default_data_and_compatible_candidate_unit(self):
+  self.use_known_legacy_service()
+  service = FakeServices()
+  with self.assertRaisesRegex(ValueError,'worker service differs'):
+   u.check_worker_unit(self.root/'custom-data', self.runtime, service)
+  with patch.object(service,'uses_default_data_home',return_value=False):
+   with self.assertRaisesRegex(ValueError,'default data directory'):
+    u.check_worker_unit(self.state, self.runtime, service)
+  with self.assertRaisesRegex(ValueError,'worker service differs'):
+   u.install(self.state,{'version':'0.1.5'},service,self.prepare)
+  self.assertEqual(service.calls,[])
+  self.assertEqual((self.state/'runtime').resolve(),self.runtime)
+
+ def test_service_manager_overrides_and_pending_reload_are_rejected(self):
+  service = u.Services()
+  loaded = f'FragmentPath={self.unit}\nDropInPaths=\nNeedDaemonReload=no\n'
+  for stdout, expected in (
+   (loaded, True),
+   (loaded.replace('DropInPaths=','DropInPaths=/some/override.conf'), False),
+   (loaded.replace('NeedDaemonReload=no','NeedDaemonReload=yes'), False),
+   (loaded.replace(str(self.unit),'/some/other.service'), False),
+  ):
+   with self.subTest(stdout=stdout), patch.object(service,'call',return_value=u.subprocess.CompletedProcess([],0,stdout)):
+    self.assertEqual(service.uses_unit(self.unit),expected)
+
+ def test_update_check_reports_worker_block_before_launching(self):
+  u.write(self.state/'updates/ticket.json',{'version':'0.1.5','checked':u.stamp()})
+  with patch.object(u,'Services',return_value=FakeServices()):
+   self.assertTrue(u.dispatch('check',self.state)['canInstall'])
+   self.unit.write_text('custom unit')
+   result = u.dispatch('check',self.state)
+   self.assertEqual(result['status'],'available')
+   self.assertFalse(result['canInstall'])
+   self.assertIn('worker service differs',result['message'])
+   with patch.object(u.subprocess,'Popen',side_effect=AssertionError('No launch')):
+    with self.assertRaisesRegex(ValueError,'worker service differs'):
+     u.dispatch('launch',self.state)
+
  def test_inactive_worker_stays_inactive_and_login_choice_not_changed(self):
   service=FakeServices(active=False);u.install(self.state,{'version':'0.1.5'},service,self.prepare);self.assertEqual(service.calls,[]);self.assertFalse(service.running)
  def test_interrupted_activation_can_restore_original_installation(self):
@@ -188,7 +266,7 @@ class UpdateTests(unittest.TestCase):
   original=u.subprocess.Popen;children=[]
   def launch(*a,**kw):
    child=original(*a,**kw);children.append(child);return child
-  with patch.object(u,'ROOT',self.root),patch.object(u.subprocess,'Popen',side_effect=launch):
+  with patch.object(u,'ROOT',self.root), patch.object(u,'Services',return_value=FakeServices()), patch.object(u.subprocess,'Popen',side_effect=launch):
    result=u.dispatch('launch',self.state)
   self.assertEqual(result['status'],'running');self.assertNotEqual(os.getsid(children[0].pid),os.getsid(0))
   children[0].wait(timeout=5)
@@ -201,6 +279,6 @@ class UpdateTests(unittest.TestCase):
 
  def test_failed_process_launch_is_not_left_as_permanently_running(self):
   u.write(self.state/'updates/ticket.json',{'version':'0.1.5','checked':u.stamp()})
-  with patch.object(u.subprocess,'Popen',side_effect=OSError('SYNTHETIC process limit')):
+  with patch.object(u,'Services',return_value=FakeServices()), patch.object(u.subprocess,'Popen',side_effect=OSError('SYNTHETIC process limit')):
    with self.assertRaises(OSError):u.dispatch('launch',self.state)
   self.assertEqual(u.status(self.state)['status'],'error');self.assertEqual((self.state/'runtime').resolve(),self.runtime)

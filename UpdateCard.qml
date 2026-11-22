@@ -33,7 +33,7 @@ Rectangle {
   Copy {visible:!!root.result?.version;text:"Latest release: "+(root.result?.version||"");font.bold:true}
   Action {visible:!!root.result?.notes;text:root.notesOpen?"Hide release notes":"Show release notes";onClicked:root.notesOpen=!root.notesOpen}
   Copy {visible:root.notesOpen&&!!root.result?.notes;text:root.result?.notes||"";color:App.Palette.muted}
-  Copy {visible:root.result?.status==="available";text:"Installation downloads and verifies the release, prepares its runtime/widget and restarts an active worker. Saved data and login startup are preserved. Previous files are kept for recovery. Save all forms first; close and reopen Observatory after success, then reload the shell to refresh the bar.";color:App.Palette.muted}
+  Copy {visible:root.result?.status==="available"&&!!root.result?.canInstall;text:"Installation downloads and verifies the release, prepares its runtime/widget and restarts an active worker. Saved data and login startup are preserved. Previous files are kept for recovery. Save all forms first; close and reopen Observatory after success, then reload the shell to refresh the bar.";color:App.Palette.muted}
   Copy {visible:root.draftBlocked;text:"Save or clear your unfinished observing-log draft before installing.";color:App.Palette.warning}
   Action {visible:(root.result?.status==="available"&&root.result?.canInstall)||root.result?.status==="installed"||root.result?.status==="recovery";text:root.accepted?"✓ I have saved my changes":"I have saved my changes";onClicked:root.accepted=!root.accepted}
   Action {visible:root.result?.status==="available";enabled:!root.busy&&!!root.result?.canInstall&&root.accepted&&!root.draftBlocked;text:"Download & install "+(root.result?.version||"");onClicked:root.run("launch")}

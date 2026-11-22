@@ -1257,8 +1257,10 @@ Python dependencies and the checksum-bound kernel in a separate runtime. The
 managed source/widget baseline refuses later local edits. The old runtime and
 widget are retained, user data stays in place, the existing bar identity and
 login-startup preference are preserved, and only an already-active managed
-worker is restarted. A foreground worker or changed service unit requires
-review. No privilege elevation or automatic uv/package-manager install occurs.
+worker is restarted. The known older alias-based worker unit is supported with
+the default data directory and is kept as-is. A foreground worker, custom
+worker unit, or service override still requires review. A check reports a worker
+configuration blocker before offering the install. No privilege elevation or automatic uv/package-manager install occurs.
 Checksums are integrity checks, not independent publisher signatures.
 
 Failures after activation restore the former alias/widget. An interrupted
@@ -1273,6 +1275,33 @@ background cache/recovery cleanup. The guided installer records the initial
 managed baseline; older/unregistered/custom installations require review rather
 than being overwritten. The supported Omarchy configuration location remains
 `~/.config`, even though the Observatory has its own temporary Quickshell config.
+
+### One-time upgrade for the older alias-based worker service
+
+If your installed updater stops with **Worker unit differs** and you use the
+older standard service, run the updater from the newer release once. Download
+the tagged release archive and `SHA256SUMS` from GitHub, verify them with
+`sha256sum -c SHA256SUMS` in the download directory, then extract the archive.
+Save your changes and close Observatory. From the extracted release directory:
+
+```sh
+omanova_state="${XDG_DATA_HOME:-$HOME/.local/share}/omasky"
+omanova_python="$omanova_state/runtime/.venv/bin/python"
+"$omanova_python" ./update_manager.py --state "$omanova_state" check
+```
+
+If the check shows the expected newer version and `"canInstall": true`, start
+the update explicitly and use `status` to see its result:
+
+```sh
+"$omanova_python" ./update_manager.py --state "$omanova_state" launch
+"$omanova_python" ./update_manager.py --state "$omanova_state" status
+```
+
+Stay signed in and wait for the result before refreshing the shell and
+reopening Observatory. The existing service and login startup setting are
+preserved. Use the in-app updater for later releases. A customised install or
+worker service still needs review.
 
 **Live satellites:** open Sky → Star Chart and switch **Live satellites · Off**
 to **On**. It uses current time, recalculating every five seconds while the chart
