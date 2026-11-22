@@ -12,6 +12,16 @@ ColumnLayout {
     readonly property string directory: Quickshell.env("OMASKY_LOG_STATE")
     readonly property string tool: Quickshell.env("OMASKY_LOG_TOOL")
     property var entries: []
+    property string selectedId: ""
+    property bool composing: false
+    readonly property var selectedEntry: entries.find(e=>e.id===selectedId) || entries[0] || null
+    readonly property bool showForm: composing || !selectedEntry
+    function localLabel(stamp, format) { return Qt.formatDateTime(new Date(stamp),format) }
+    function beginDraft() {
+        composing=true
+        if (!dirty) { useNow(); draftContext="" }
+        seen.forceActiveFocus()
+    }
     property string message: ""
     property bool failed: false
     property string pending: ""
@@ -28,6 +38,7 @@ ColumnLayout {
     function receiveDraft() {
         if(!draftRequest || String(draftRequest.token)===lastDraftToken) return
         lastDraftToken=String(draftRequest.token)
+        composing=true
         if(dirty) replacementDraft=draftRequest
         else applyDraft(draftRequest)
     }
@@ -131,15 +142,6 @@ ColumnLayout {
             border.color: action.visualFocus ? App.Palette.accent : App.Palette.border
         }
     }
-    component Card: Rectangle {
-        Layout.fillWidth: true
-        Layout.leftMargin: 22
-        Layout.rightMargin: 22
-        color: App.Palette.surface
-        border.color: App.Palette.line
-        radius: 12
-    }
-
     FileView {
         id: history
         path: page.directory + "/observations.json"
@@ -188,6 +190,7 @@ ColumnLayout {
             page.directory, "add"]
         environment: ({ "OPENBLAS_NUM_THREADS": "1" })
         stdinEnabled: true
+        stdout: StdioCollector { id: receipt }
         stderr: StdioCollector { id: diagnostics }
         onStarted: write(page.pending + "\n")
         onExited: function(code) {
@@ -197,6 +200,8 @@ ColumnLayout {
                 page.message = diagnostics.text.trim() || qsTr("Could not save the observation.")
                 return
             }
+            try { page.selectedId=JSON.parse(receipt.text).id } catch (_) { page.selectedId="" }
+            page.composing=false
             seen.clear()
             notes.clear()
             page.dirty = false
@@ -230,20 +235,89 @@ ColumnLayout {
         }
     }
 
-    ColumnLayout {
-        Layout.fillWidth: true
-        Layout.margins: 22
-        spacing: 8
-        App.PageHeader { eyebrow:"LOG"; title:qsTr("Observing log") }
-        Copy {
-            text: page.embedded ? qsTr("Entries stay on this computer. Times use your computer’s time zone.")
-                : qsTr("Entries stay on this computer in a separate preview log. Times use your computer’s time zone.")
-            color: App.Palette.muted
+    Flow {
+        Layout.fillWidth:true;Layout.leftMargin:20;Layout.rightMargin:20;Layout.topMargin:14
+        spacing:8
+        Column {
+            width:Math.max(220,parent.width-exportAction.width-newAction.width-20)
+            spacing:4
+            Copy {text:qsTr("Observing Log");font.pixelSize:29;font.bold:true}
+            Copy {text:qsTr("Saved on this computer · Times shown in your local time zone");color:App.Palette.muted;font.pixelSize:14;width:parent.width}
+        }
+        Action {
+            id:exportAction;text:qsTr("Export CSV")
+            enabled:page.ready&&page.entries.length>0&&!save.running&&!exportCsv.running
+            onClicked:{page.exportReceipt=null;exportCsv.running=true}
+        }
+        Action {
+            id:newAction;text:page.dirty?qsTr("Resume draft"):qsTr("+ New observation")
+            enabled:page.ready&&!save.running
+            onClicked:page.beginDraft()
         }
     }
-
-    Card {
-        implicitHeight: form.implicitHeight + 34
+    Copy {
+        Layout.leftMargin:20;Layout.rightMargin:20
+        visible:!!page.message;text:page.message;color:page.failed?App.Palette.warning:App.Palette.accent
+    }
+    Action {
+        visible:!!page.exportReceipt;Layout.leftMargin:20;text:qsTr("Open export folder")
+        onClicked:Qt.openUrlExternally("file://"+page.directory.split("/").map(encodeURIComponent).join("/")+"/exports")
+    }
+    GridLayout {
+        id:grid
+        Layout.fillWidth:true;Layout.leftMargin:18;Layout.rightMargin:18
+        columns:width>=715?2:1;columnSpacing:12;rowSpacing:12
+        App.ViewPanel {
+            appearance:"mission";Layout.fillWidth:true;Layout.preferredWidth:310;Layout.fillHeight:grid.columns===2
+            Layout.alignment:Qt.AlignTop;implicitHeight:listBody.implicitHeight+30
+            ColumnLayout {
+                id:listBody;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:15;spacing:8
+                RowLayout {
+                    Layout.fillWidth:true
+                    Copy {text:qsTr("Saved observations");font.pixelSize:19;font.bold:true}
+                    Copy {Layout.fillWidth:false;text:String(page.entries.length);color:App.Palette.muted}
+                }
+                Copy {visible:page.ready&&!page.entries.length;text:qsTr("Your first saved observation will appear here.");color:App.Palette.muted}
+                ListView {
+                    id:list
+                    Layout.fillWidth:true;Layout.preferredHeight:Math.min(contentHeight,grid.columns===1?182:422)
+                    clip:true;model:page.entries;spacing:3
+                    ScrollBar.vertical:ScrollBar {}
+                    delegate:Column {
+                        id:row
+                        required property int index
+                        required property var modelData
+                        width:list.width
+                        readonly property string dateLabel:page.localLabel(modelData.observed,"dddd · d MMM yyyy")
+                        Text {
+                            leftPadding:4;topPadding:10;bottomPadding:6
+                            visible:row.index===0 || row.dateLabel!==page.localLabel(page.entries[row.index-1]?.observed || "","dddd · d MMM yyyy")
+                            text:row.dateLabel;font.pixelSize:12;font.bold:true;color:App.Palette.muted
+                        }
+                        Button {
+                            width:parent.width;height:62
+                            Accessible.name:row.modelData.seen+" · "+row.dateLabel
+                            enabled:!save.running
+                            onClicked:{page.selectedId=row.modelData.id;page.composing=false}
+                            readonly property bool picked:!page.showForm && page.selectedEntry?.id===row.modelData.id
+                            background:Rectangle {radius:5;color:parent.picked?App.Palette.hover:App.Palette.field;border.color:parent.visualFocus||parent.picked?App.Palette.accent:App.Palette.line}
+                            contentItem:ColumnLayout {
+                                spacing:2
+                                RowLayout {
+                                    Layout.fillWidth:true
+                                    Text {Layout.fillWidth:true;elide:Text.ElideRight;textFormat:Text.PlainText;text:row.modelData.seen;color:App.Palette.ink;font.bold:true;font.pixelSize:16}
+                                    Text {text:page.localLabel(row.modelData.observed,"HH:mm");color:App.Palette.accent;font.pixelSize:14}
+                                }
+                                Text {Layout.fillWidth:true;elide:Text.ElideRight;textFormat:Text.PlainText;text:row.modelData.place;color:App.Palette.muted;font.pixelSize:13}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        App.ViewPanel {
+            visible:page.showForm;appearance:"mission";Layout.fillWidth:true;Layout.preferredWidth:660
+            Layout.alignment:Qt.AlignTop;implicitHeight:form.implicitHeight+34
         ColumnLayout {
             id: form
             anchors.fill: parent
@@ -297,59 +371,26 @@ ColumnLayout {
                 enabled: page.ready && !save.running
                 onClicked: page.submit(seen.text, where.text, notes.text, day.text, time.text)
             }
-            Copy {
-                visible: !!page.message
-                text: page.message
-                color: page.failed ? App.Palette.warning : App.Palette.accent
-            }
         }
-    }
-
-    Card {
-        implicitHeight:exportBody.implicitHeight+32
-        ColumnLayout {
-            id:exportBody;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:16;spacing:8
-            Copy {text:qsTr("Export your log");font.pixelSize:22;font.weight:Font.DemiBold}
-            Copy {text:qsTr("Export all saved entries to a local CSV, including places and notes. Unsaved drafts are excluded. Sharing is a separate action.");color:App.Palette.muted}
-            Flow {
-                Layout.fillWidth:true;spacing:8
-                Action {text:exportCsv.running?qsTr("Exporting…"):qsTr("Export saved entries to CSV");enabled:page.ready&&page.entries.length>0&&!save.running&&!exportCsv.running;onClicked:{page.exportReceipt=null;exportCsv.running=true}}
-                Action {text:qsTr("Open export folder");visible:!!page.exportReceipt;onClicked:Qt.openUrlExternally("file://"+page.directory.split("/").map(encodeURIComponent).join("/")+"/exports")}
-            }
-            Copy {visible:!!page.exportReceipt;text:page.exportReceipt ? "exports/"+page.exportReceipt.path.split("/").pop() : "";color:App.Palette.accent;font.pixelSize:12}
-            Copy {text:qsTr("Spreadsheet formula-like text is escaped in CSV. The saved log stays unchanged. Files are private and never overwrite earlier exports.");color:App.Palette.muted;font.pixelSize:12}
         }
-    }
-
-    Copy {
-        Layout.leftMargin: 22
-        Layout.rightMargin: 22
-        text: qsTr("Saved observations")
-        font.pixelSize: 22
-        font.bold: true
-    }
-    Copy {
-        Layout.leftMargin: 22
-        Layout.rightMargin: 22
-        visible: page.ready && !page.entries.length
-        text: qsTr("Your saved entries will appear here, newest observation first.")
-        color: App.Palette.muted
-    }
-    Repeater {
-        model: page.entries
-        delegate: Card {
-            id: entry
-            required property var modelData
-            implicitHeight: details.implicitHeight + 32
+        App.ViewPanel {
+            visible:!page.showForm;appearance:"mission";Layout.fillWidth:true;Layout.preferredWidth:660
+            Layout.alignment:Qt.AlignTop;implicitHeight:Math.max(295,detail.implicitHeight+40)
             ColumnLayout {
-                id: details
-                anchors.fill: parent
-                anchors.margins: 16
-                spacing: 6
-                Copy { text: entry.modelData.seen; font.pixelSize: 20; font.bold: true }
-                Copy { text: entry.modelData.observed.replace("T", " · "); color: App.Palette.accent }
-                Copy { text: entry.modelData.place; color: App.Palette.muted }
-                Copy { visible: !!entry.modelData.notes; text: entry.modelData.notes }
+                id:detail;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:20;spacing:15
+                Copy {text:page.selectedEntry?page.localLabel(page.selectedEntry.observed,"dddd, d MMMM yyyy"):"";color:App.Palette.muted}
+                Copy {text:page.selectedEntry?.seen || "";font.pixelSize:34;font.bold:true}
+                Rectangle {Layout.fillWidth:true;implicitHeight:1;color:App.Palette.line}
+                GridLayout {
+                    Layout.fillWidth:true;columns:2;columnSpacing:18
+                    Copy {text:qsTr("Observed at");color:App.Palette.muted}
+                    Copy {text:qsTr("Location");color:App.Palette.muted}
+                    Copy {text:page.selectedEntry?page.localLabel(page.selectedEntry.observed,"HH:mm t"):"";font.pixelSize:21;font.bold:true;color:App.Palette.accent}
+                    Copy {text:page.selectedEntry?.place || "";font.pixelSize:21;font.bold:true}
+                }
+                Rectangle {Layout.fillWidth:true;implicitHeight:1;color:App.Palette.line}
+                Copy {text:qsTr("Observing notes");font.bold:true;font.pixelSize:18}
+                Copy {text:page.selectedEntry?.notes || qsTr("No notes recorded.")}
             }
         }
     }

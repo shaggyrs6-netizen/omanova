@@ -129,7 +129,8 @@ def main():
         line = sys.stdin.buffer.readline(32769)
         if len(line) > 32768 or not line.endswith(b"\n"):
             raise ValueError("Observation exceeds the input limit.")
-        add_observation(directory, json.loads(line))
+        item = add_observation(directory, json.loads(line))
+        print(json.dumps({"id": item["id"]}))
     else:
         raise ValueError("Unknown observing log command.")
 
