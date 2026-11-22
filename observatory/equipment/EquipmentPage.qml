@@ -12,6 +12,16 @@ Item {
     readonly property bool deployed:Quickshell.env("OMANOVA_EQUIPMENT_DEPLOYED")==="1"
     readonly property color backgroundColour:App.Palette.background
     Component.onCompleted:if(deployed)request("tick")
+    property int section: 0
+    property bool editorOpen:false
+    property bool manualOpen:false
+    readonly property var sections: [
+        ["Equipment & sky","Gear and observing conditions"],
+        ["Saved setups","Telescope, eyepiece and camera frames"],
+        ["Suggestions","Matches for your observing profile"]
+    ]
+    readonly property string overlayName: activeSetup?.name || (savedField ? "Manual field" : "No overlay set")
+    readonly property string overlaySize: activeSetup ? labelField(activeSetup) : savedField ? formatAngle(savedField) : ""
     property bool capabilitiesOpen:false
     property bool calculatorOpen:false
     property bool cameraOpen:false
@@ -109,7 +119,7 @@ Item {
         environment:({"OPENBLAS_NUM_THREADS":"1"});stdinEnabled:true
         onStarted:{write(root.pending);root.pending="";stdinEnabled=false}
         stderr:StdioCollector {id:errors}
-        onExited:function(code){if(root.fieldConfirmation)root.fieldNotice=code===0?root.fieldConfirmation:"Field could not be saved.";if(code===0)view.reload();else root.dataSet=null;root.result=code===0?root.deployed?"Equipment and sky profile saved locally.":"Saved in this preview only.":errors.text.trim()||"Update unavailable. Try selecting a data source again."}
+        onExited:function(code){if(root.fieldConfirmation)root.fieldNotice=code===0?root.fieldConfirmation:"Field could not be saved.";if(code===0)view.reload();else root.dataSet=null;root.result=code===0?(root.action==="tick"?"":root.deployed?"Profile updated locally.":"Saved in this preview only."):(errors.text.trim()||"Update unavailable. Try again.")}
     }
     Timer {interval:30000;repeat:true;running:!!root.dataSet&&!helper.running&&root.dataSet.source==="live";onTriggered:root.request("tick")}
         Rectangle {
@@ -146,202 +156,326 @@ Item {
             ScrollView {
                 id:scroll;anchors.fill:parent;clip:true;contentWidth:availableWidth
                 ColumnLayout {
-                    width:scroll.availableWidth;spacing:14
-                    ColumnLayout {
-                        Layout.fillWidth:true;Layout.margins:24;spacing:10
-                        App.PageHeader {eyebrow:"SETTINGS";title:"My Equipment and Sky"}
-                        Copy {text:"Choose what you have and the sky you expect. Suggestions explain what fits, what is uncertain and what needs a different setup.";color:App.Palette.muted}
-                        Flow {
-                            Layout.fillWidth:true;spacing:10;visible:!root.deployed
-                            Action {text:root.dataSet?.source==="sample"?"● Public examples":"Public examples";enabled:!helper.running;onClicked:root.request("source",{source:"sample"})}
-                            Action {text:root.dataSet?.source==="live"?"● Live suggestions · read-only":"Live suggestions · read-only";enabled:!helper.running;onClicked:root.request("source",{source:"live"})}
-                        }
-                        Copy {text:root.dataSet?.source==="live"?"READ-ONLY LIVE SNAPSHOT · Rechecks local planner data every 30 seconds. No new downloads, alerts or live setting changes.":"SIMULATED EXAMPLES · Fixed sample clock: "+root.when(root.dataSet?.clock)+". These are filter exercises, not tonight’s predictions.";color:App.Palette.warning}
-                        Copy {text:"My equipment · choose one or more";font.bold:true}
-                        Flow {
-                            Layout.fillWidth:true;spacing:12
-                            Repeater {
-                                model:[{key:"eye",label:"Naked eye"},{key:"binoculars",label:"Binoculars"},{key:"telescope",label:"Telescope"},{key:"camera",label:"Camera"}]
-                                Toggle {required property var modelData;text:modelData.label;checked:root.dataSet?.profile?.gear?.includes(modelData.key)||false;onClicked:root.gear(modelData.key,checked)}
-                            }
-                        }
-                        Copy {text:"Equipment choices filter suggestions. A saved frame estimates the sky your camera covers. Exposure, tracking and faint-target detail still depend on your setup.";color:App.Palette.muted}
-                        Copy {text:"Field of view for overlays";font.bold:true}
-                        Copy {
-                            text:root.activeSetup ? "Active setup: "+root.activeSetup.name+" · "+root.labelField(root.activeSetup) :
-                                root.savedField===null ? "No field size saved. Calculate it or enter it manually." :
-                                "Active field: "+root.formatAngle(root.savedField)
-                            color:App.Palette.accent
-                        }
-                        Action {
-                            text:root.calculatorOpen?"Hide telescope calculator":"Calculate from telescope and eyepiece"
-                            onClicked:{root.calculatorOpen=!root.calculatorOpen;if(root.calculatorOpen)root.cameraOpen=false}
-                        }
-                        ColumnLayout {
-                            Layout.fillWidth:true;visible:root.calculatorOpen;spacing:7
-                            Copy {text:"Use the effective telescope focal length if you use a Barlow or focal reducer. Use the eyepiece’s apparent field for the third value.";color:App.Palette.muted}
-                            Flow {
-                                Layout.fillWidth:true;spacing:8
-                                SpecField {id:telescope;width:200;label:"Telescope focal length (mm)";text:root.scopeSpec??""}
-                                SpecField {id:eyepiece;width:200;label:"Eyepiece focal length (mm)";text:root.ocularSpec??""}
-                                SpecField {id:apparent;width:215;label:"Eyepiece apparent field (°)";text:root.apparentSpec??""}
-                            }
-                            Copy {
-                                text:root.estimate?"Estimated true field: "+root.formatAngle(root.estimate.field)+" · "+
-                                    Number(root.estimate.magnification.toPrecision(3))+"× magnification":
-                                    "Enter all three specs for an estimate (supported field: 0.01° to 180°)."
-                                color:root.estimate?App.Palette.accent:App.Palette.muted
-                            }
-                            Action {text:"Use estimated field without naming it";enabled:!!root.dataSet&&!helper.running&&!!root.estimate;onClicked:root.saveEstimate()}
-                            SpecField {id:nameInput;width:240;label:"Setup name";numeric:false;maximumLength:48}
-                            Flow {
-                                Layout.fillWidth:true;spacing:8
-                                Action {
-                                    text:root.existingName?"Update and use setup":"Save and use setup"
-                                    enabled:!!root.dataSet&&!helper.running&&!!root.estimate&&!!root.setupName&&
-                                        (root.existingName||(!root.telescopeNameMatch&&root.setups.length<12))
-                                    onClicked:root.saveNamedSetup()
-                                }
-                                Action {
-                                    visible:root.existingName
-                                    text:"Remove named setup"
-                                    enabled:!helper.running
-                                    onClicked:root.request("remove_setup",{name:root.setupName},"Setup removed.")
-                                }
-                            }
-                            Copy {
-                                visible:text!==""
-                                text:root.telescopeNameMatch?.camera ? "This name is used by a camera setup." :
-                                    root.setups.length>=12 ? "All 12 setup slots are in use. Edit or remove a saved setup." : ""
-                                color:App.Palette.muted
-                            }
-                            Flow {
-                                Layout.fillWidth:true;spacing:8
-                                Repeater {
-                                    model:root.setups.filter(setup=>!setup.camera)
-                                    Action {
-                                        required property var modelData
-                                        text:modelData.name
-                                        enabled:!helper.running
-                                        onClicked:root.editSetup(modelData)
-                                    }
-                                }
-                            }
-                        }
-                        Action {
-                            text:root.cameraOpen?"Hide camera calculator":"Calculate camera frame"
-                            onClicked:{root.cameraOpen=!root.cameraOpen;if(root.cameraOpen)root.calculatorOpen=false}
-                        }
-                        ColumnLayout {
-                            Layout.fillWidth:true;visible:root.cameraOpen;spacing:8
-                            Copy {
-                                text:"Use the sensor’s active width and height in millimetres and the actual focal length of the lens or telescope."
-                                color:App.Palette.muted
-                            }
-                            Flow {
-                                Layout.fillWidth:true;spacing:8
-                                SpecField {id:sensorWidth;width:205;label:"Sensor width (mm)"}
-                                SpecField {id:sensorHeight;width:205;label:"Sensor height (mm)"}
-                                SpecField {id:cameraFocal;width:205;label:"Focal length (mm)"}
-                            }
-                            Copy {
-                                text:root.cameraEstimate ? "Estimated camera frame: "+root.formatAngle(root.cameraEstimate.width)+
-                                    " wide × "+root.formatAngle(root.cameraEstimate.height)+" high" :
-                                    "Enter positive dimensions and focal length to calculate the frame."
-                                color:root.cameraEstimate?App.Palette.accent:App.Palette.muted
-                            }
-                            SpecField {id:cameraName;width:240;label:"Camera setup name";numeric:false;maximumLength:48}
-                            Flow {
-                                Layout.fillWidth:true;spacing:8
-                                Action {
-                                    text:root.knownCamera?"Update and use camera setup":"Save and use camera setup"
-                                    enabled:root.canSaveCamera
-                                    onClicked:root.saveCameraSetup()
-                                }
-                                Action {
-                                    visible:root.knownCamera
-                                    text:"Remove camera setup"
-                                    enabled:!helper.running
-                                    onClicked:root.request("remove_setup",{name:root.photoName},"Camera setup removed.")
-                                }
-                            }
-                            Copy {
-                                visible:text!==""
-                                text:root.photoNameMatch&&!root.knownCamera ? "This name is used by a telescope setup." :
-                                    root.setups.length>=12 ? "All 12 setup slots are in use. Edit or remove a saved setup." : ""
-                                color:App.Palette.muted
-                            }
-                            Flow {
-                                Layout.fillWidth:true;spacing:8
-                                Repeater {
-                                    model:root.setups.filter(setup=>!!setup.camera)
-                                    Action {
-                                        required property var modelData
-                                        text:modelData.name
-                                        enabled:!helper.running
-                                        onClicked:root.editCamera(modelData)
-                                    }
-                                }
-                            }
-                        }
-                        Flow {
-                            Layout.fillWidth:true;spacing:8
-                            SpecField {id:manualField;width:200;label:"Manual true field (°)";text:root.savedField??""}
-                            Action {text:"Save manual field";enabled:!!root.dataSet&&!helper.running;onClicked:root.saveManualField()}
-                        }
-                        Copy {visible:root.fieldNotice!=="";text:root.fieldNotice;color:App.Palette.accent}
-                        Action {text:root.capabilitiesOpen?"Hide equipment details":"Optional equipment details";onClicked:root.capabilitiesOpen=!root.capabilitiesOpen}
-                        ColumnLayout {visible:root.capabilitiesOpen;Layout.fillWidth:true;spacing:8
-                            Copy {text:"Aperture (20–600 mm), binocular power (2–30×). Leave unknown values blank.";color:App.Palette.muted}
-                            Flow {Layout.fillWidth:true;spacing:8
-                                TextField {id:aperture;width:145;placeholderText:"Aperture mm";text:root.dataSet?.profile?.apertureMm??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
-                                TextField {id:power;width:145;placeholderText:"Binocular ×";text:root.dataSet?.profile?.binocularMagnification??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
-                                Action {text:"Save details";enabled:!!root.dataSet&&!helper.running;onClicked:{let p={};p.apertureMm=aperture.text.trim()?Number(aperture.text):null;p.binocularMagnification=power.text.trim()?Number(power.text):null;if([p.apertureMm,p.binocularMagnification].some(v=>v!==null&&!Number.isFinite(v))){root.result="Enter numbers or leave unknown values blank.";return}root.request("patch",p)}}
-                            }
-                            Flow {Layout.fillWidth:true;spacing:8
-                                Repeater {model:["unknown","widefield","tracked"];Action {required property string modelData;text:(root.dataSet?.profile?.cameraMode===modelData?"● ":"")+"Camera: "+modelData;enabled:!!root.dataSet&&!helper.running;onClicked:root.preference("cameraMode",modelData)}}
-                            }
-                            Copy {text:"Sky Finder compares your field of view with target size. Aperture/power/camera mode are recorded as context, not a promise of limiting magnitude, exposure or resolved detail. Equipment preferences also filter Overview and new calendar/offline selections; saved guides retain their original snapshot.";color:App.Palette.muted}
-                        }
-                        Copy {text:"My sky · manual description";font.bold:true}
-                        Flow {
-                            Layout.fillWidth:true;spacing:8
-                            Repeater {
-                                model:[{key:"unknown",label:"Not sure"},{key:"bright",label:"Bright / urban"},{key:"moderate",label:"Moderate / suburban"},{key:"dark",label:"Dark / rural"}]
-                                Action {required property var modelData;text:(root.dataSet?.profile?.sky===modelData.key?"● ":"")+modelData.label;enabled:!helper.running&&!!root.dataSet;onClicked:root.preference("sky",modelData.key)}
-                            }
-                        }
-                        Copy {text:"Your description is a planning preference, not a measured darkness rating. Cloud, Moon, glare and your horizon can still limit a sighting.";color:App.Palette.muted}
-                        Flow {
-                            Layout.fillWidth:true;spacing:10
-                            Toggle {text:"Filter suggestions";checked:root.dataSet?.profile?.filter===true;onClicked:root.preference("filter",checked)}
-                            Toggle {text:"Include uncertain matches";checked:root.dataSet?.profile?.uncertain===true;onClicked:root.preference("uncertain",checked)}
-                            Toggle {text:"Inspect filtered-out entries";checked:root.dataSet?.profile?.showExcluded===true;onClicked:root.preference("showExcluded",checked)}
-                        }
-                        Copy {text:(root.dataSet?.counts?.shown||0)+" shown / "+(root.dataSet?.counts?.total||0)+" total · "+(root.dataSet?.counts?.eligible||0)+" eligible after profile · "+(root.dataSet?.counts?.uncertain||0)+" uncertain · "+(root.dataSet?.counts?.excluded||0)+" filtered";color:App.Palette.accent}
-                        Copy {visible:root.result.length>0;text:root.result;color:App.Palette.muted}
-                        Copy {visible:!!root.dataSet?.error;text:root.dataSet?.error||"";color:App.Palette.warning}
-                    }
-                    Repeater {
-                        model:root.dataSet?.rows||[]
-                        Rectangle {
-                            id:card;required property var modelData
-                            Layout.fillWidth:true;Layout.leftMargin:24;Layout.rightMargin:24
-                            implicitHeight:body.implicitHeight+32;radius:10;color:App.Palette.surface;border.color:modelData.excluded?App.Palette.line:App.Palette.border
+                    width:scroll.availableWidth;spacing:12
+                    Heading {Layout.margins:18;Layout.bottomMargin:0;text:"My Equipment and Sky"}
+                    GridLayout {
+                        id:panes
+                        Layout.fillWidth:true;Layout.margins:16
+                        columns:width>=720?2:1;rowSpacing:10;columnSpacing:12
+                        App.ViewPanel {
+                            appearance:"mission";Layout.fillWidth:true;Layout.preferredWidth:270
+                            Layout.alignment:Qt.AlignTop;implicitHeight:nav.implicitHeight+28
                             ColumnLayout {
-                                id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:16;spacing:8
-                                Copy {text:card.modelData.kind.toUpperCase()+" · "+card.modelData.profileBadge;color:card.modelData.eligible?App.Palette.good:App.Palette.warning;font.pixelSize:12;font.bold:true}
-                                Heading {text:card.modelData.name;font.pixelSize:22}
-                                Copy {text:root.when(card.modelData.start)+" – "+Qt.formatDateTime(new Date(card.modelData.end),"HH:mm")+" · "+(card.modelData.look.direction||"Direction unknown")+" · "+(card.modelData.look.el===null?"altitude unknown":Math.round(card.modelData.look.el)+"° up")}
-                                Copy {text:"Source visibility: "+card.modelData.visibility+" · Weather: "+card.modelData.conditions.label+" · "+(card.modelData.eligible?"Eligible after profile checks":"Inspect only / not an eligible suggestion");color:App.Palette.muted}
-                                Copy {text:card.modelData.notes.join("\n");color:App.Palette.muted}
-                                Copy {visible:!!card.modelData.safety;text:card.modelData.safety;color:App.Palette.warning}
-                                Action {visible:!!card.modelData.source;text:card.modelData.restricted?"Read solar safety guidance":"Open source guidance";onClicked:Qt.openUrlExternally(card.modelData.source)}
+                                id:nav;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
+                                ComboBox {
+                                    visible:panes.columns===1;Layout.fillWidth:true
+                                    model:root.sections.map(s=>s[0]);currentIndex:root.section
+                                    Accessible.name:"Equipment section"
+                                    palette.button:App.Palette.button;palette.buttonText:App.Palette.ink
+                                    palette.base:App.Palette.field;palette.text:App.Palette.ink
+                                    onActivated:index=>root.section=index
+                                }
+                                Repeater {
+                                    model:root.sections
+                                    Button {
+                                        id:navButton
+                                        required property var modelData
+                                        required property int index
+                                        visible:panes.columns===2
+                                        Layout.fillWidth:true;implicitHeight:65;leftPadding:12;rightPadding:8
+                                        Accessible.name:modelData[0];Accessible.selected:root.section===index
+                                        onClicked:root.section=index
+                                        background:Rectangle {
+                                            radius:5;color:root.section===navButton.index?App.Palette.hover:navButton.hovered?App.Palette.field:"transparent"
+                                            border.color:root.section===navButton.index||navButton.activeFocus?App.Palette.accent:"transparent"
+                                        }
+                                        contentItem:ColumnLayout {
+                                            spacing:3
+                                            Copy {text:navButton.modelData[0];font.bold:true;color:root.section===navButton.index?App.Palette.accent:App.Palette.ink}
+                                            Copy {text:navButton.modelData[1];font.pixelSize:12;color:App.Palette.muted}
+                                        }
+                                    }
+                                }
+                                Rectangle {Layout.fillWidth:true;implicitHeight:1;color:App.Palette.line}
+                                Copy {text:"Active overlay";color:App.Palette.muted}
+                                Copy {text:root.overlayName;font.pixelSize:18;font.bold:true}
+                                Copy {text:root.overlaySize;visible:!!text;color:App.Palette.accent}
+                            }
+                        }
+                        App.ViewPanel {
+                            appearance:"mission";Layout.fillWidth:true;Layout.preferredWidth:675;Layout.minimumWidth:0
+                            Layout.alignment:Qt.AlignTop;implicitHeight:body.implicitHeight+34
+                            ColumnLayout {
+                                id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:17;spacing:12
+                                RowLayout {
+                                    Layout.fillWidth:true
+                                    Heading {text:root.sections[root.section][0]}
+                                    Action {visible:root.section===1;text:root.editorOpen?"Close editor":"Add or edit setup"
+                                        onClicked:{
+                                            root.editorOpen=!root.editorOpen
+                                            if(root.editorOpen && root.activeSetup){
+                                                root.cameraOpen=!!root.activeSetup.camera;root.calculatorOpen=!root.cameraOpen
+                                                if(root.cameraOpen)root.editCamera(root.activeSetup);else root.editSetup(root.activeSetup)
+                                            }
+                                        }
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth:true;spacing:12;visible:root.section===0
+                                    Copy {text:"My equipment · choose one or more";font.bold:true}
+                                    GridLayout {
+                                        Layout.fillWidth:true;columns:2;columnSpacing:24;rowSpacing:6
+                                        Repeater {
+                                            model:[{key:"eye",label:"Naked eye"},{key:"binoculars",label:"Binoculars"},{key:"telescope",label:"Telescope"},{key:"camera",label:"Camera"}]
+                                            Toggle {required property var modelData;text:modelData.label;checked:root.dataSet?.profile?.gear?.includes(modelData.key)||false;onClicked:root.gear(modelData.key,checked)}
+                                        }
+                                    }
+                                    Copy {text:"Equipment choices filter suggestions. A saved frame estimates the sky your camera covers. Exposure, tracking and faint-target detail still depend on your setup.";color:App.Palette.muted}
+
+                                    Copy {text:"My sky";font.bold:true}
+                                    Flow {
+                                        Layout.fillWidth:true;spacing:8
+                                        Repeater {
+                                            model:[{key:"unknown",label:"Not sure"},{key:"bright",label:"Bright / urban"},{key:"moderate",label:"Moderate / suburban"},{key:"dark",label:"Dark / rural"}]
+                                            Action {required property var modelData;text:(root.dataSet?.profile?.sky===modelData.key?"● ":"")+modelData.label;enabled:!helper.running&&!!root.dataSet;onClicked:root.preference("sky",modelData.key)}
+                                        }
+                                    }
+                                    Copy {text:"Your description is a planning preference, not a measured darkness rating. Cloud, Moon, glare and your horizon can still limit a sighting.";color:App.Palette.muted}
+
+                                    Action {text:root.capabilitiesOpen?"Hide equipment details":"Optional equipment details";onClicked:root.capabilitiesOpen=!root.capabilitiesOpen}
+                                    ColumnLayout {visible:root.capabilitiesOpen;Layout.fillWidth:true;spacing:8
+                                        Copy {text:"Aperture (20–600 mm), binocular power (2–30×). Leave unknown values blank.";color:App.Palette.muted}
+                                        Flow {Layout.fillWidth:true;spacing:8
+                                            TextField {id:aperture;width:145;placeholderText:"Aperture mm";text:root.dataSet?.profile?.apertureMm??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
+                                            TextField {id:power;width:145;placeholderText:"Binocular ×";text:root.dataSet?.profile?.binocularMagnification??"";color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true;background:Rectangle {color:App.Palette.field;border.color:App.Palette.border;radius:5}}
+                                            Action {text:"Save details";enabled:!!root.dataSet&&!helper.running;onClicked:{let p={};p.apertureMm=aperture.text.trim()?Number(aperture.text):null;p.binocularMagnification=power.text.trim()?Number(power.text):null;if([p.apertureMm,p.binocularMagnification].some(v=>v!==null&&!Number.isFinite(v))){root.result="Enter numbers or leave unknown values blank.";return}root.request("patch",p)}}
+                                        }
+                                        Flow {Layout.fillWidth:true;spacing:8
+                                            Repeater {model:["unknown","widefield","tracked"];Action {required property string modelData;text:(root.dataSet?.profile?.cameraMode===modelData?"● ":"")+"Camera: "+modelData;enabled:!!root.dataSet&&!helper.running;onClicked:root.preference("cameraMode",modelData)}}
+                                        }
+                                        Copy {text:"Sky Finder compares your field of view with target size. Aperture/power/camera mode are recorded as context, not a promise of limiting magnitude, exposure or resolved detail. Equipment preferences also filter Overview and new calendar/offline selections; saved guides retain their original snapshot.";color:App.Palette.muted}
+                                    }
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth:true;spacing:12;visible:root.section===1
+                                    Flow {
+                                        Layout.fillWidth:true;spacing:7
+                                        Repeater {
+                                            model:root.setups
+                                            Action {
+                                                required property var modelData
+                                                width:Math.min(implicitWidth,parent.width)
+                                                text:(root.activeSetup?.name===modelData.name?"● ":"")+modelData.name
+                                                Accessible.name:modelData.name
+                                                enabled:!helper.running
+                                                onClicked:{
+                                                    root.request("select_setup",{name:modelData.name},"Setup selected.")
+                                                    if(root.editorOpen) {
+                                                        root.cameraOpen=!!modelData.camera;root.calculatorOpen=!root.cameraOpen
+                                                        if(root.cameraOpen)root.editCamera(modelData);else root.editSetup(modelData)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Copy {text:root.overlayName;font.pixelSize:22;font.bold:true}
+                                    GridLayout {
+                                        visible:!!root.overlaySize;Layout.fillWidth:true;columns:width>=400?2:1;columnSpacing:15
+                                        ColumnLayout {
+                                            Layout.fillWidth:true
+                                            Copy {text:root.activeSetup?.camera?"Camera frame":root.activeSetup?"Telescope and eyepiece":"Manual field";font.bold:true}
+                                            Repeater {
+                                                model:root.activeSetup?.camera ?
+                                                    ["Sensor width    "+root.activeSetup.camera.sensorWidthMm+" mm","Sensor height    "+root.activeSetup.camera.sensorHeightMm+" mm","Focal length    "+root.activeSetup.camera.focalLengthMm+" mm"] :
+                                                    root.activeSetup?.optics ? ["Telescope    "+root.activeSetup.optics.telescopeMm+" mm","Eyepiece    "+root.activeSetup.optics.eyepieceMm+" mm","Apparent field    "+root.activeSetup.optics.apparentDeg+"°"] : []
+                                                Copy {required property string modelData;text:modelData;color:App.Palette.muted}
+                                            }
+                                        }
+                                        Rectangle {
+                                            Layout.fillWidth:true;Layout.preferredWidth:200;implicitHeight:145
+                                            color:App.Palette.field;border.color:App.Palette.line;radius:5
+                                            Item {
+                                                anchors {fill:parent;margins:13;bottomMargin:40}
+                                                Rectangle {
+                                                    readonly property real ratio:root.activeSetup?.camera ? root.activeSetup.camera.sensorWidthMm/root.activeSetup.camera.sensorHeightMm : 1
+                                                    anchors.centerIn:parent;width:Math.min(parent.width,parent.height*ratio);height:width/ratio
+                                                    radius:root.activeSetup?.camera?0:width/2
+                                                    color:App.Palette.shade;border.color:App.Palette.accent
+                                                    Text {anchors.centerIn:parent;text:"+";color:App.Palette.muted}
+                                                }
+                                            }
+                                            Text {anchors.horizontalCenter:parent.horizontalCenter;anchors.bottom:parent.bottom;anchors.bottomMargin:10;text:root.overlaySize;color:App.Palette.accent;font.bold:true}
+                                        }
+                                    }
+                                    Copy {visible:!root.overlaySize;text:"Add a telescope or camera setup, or enter a manual field of view.";color:App.Palette.muted}
+
+                                    ColumnLayout {
+                                        Layout.fillWidth:true;spacing:12;visible:root.editorOpen
+                                        Action {
+                                            text:root.calculatorOpen?"Hide telescope calculator":"Calculate from telescope and eyepiece"
+                                            onClicked:{root.calculatorOpen=!root.calculatorOpen;if(root.calculatorOpen)root.cameraOpen=false}
+                                        }
+                                        ColumnLayout {
+                                            Layout.fillWidth:true;visible:root.calculatorOpen;spacing:7
+                                            Copy {text:"Use the effective telescope focal length if you use a Barlow or focal reducer. Use the eyepiece’s apparent field for the third value.";color:App.Palette.muted}
+                                            Flow {
+                                                Layout.fillWidth:true;spacing:8
+                                                SpecField {id:telescope;width:200;label:"Telescope focal length (mm)";text:root.scopeSpec??""}
+                                                SpecField {id:eyepiece;width:200;label:"Eyepiece focal length (mm)";text:root.ocularSpec??""}
+                                                SpecField {id:apparent;width:215;label:"Eyepiece apparent field (°)";text:root.apparentSpec??""}
+                                            }
+                                            Copy {
+                                                text:root.estimate?"Estimated true field: "+root.formatAngle(root.estimate.field)+" · "+
+                                                    Number(root.estimate.magnification.toPrecision(3))+"× magnification":
+                                                    "Enter all three specs for an estimate (supported field: 0.01° to 180°)."
+                                                color:root.estimate?App.Palette.accent:App.Palette.muted
+                                            }
+                                            Action {text:"Use estimated field without naming it";enabled:!!root.dataSet&&!helper.running&&!!root.estimate;onClicked:root.saveEstimate()}
+                                            SpecField {id:nameInput;width:240;label:"Setup name";numeric:false;maximumLength:48}
+                                            Flow {
+                                                Layout.fillWidth:true;spacing:8
+                                                Action {
+                                                    text:root.existingName?"Update and use setup":"Save and use setup"
+                                                    enabled:!!root.dataSet&&!helper.running&&!!root.estimate&&!!root.setupName&&
+                                                        (root.existingName||(!root.telescopeNameMatch&&root.setups.length<12))
+                                                    onClicked:root.saveNamedSetup()
+                                                }
+                                                Action {
+                                                    visible:root.existingName
+                                                    text:"Remove named setup"
+                                                    enabled:!helper.running
+                                                    onClicked:root.request("remove_setup",{name:root.setupName},"Setup removed.")
+                                                }
+                                            }
+                                            Copy {
+                                                visible:text!==""
+                                                text:root.telescopeNameMatch?.camera ? "This name is used by a camera setup." :
+                                                    root.setups.length>=12 ? "All 12 setup slots are in use. Edit or remove a saved setup." : ""
+                                                color:App.Palette.muted
+                                            }
+                                            Flow {
+                                                Layout.fillWidth:true;spacing:8
+                                                Repeater {
+                                                    model:root.setups.filter(setup=>!setup.camera)
+                                                    Action {
+                                                        required property var modelData
+                                                        text:modelData.name
+                                                        enabled:!helper.running
+                                                        onClicked:root.editSetup(modelData)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Action {
+                                            text:root.cameraOpen?"Hide camera calculator":"Calculate camera frame"
+                                            onClicked:{root.cameraOpen=!root.cameraOpen;if(root.cameraOpen)root.calculatorOpen=false}
+                                        }
+                                        ColumnLayout {
+                                            Layout.fillWidth:true;visible:root.cameraOpen;spacing:8
+                                            Copy {
+                                                text:"Use the sensor’s active width and height in millimetres and the actual focal length of the lens or telescope."
+                                                color:App.Palette.muted
+                                            }
+                                            Flow {
+                                                Layout.fillWidth:true;spacing:8
+                                                SpecField {id:sensorWidth;width:205;label:"Sensor width (mm)"}
+                                                SpecField {id:sensorHeight;width:205;label:"Sensor height (mm)"}
+                                                SpecField {id:cameraFocal;width:205;label:"Focal length (mm)"}
+                                            }
+                                            Copy {
+                                                text:root.cameraEstimate ? "Estimated camera frame: "+root.formatAngle(root.cameraEstimate.width)+
+                                                    " wide × "+root.formatAngle(root.cameraEstimate.height)+" high" :
+                                                    "Enter positive dimensions and focal length to calculate the frame."
+                                                color:root.cameraEstimate?App.Palette.accent:App.Palette.muted
+                                            }
+                                            SpecField {id:cameraName;width:240;label:"Camera setup name";numeric:false;maximumLength:48}
+                                            Flow {
+                                                Layout.fillWidth:true;spacing:8
+                                                Action {
+                                                    text:root.knownCamera?"Update and use camera setup":"Save and use camera setup"
+                                                    enabled:root.canSaveCamera
+                                                    onClicked:root.saveCameraSetup()
+                                                }
+                                                Action {
+                                                    visible:root.knownCamera
+                                                    text:"Remove camera setup"
+                                                    enabled:!helper.running
+                                                    onClicked:root.request("remove_setup",{name:root.photoName},"Camera setup removed.")
+                                                }
+                                            }
+                                            Copy {
+                                                visible:text!==""
+                                                text:root.photoNameMatch&&!root.knownCamera ? "This name is used by a telescope setup." :
+                                                    root.setups.length>=12 ? "All 12 setup slots are in use. Edit or remove a saved setup." : ""
+                                                color:App.Palette.muted
+                                            }
+                                            Flow {
+                                                Layout.fillWidth:true;spacing:8
+                                                Repeater {
+                                                    model:root.setups.filter(setup=>!!setup.camera)
+                                                    Action {
+                                                        required property var modelData
+                                                        text:modelData.name
+                                                        enabled:!helper.running
+                                                        onClicked:root.editCamera(modelData)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Action {text:root.manualOpen?"Hide manual field":"Manual field of view";onClicked:root.manualOpen=!root.manualOpen}
+                                    Flow {
+                                        visible:root.manualOpen
+                                        Layout.fillWidth:true;spacing:8
+                                        SpecField {id:manualField;width:200;label:"Manual true field (°)";text:root.savedField??""}
+                                        Action {text:"Save manual field";enabled:!!root.dataSet&&!helper.running;onClicked:root.saveManualField()}
+                                    }
+
+                                    Copy {visible:!!root.fieldNotice;text:root.fieldNotice;color:App.Palette.accent}
+                                }
+                                ColumnLayout {
+                                    Layout.fillWidth:true;spacing:12;visible:root.section===2
+                                    Flow {
+                                        Layout.fillWidth:true;spacing:10;visible:!root.deployed
+                                        Action {text:root.dataSet?.source==="sample"?"● Public examples":"Public examples";enabled:!helper.running;onClicked:root.request("source",{source:"sample"})}
+                                        Action {text:root.dataSet?.source==="live"?"● Live suggestions · read-only":"Live suggestions · read-only";enabled:!helper.running;onClicked:root.request("source",{source:"live"})}
+                                    }
+                                    Copy {text:root.dataSet?.source==="live"?"READ-ONLY LIVE SNAPSHOT · Rechecks local planner data every 30 seconds. No new downloads, alerts or live setting changes.":"SIMULATED EXAMPLES · Fixed sample clock: "+root.when(root.dataSet?.clock)+". These are filter exercises, not tonight’s predictions.";color:App.Palette.warning}
+
+                                    Flow {
+                                        Layout.fillWidth:true;spacing:10
+                                        Toggle {text:"Filter suggestions";checked:root.dataSet?.profile?.filter===true;onClicked:root.preference("filter",checked)}
+                                        Toggle {text:"Include uncertain matches";checked:root.dataSet?.profile?.uncertain===true;onClicked:root.preference("uncertain",checked)}
+                                        Toggle {text:"Inspect filtered-out entries";checked:root.dataSet?.profile?.showExcluded===true;onClicked:root.preference("showExcluded",checked)}
+                                    }
+                                    Copy {text:(root.dataSet?.counts?.shown||0)+" shown / "+(root.dataSet?.counts?.total||0)+" total · "+(root.dataSet?.counts?.eligible||0)+" eligible after profile · "+(root.dataSet?.counts?.uncertain||0)+" uncertain · "+(root.dataSet?.counts?.excluded||0)+" filtered";color:App.Palette.accent}
+
+                                    Repeater {
+                                        model:root.dataSet?.rows||[]
+                                        Rectangle {
+                                            id:card;required property var modelData
+                                            Layout.fillWidth:true;Layout.minimumWidth:0
+                                            implicitHeight:body.implicitHeight+32;radius:10;color:App.Palette.surface;border.color:modelData.excluded?App.Palette.line:App.Palette.border
+                                            ColumnLayout {
+                                                id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:16;spacing:8
+                                                Copy {text:card.modelData.kind.toUpperCase()+" · "+card.modelData.profileBadge;color:card.modelData.eligible?App.Palette.good:App.Palette.warning;font.pixelSize:12;font.bold:true}
+                                                Heading {text:card.modelData.name;font.pixelSize:22}
+                                                Copy {text:root.when(card.modelData.start)+" – "+Qt.formatDateTime(new Date(card.modelData.end),"HH:mm")+" · "+(card.modelData.look.direction||"Direction unknown")+" · "+(card.modelData.look.el===null?"altitude unknown":Math.round(card.modelData.look.el)+"° up")}
+                                                Copy {text:"Source visibility: "+card.modelData.visibility+" · Weather: "+card.modelData.conditions.label+" · "+(card.modelData.eligible?"Eligible after profile checks":"Inspect only / not an eligible suggestion");color:App.Palette.muted}
+                                                Copy {text:card.modelData.notes.join("\n");color:App.Palette.muted}
+                                                Copy {visible:!!card.modelData.safety;text:card.modelData.safety;color:App.Palette.warning}
+                                                Action {visible:!!card.modelData.source;text:card.modelData.restricted?"Read solar safety guidance":"Open source guidance";onClicked:Qt.openUrlExternally(card.modelData.source)}
+                                            }
+                                        }
+                                    }
+                                    Copy {visible:!root.dataSet?.rows?.length;text:"No suggestions match these choices. Try another equipment choice or inspect filtered-out entries."}
+                                    Copy {text:root.dataSet?.limits||"";color:App.Palette.muted}
+                                }
+                                Copy {visible:!!root.result;text:root.result;color:App.Palette.muted}
+                                Copy {visible:!!root.dataSet?.error;text:root.dataSet?.error||"";color:App.Palette.warning}
                             }
                         }
                     }
-                    Copy {Layout.margins:24;visible:!root.dataSet?.rows?.length;text:"No suggestions match these choices. Try another equipment choice or inspect filtered-out entries."}
-                    Copy {Layout.margins:24;text:root.dataSet?.limits||"";color:App.Palette.muted}
                 }
             }
         }
