@@ -40,7 +40,10 @@ def build(state, snapshot, now=None):
     ts = load.timescale(builtin=True)
     with closing(load_file(str(ROOT / 'assets/de440s.bsp'))) as eph:
         observer = eph['earth'] + wgs84.latlon(place['lat'], place['lon'], elevation_m=place['elevation'])
-        sun_now = observer.at(ts.from_datetime(now)).observe(eph['sun']).apparent().altaz()[0].degrees
+        current_time = ts.from_datetime(now)
+        sun_now = observer.at(current_time).observe(eph['sun']).apparent().altaz()[0].degrees
+        moon_fraction = float(almanac.fraction_illuminated(eph, 'moon', current_time))
+        moon_waxing = bool(almanac.moon_phase(eph, current_time).degrees < 180)
         day = local.date() - timedelta(days=int(local.hour < 12 and sun_now < -6))
         start, end = night_bounds(day, zone)
         stamps = []
@@ -67,6 +70,7 @@ def build(state, snapshot, now=None):
             'start':iso(start), 'end':iso(end), 'sunset':sets[0] if sets else None,
             'sunrise':rises[0] if rises else None, 'hours':rows,
             'weatherFetched':fetched, 'weatherNote':note,
+            'moonFraction':moon_fraction, 'moonWaxing':moon_waxing,
             'basis':'Hourly Sun/Moon geometry and cached weather, not a visibility score. Active-location horizons are not applied to this strip.'}
 
 

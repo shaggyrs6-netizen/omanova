@@ -19,7 +19,7 @@ Canvas {
         if (r < 3) return
         ctx.beginPath()
         ctx.arc(x, y, r, 0, Math.PI * 2)
-        ctx.fillStyle = "#172840"
+        ctx.fillStyle = App.Palette.themed ? App.Palette.field : "#172840"
         ctx.strokeStyle = App.Palette.muted
         ctx.lineWidth = 1.5
         ctx.fill()
@@ -36,7 +36,7 @@ Canvas {
                 ctx.fill()
             }
         }
-        surface("#21344f")
+        surface(App.Palette.themed ? App.Palette.surface : "#21344f")
         const side = waxing ? 1 : -1
         const terminator = 1 - 2 * Math.max(0, Math.min(1, fraction))
         ctx.beginPath()

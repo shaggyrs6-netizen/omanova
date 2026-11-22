@@ -35,6 +35,9 @@ class UsabilityTests(unittest.TestCase):
             data=build(Path(d),snapshot,now)
             self.assertEqual(len(data['hours']),25)
             self.assertTrue(data['sunset']);self.assertTrue(data['sunrise'])
+            self.assertGreaterEqual(data['moonFraction'],0)
+            self.assertLessEqual(data['moonFraction'],1)
+            self.assertIsInstance(data['moonWaxing'],bool)
             self.assertNotIn('private sample',json.dumps(data));self.assertNotIn('lat',data);self.assertTrue(all(r['cloud'] is None for r in data['hours']))
     def test_predawn_rollover_accepts_numpy_boolean_and_uses_previous_night(self):
         now=datetime(2026,11,15,9,tzinfo=UTC)

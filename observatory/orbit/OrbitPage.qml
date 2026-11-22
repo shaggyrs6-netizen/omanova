@@ -10,6 +10,25 @@ ColumnLayout {
     property var formatDistance: (km, digits) => km.toLocaleString(Qt.locale(), 'f', digits) + " km"
     spacing: 13
     property var orbitData: null
+    property var initialTarget: null
+    signal targetConsumed()
+    function applyTarget() {
+        if (!initialTarget || !orbitData || calculate.running) return
+        const target = initialTarget
+        const index = orbitData.stations.findIndex(s => s.name === target.station)
+        if (index >= 0) {
+            const pass = orbitData.stations[index].passes.findIndex(p => Math.abs(Date.parse(p.rise)-Date.parse(target.rise)) <= 5000)
+            if (pass >= 0) {
+                stationIndex = index
+                passIndex = pass
+                const time = Date.parse(target.time)
+                sampleIndex = selected.pass.reduce((best,p,i,a) =>
+                    Math.abs(Date.parse(p.time)-time) < Math.abs(Date.parse(a[best].time)-time) ? i : best, 0)
+            }
+        }
+        targetConsumed()
+    }
+    onOrbitDataChanged: Qt.callLater(applyTarget)
     property int stationIndex: 0
     property int passIndex: 0
     property int sampleIndex: 0

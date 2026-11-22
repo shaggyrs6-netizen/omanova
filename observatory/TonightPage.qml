@@ -14,7 +14,10 @@ ColumnLayout {
     signal recordObservation(var selected)
     signal openEvents()
     signal openSettings()
-    spacing: 18
+    signal openOrbit(string station, string rise, string time)
+    readonly property bool weatherCurrent: sky.data?.settings?.weather === true && !!strip?.weatherFetched &&
+        sky.now >= Date.parse(strip.weatherFetched) && sky.now - Date.parse(strip.weatherFetched) < 21600000
+    spacing: 14
     readonly property bool nightCurrent: night.current
     readonly property var strip: nightCurrent ? night.dataSet : null
     readonly property double end: strip ? Date.parse(strip.end) : sky.now+86400000
@@ -25,6 +28,12 @@ ColumnLayout {
     component Copy: Text {
         Layout.fillWidth:true;wrapMode:Text.Wrap;textFormat:Text.PlainText
         color:App.Palette.ink;font.pixelSize:14
+    }
+    TonightInstruments {
+        Layout.fillWidth: true
+        Layout.leftMargin: 16; Layout.rightMargin: 16; Layout.topMargin: 8
+        sky: page.sky; strip: page.strip; weatherCurrent: page.weatherCurrent
+        onOpenOrbit: (station,rise,time) => page.openOrbit(station,rise,time)
     }
     App.PageHeader {
         Layout.margins:24;Layout.bottomMargin:0

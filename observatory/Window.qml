@@ -62,7 +62,7 @@ ShellRoot {
     FloatingWindow {
         id: window
         title: "OMANOVA Observatory · " + (shell.settingsTrial ? (Quickshell.env("OMANOVA_THEME_TRIAL")==="1" ? "Theme preview" : "Settings preview") : sky.fixture ? "Fixture preview" : "Live data")
-        color: App.Palette.background
+        color: ui.pageId === "overview" && !App.Palette.themed ? "#060e19" : App.Palette.background
         implicitWidth: 1050
         implicitHeight: 700
         minimumSize: Qt.size(360, 400)
@@ -111,7 +111,8 @@ ShellRoot {
             readonly property var sectionPages: Navigation.sectionPages(sectionId, extendedPages)
             readonly property bool showingPlanets: pageId === "planets"
             readonly property bool ownScroll: ["planets", "trips", "following", "equipment", "calendar", "offline", "my-night", "sites", "sky-finder", "log", "star-chart", "live-orbit", "polar", "transits"].includes(pageId)
-            NightContext { id: nightContext; skyModel: sky }
+            NightContext { id: nightModel; skyModel: sky }
+            property var orbitTarget: null
             property real scrub: -1
             readonly property real riseTime: event ? Date.parse(event.start) : 0
             readonly property real passSeconds: event ? (Date.parse(event.end) - riseTime) / 1000 : 0
@@ -413,6 +414,7 @@ ShellRoot {
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                     Loader {
                         id: screenLoader
+                        onLoaded: Qt.callLater(() => { if (ui.pageId === "overview") scroll.contentItem.contentY = scroll.contentItem.originY })
                         width: scroll.availableWidth
                         sourceComponent: ui.ownScroll ? null : ({overview:overview, "sky-view":skyView, conditions:conditions, events:eventsView, orbit:orbitView, moon:moonView, meteors:meteorView, comets:cometView, eclipses:eclipseView, plumes:plumeView, watchlist:watchlistView, trains:trainView, aurora:auroraView, "regional-sites":darkSitesView, settings:settingsView})[ui.pageId] || null
                     }
@@ -552,7 +554,7 @@ ShellRoot {
 
             Component {
                 id: orbitView
-                OrbitPages.OrbitPage { formatDistance: sky.formatDistance }
+                OrbitPages.OrbitPage { formatDistance: sky.formatDistance; initialTarget: ui.orbitTarget; onTargetConsumed: ui.orbitTarget = null }
             }
 
             Component {
@@ -573,7 +575,7 @@ ShellRoot {
                 id: overview
                 TonightPage {
                     sky: ui.skyModel
-                    night: nightContext
+                    night: nightModel
                     canAddToNight:ui.extendedPages
                     onAddToNight:key=>ui.addToNight("event",key)
                     onRecordObservation: selected => ui.startObservation(selected)
@@ -581,6 +583,7 @@ ShellRoot {
                         if (selected.station_id) ui.selectedEventId = selected.station_id
                         ui.changeScreen(selected.page)
                     }
+                    onOpenOrbit: (station,rise,time) => { ui.orbitTarget = {station,rise,time}; ui.navigate("orbit") }
                     onOpenEvents: ui.navigate("events")
                     onOpenSettings: ui.navigate("settings")
                 }
@@ -750,7 +753,7 @@ ShellRoot {
             function freshness(): string {
                 return JSON.stringify({stale:sky.snapshotStale, planningStale:sky.plannerStale, next:sky.nextOpportunity?.id||null, verdict:ui.verdict, picks:ui.pageId==="overview"?(ui.screenItem?.picks?.length??0):null, mismatch:sky.runtimeMismatch})
             }
-            function navigation(): string { return JSON.stringify({page:ui.pageId, section:ui.sectionId, pages:Navigation.available(ui.extendedPages), status:sky.runtimeStatus, installed:sky.installedRuntime, running:sky.data?.runtime, nightReady:!!nightContext.dataSet, nightError:nightContext.error}) }
+            function navigation(): string { return JSON.stringify({page:ui.pageId, section:ui.sectionId, pages:Navigation.available(ui.extendedPages), status:sky.runtimeStatus, installed:sky.installedRuntime, running:sky.data?.runtime, nightReady:!!nightModel.dataSet, nightError:nightModel.error}) }
             function fixtureSize(width:int, height:int):void { if(sky.fixture){window.implicitWidth=Math.max(360,width);window.implicitHeight=Math.max(400,height)} }
             function planets(section: int): string {
                 ui.changeScreen(7)
