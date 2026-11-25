@@ -22,6 +22,13 @@ Item {
  property int pageNumber:0
  property bool instrumentsOpen:false
  property bool instrumentsLoaded:false
+ function showInstruments() {
+  instrumentsLoaded=true
+  instrumentsOpen=true
+  Qt.callLater(() => {
+   if (instrumentsOpen) scroll.contentItem.contentY=instruments.y
+  })
+ }
  property var instrumentTarget:null
  readonly property int pageSize:12
  function finderMatches(row,query) {
@@ -86,7 +93,7 @@ Item {
     Action {visible:!!root.dataSet;text:root.detailsOpen?"Hide estimate details":"How this is estimated";onClicked:root.detailsOpen=!root.detailsOpen}
     Copy {visible:root.detailsOpen&&root.section==="finder";text:root.dataSet?.darkness?.basis||"Darkness estimates use Sun/Moon geometry; background sky quality remains unknown.";color:App.Palette.muted}
     Copy {visible:root.old;text:"These results are old or future-dated. Recalculate before relying on them.";color:App.Palette.warning;font.bold:true}
-    Action {visible:root.section==="finder";text:root.instrumentsOpen?"Hide observing instruments":"Observing instruments";onClicked:{root.instrumentsLoaded=true;root.instrumentsOpen=!root.instrumentsOpen}}
+    Action {visible:root.section==="finder";text:root.instrumentsOpen?"Hide observing instruments":"Observing instruments";onClicked:{if(root.instrumentsOpen)root.instrumentsOpen=false;else root.showInstruments()}}
     Copy {text:root.result;color:App.Palette.muted}
     Copy {visible:root.detailsOpen;text:root.dataSet?.limits||"";color:App.Palette.muted}
    }
@@ -131,7 +138,7 @@ Item {
       Action {
        visible:root.section==="finder"&&root.instrumentsOpen&&root.source==="active"&&card.modelData.kind==="deep-sky"&&Quickshell.env("OMASKY_FIXTURE")!=="1"
        text:root.instrumentTarget?.id===card.modelData.id?"Selected for Go To":"Select for Go To"
-       onClicked:{root.instrumentTarget=card.modelData;scroll.contentItem.contentY=0}
+       onClicked:{root.instrumentTarget=card.modelData;root.showInstruments()}
       }
       Loader {
        id:overlay
