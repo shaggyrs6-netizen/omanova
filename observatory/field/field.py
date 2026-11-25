@@ -15,6 +15,7 @@ from observing_context import trip_state,equipment_profile,match
 DATA=Path(os.environ.get('XDG_DATA_HOME') or Path.home()/'.local/share')
 LIVE_STATE=DATA/'omanova-field'
 CAT=json.loads((Path(__file__).parent/'catalog.json').read_text())
+CAT['targets'] += json.loads(Path(__file__).with_name('messier-openngc.json').read_text())
 SITES=json.loads((Path(__file__).parent/'sites.json').read_text())
 
 LANDMARK_IDS = {item['id'] for item in CAT['landmarks']}
@@ -101,7 +102,7 @@ def finder(request,fixture=False,now=None):
                     'moonAltitude':round(moonalt),'moonPercent':round(100*float(almanac.fraction_illuminated(eph,'moon',ts.from_datetime(when))))})
             rows.append({**target,'kind':'landmark' if landmark else 'deep-sky','windows':windows,'status':'Potential geometry only; brightness/conditions unconfirmed' if windows else 'No usable window: below threshold, daylight or saved horizon blocked'})
     return {'source':source,'fixture':fixture,'night':day.isoformat(),'zone':tz,'generated':iso(now),'rows':rows,'darkness':darkness,
-            'horizon':'Saved manual sectors and enabled terrain applied; no new terrain downloads.','limits':CAT['coordinateBasis']+' Minimum 20° elevation; twilight for bright landmarks, astronomical darkness for deep-sky targets. No GO, weather guarantee, refraction or telescope alignment solution.'}
+            'horizon':'Saved manual sectors and enabled terrain applied; no new terrain downloads.','limits':'Rounded J2000/ICRS centres from the original finder and OpenNGC. Minimum 20° elevation; twilight for bright landmarks, astronomical darkness for deep-sky targets. No GO, weather guarantee, refraction or telescope alignment solution.'}
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--state',required=True,type=Path);parser.add_argument('--fixture',action='store_true');parser.add_argument('action',choices=('sites','finder'));args=parser.parse_args()

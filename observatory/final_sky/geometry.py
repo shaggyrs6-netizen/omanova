@@ -81,7 +81,7 @@ def sky_chart(eph,ts,p,terrain,when):
                     dec_degrees=np.array([item['dec'] for item in targets]))
     elevations, bearings, _ = observer.observe(deep_sky).apparent().altaz()
     terrain_mask = combined_altitude(bearings.degrees, p.get('horizon', []), terrain)
-    centres = [{**{key: item[key] for key in ('id', 'name', 'extent')},
+    centres = [{'id': item['id'], 'name': item['name'], 'extent': item.get('extent'),
                 'az': float(az), 'el': float(el), 'clear': bool(el > horizon)}
                for item, az, el, horizon in zip(targets, bearings.degrees, elevations.degrees, terrain_mask) if el >= 0]
     return {'stars':rows,'lines':cat['lines'],'objects':objects,'targets':centres,'poleAltitude':p['lat'],'horizon':[float(x) for x in combined_altitude(np.arange(360),p.get('horizon',[]),terrain)],

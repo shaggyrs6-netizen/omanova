@@ -28,7 +28,7 @@ cache file under `.preview/satellites/cache` or `.preview/trains/cache`,
 and move it out of the cache directory before reopening the view.
 
 The 18 November comet refresh used Horizons geocentric observer
-tables (quantities 1 and 2), through 2 January 2027 at 00:00 UTC, and qualified COBS
+tables (quantities 1 and 2), through 9 January 2027 at 00:00 UTC, and qualified COBS
 API observations. `observatory/comets/refresh_catalog.py` is an explicit
 maintainer staging command, not an automatic user download. It validates
 timestamps, coverage, response bounds and coordinates before writing a new
@@ -66,3 +66,5 @@ and the interface links to the provider's licence page.
 - Polar orientation guidance: https://www.celestron.com/pages/all-star-polar-alignment .
   Diagram is upright sky, not an optical reticle.
 - Solar optical safety: https://science.nasa.gov/eclipses/safety/ .
+
+Sky Finder's expanded Messier data are derived from [OpenNGC](https://github.com/mattiaverga/OpenNGC) under CC BY-SA 4.0. See [subset attribution](observatory/field/OPENNGC.md). Skyglow estimation reads a user-supplied [World Atlas 2015 GeoTIFF](https://doi.org/10.5880/GFZ.1.4.2016.001) locally. The atlas is a separate download subject to the provider's terms.

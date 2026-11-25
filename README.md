@@ -128,7 +128,7 @@ remain on hold; GitHub releases are separate.
 | Calendar Export | Local .ics snapshots from active or Trip locations, named-zone context and per-session optional reminders; manual import. |
 | Offline Cards | Private, immutable night guides with times, directions and equipment; self-contained HTML, print styling and stale-data warnings. |
 | Destination Sites | 12 curated examples across four countries, straight-line km/miles distances from active or Trip locations and dated official access evidence. |
-| Sky Finder | Five constellation landmarks and 25 searchable Messier targets, local windows, compass, Sun/Moon context, equipment and saved-horizon guidance. |
+| Sky Finder | Five constellation landmarks and 109 searchable Messier targets, local windows, compass, Sun/Moon context, equipment and saved-horizon guidance. |
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
 ## Screenshots
@@ -339,7 +339,7 @@ changes. Paused feeds may show cached data. External links open on demand. See
 
 ### Maintenance
 
-The dated comet catalogue expires on 2 January 2027 at 00:00 UTC. Dark-sky
+The dated comet catalogue expires on 9 January 2027 at 00:00 UTC. Dark-sky
 access and travel estimates need occasional review. Launch schedules may use
 cached data if a refresh fails. Weather and astronomy are estimates and
 local terrain or obstructions can change what you see.
@@ -563,14 +563,41 @@ for Moon–planet pairs. Local windows require the Sun to be at least 6° below
 the horizon and each target at least 10° up. The model uses sky geometry.
 Clouds, obstructions and sky brightness can change what you see.
 
+## Sky Finder observing instruments
+
+Open **Sky → Sky Finder → Observing instruments**. The catalogue includes
+109 Messier targets and five landmarks, with local observing windows,
+horizon checks and direct saving to My Night. [OpenNGC data credits](observatory/field/OPENNGC.md)
+
+- **Skyglow estimate.** Supply the single-band World Atlas 2015 GeoTIFF and have
+  the GDAL command-line utilities (`gdalinfo` and `gdallocationinfo`) on your PATH.
+  Finder samples the atlas locally for the active, Home or destination site.
+  The result is modelled artificial zenith luminance in mcd/m² from a historical
+  atlas. The estimate is separate from today's Moon, clouds and direct glare.
+  Your manual sky quality setting still controls suggestions.
+  [Atlas data and terms](https://doi.org/10.5880/GFZ.1.4.2016.001)
+- **Plate solving.** Install Astrometry.net (`solve-field` and `wcsinfo`) and its
+  indexes for your field of view. Choose a local FITS, PNG or JPEG image up
+  to 100 MiB. The tool reports field centre, pixel scale and orientation. Your
+  original image stays in place. Processing and temporary output are local.
+  [Astrometry.net setup](https://astrometry.net/doc/readme.html)
+- **Telescope.** Run an INDI server at `127.0.0.1:7624` and have
+  `indi_getprop` and `indi_setprop` available. Align and connect the mount
+  in your INDI controller and confirm the correct active observing site.
+  Enter the exact device name, choose a deep-sky target, then confirm each
+  Go To. The tool checks astronomical darkness, 20° minimum elevation and
+  your saved horizon. Stay with the telescope and use the controller's
+  mount limits and emergency stop. Verify movement and stop requests on
+  the mount. [INDI setup](https://docs.indilib.org/getting-started/)
+
 ## Comet preview
 
 Run `./preview-comets --live` for the saved observing point or
 `./preview-comets --fixture` for the frozen Nashville example. This
 standalone preview contains four selected targets. Its
 [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) geocentric position snapshot
-covers 18 November 2026 at 00:00 UTC through 2 January 2027 at 00:00 UTC.
-Positions and qualified dated brightness reports were refreshed on 18 November 2026.
+covers 25 November 2026 at 00:00 UTC through 9 January 2027 at 00:00 UTC.
+Positions and qualified dated brightness reports were refreshed on 25 November 2026.
 Fixture mode retains its separately frozen November catalogue.
 It uses two-hour observer tables (quantities 1 and 2) and interpolates
 coordinates locally. Observing windows require astronomical darkness and
@@ -1132,7 +1159,7 @@ day warnings remain visible. The original regional Dark-Sky Sites page remains.
 No coordinates are sent for distance calculation, and no routing API is used.
 
 **Sky Finder** includes Orion/Alnilam, Lyra/Vega, Ursa Minor/Polaris, Ursa Major/
-Dubhe and Carina/Canopus as constellation anchors, plus 25 Messier targets.
+Dubhe and Carina/Canopus as constellation anchors, plus 109 Messier targets.
 Search by name, Messier number or constellation, then add any result to My Night.
 Finding hints suggest a starting point and equipment without predicting brightness. The finder calculates windows at least 20°
 up and above the saved horizon,

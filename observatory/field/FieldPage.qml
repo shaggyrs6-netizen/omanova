@@ -19,6 +19,11 @@ Item {
  property string pending:""
  property bool nearby:true
  property bool detailsOpen:false
+ property int pageNumber:0
+ property bool instrumentsOpen:false
+ property bool instrumentsLoaded:false
+ property var instrumentTarget:null
+ readonly property int pageSize:12
  function finderMatches(row,query) {
   const term=query.trim().toLowerCase().replace(/’/g,"'").replace(/\s+/g," ")
   if(!term)return true
@@ -28,11 +33,13 @@ Item {
  }
  readonly property var shownRows:(dataSet?.rows||[]).filter(row=>section==="sites" ? !nearby||row.distanceKm<=500 : finderMatches(row,search.text))
 
+ readonly property var pageRows:section==="sites"?shownRows:shownRows.slice(pageNumber*pageSize,(pageNumber+1)*pageSize)
+
  property double clock:Date.now()
  readonly property string state:Quickshell.env("OMANOVA_FIELD_STATE")
  readonly property string runtime:Quickshell.env("OMANOVA_FIELD_RUNTIME")
  readonly property bool old:!!dataSet&&(clock-Date.parse(dataSet.generated)>7200000||clock<Date.parse(dataSet.generated))
- function request(){if(job.running)return;pending=JSON.stringify({source:source,night:night.text})+"\n";dataSet=null;result="Calculating locally…";job.stdinEnabled=true;job.running=true}
+ function request(){if(job.running)return;pageNumber=0;pending=JSON.stringify({source:source,night:night.text})+"\n";dataSet=null;result="Calculating locally…";job.stdinEnabled=true;job.running=true}
  Component.onCompleted:request()
  Timer {interval:30000;repeat:true;running:true;onTriggered:root.clock=Date.now()}
  FileView {id:file;path:root.state+"/"+root.section+".json";printErrors:false;onLoaded:{try{root.clock=Date.now();root.dataSet=JSON.parse(text());if(root.dataSet.night)night.text=root.dataSet.night}catch(e){root.result="Could not read field results."}}}
@@ -53,7 +60,7 @@ Item {
     Copy {text:root.section==="sites"?"A curated starting list near your active or Trip Planner location. Distance is straight-line, not driving distance or permission to access the site.":"Find clusters, nebulae, galaxies and constellation landmarks. The finder uses your saved horizon to estimate viewing windows. Brightness and weather stay unconfirmed.";color:App.Palette.muted}
     Flow {Layout.fillWidth:true;spacing:10
      Repeater {model:[{key:"active",label:"Active location"},{key:"trip-home",label:"Trip Home"},{key:"trip-destination",label:"Trip destination"}]
-      Action {required property var modelData;text:(root.source===modelData.key?"● ":"")+modelData.label;onClicked:{root.source=modelData.key;night.text="";root.request()}}}
+      Action {required property var modelData;text:(root.source===modelData.key?"● ":"")+modelData.label;onClicked:{root.instrumentTarget=null;root.source=modelData.key;night.text="";root.request()}}}
      Action {visible:root.section==="sites";text:root.nearby?"Within 500 km · show all":"All curated sites · show within 500 km";onClicked:root.nearby=!root.nearby}
     }
     Flow {visible:root.section==="finder";Layout.fillWidth:true;spacing:10
@@ -62,7 +69,7 @@ Item {
     }
     Flow {visible:root.section==="finder";Layout.fillWidth:true;spacing:10
      TextField {
-      id:search;width:Math.min(330,scroll.availableWidth-62);implicitHeight:40;maximumLength:80
+      id:search;onTextChanged:root.pageNumber=0;width:Math.min(330,scroll.availableWidth-62);implicitHeight:40;maximumLength:80
       placeholderText:"Search name, Messier number or constellation"
       Accessible.name:"Search Sky Finder targets"
       color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true
@@ -79,13 +86,32 @@ Item {
     Action {visible:!!root.dataSet;text:root.detailsOpen?"Hide estimate details":"How this is estimated";onClicked:root.detailsOpen=!root.detailsOpen}
     Copy {visible:root.detailsOpen&&root.section==="finder";text:root.dataSet?.darkness?.basis||"Darkness estimates use Sun/Moon geometry; background sky quality remains unknown.";color:App.Palette.muted}
     Copy {visible:root.old;text:"These results are old or future-dated. Recalculate before relying on them.";color:App.Palette.warning;font.bold:true}
+    Action {visible:root.section==="finder";text:root.instrumentsOpen?"Hide observing instruments":"Observing instruments";onClicked:{root.instrumentsLoaded=true;root.instrumentsOpen=!root.instrumentsOpen}}
     Copy {text:root.result;color:App.Palette.muted}
     Copy {visible:root.detailsOpen;text:root.dataSet?.limits||"";color:App.Palette.muted}
+   }
+   Loader {
+    id: instruments
+    active: root.instrumentsLoaded && root.section==="finder"
+    visible: root.instrumentsOpen
+    Layout.fillWidth:true; Layout.leftMargin:18; Layout.rightMargin:18
+    sourceComponent: InstrumentTools {
+     runtime:root.runtime; siteSource:root.source
+     sample:Quickshell.env("OMASKY_FIXTURE")==="1"
+     targetId:root.instrumentTarget?.id||"";targetName:root.instrumentTarget?.name||""
+    }
+   }
+   RowLayout {
+    visible:root.section==="finder"&&root.shownRows.length>root.pageSize
+    Layout.leftMargin:18
+    Action {text:"Previous targets";enabled:!job.running&&root.pageNumber>0;onClicked:{root.framingId="";root.pageNumber--}}
+    Copy {text:(root.pageNumber+1)+" / "+Math.ceil(root.shownRows.length/root.pageSize);Layout.fillWidth:false}
+    Action {text:"Next targets";enabled:!job.running&&(root.pageNumber+1)*root.pageSize<root.shownRows.length;onClicked:{root.framingId="";root.pageNumber++}}
    }
    GridLayout {
     Layout.fillWidth:true;Layout.leftMargin:18;Layout.rightMargin:18
     columns:width>=920 && !root.framingId?2:1;rowSpacing:12;columnSpacing:12
-   Repeater {id:cards;model:root.shownRows
+   Repeater {id:cards;model:root.pageRows
     App.ViewPanel {appearance:"mission";id:card;required property var modelData;readonly property var framing:overlay.item;Layout.fillWidth:true;Layout.preferredWidth:1;Layout.minimumWidth:0;Layout.alignment:Qt.AlignTop;implicitHeight:body.implicitHeight+28;border.color:App.Palette.line
      ColumnLayout {id:body;anchors.left:parent.left;anchors.right:parent.right;anchors.top:parent.top;anchors.margins:14;spacing:8
       Copy {text:card.modelData.name;font.pixelSize:22;font.bold:true}
@@ -101,6 +127,11 @@ Item {
        visible:root.section==="finder"&&root.canAddToNight&&!!card.modelData.extent
        text:root.framingId===card.modelData.id?"Hide field-of-view overlay":"Show field-of-view overlay"
        onClicked:root.framingId=root.framingId===card.modelData.id?"":card.modelData.id
+      }
+      Action {
+       visible:root.section==="finder"&&root.instrumentsOpen&&root.source==="active"&&card.modelData.kind==="deep-sky"&&Quickshell.env("OMASKY_FIXTURE")!=="1"
+       text:root.instrumentTarget?.id===card.modelData.id?"Selected for Go To":"Select for Go To"
+       onClicked:{root.instrumentTarget=card.modelData;scroll.contentItem.contentY=0}
       }
       Loader {
        id:overlay
@@ -151,17 +182,17 @@ Item {
   }
   function sampleFramingState():string {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1")return ""
-   const panel=cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing
+   const panel=cards.itemAt(root.pageRows.findIndex(row=>row.id===root.framingId))?.framing
    return panel ? JSON.stringify(Object.assign({}, panel.comparison, {field:panel.fieldDeg, setup:panel.activeName, width:panel.activeSetup?.widthDeg, height:panel.activeSetup?.heightDeg})) : ""
   }
   function sampleSelectSetup(name:string):bool {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1")return false
-   const panel=cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing
+   const panel=cards.itemAt(root.pageRows.findIndex(row=>row.id===root.framingId))?.framing
    return panel?.selectSetup(name || null) ?? false
   }
   function sampleCaptureFraming():void {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1")return
-   cards.itemAt(root.shownRows.findIndex(row=>row.id===root.framingId))?.framing?.grabToImage(r=>r.saveToFile(root.state+"/framing.png"))
+   cards.itemAt(root.pageRows.findIndex(row=>row.id===root.framingId))?.framing?.grabToImage(r=>r.saveToFile(root.state+"/framing.png"))
   }
   function sampleAdd(key:string):bool {
    if(Quickshell.env("OMASKY_FIXTURE")!=="1"||!root.canAddToNight||job.running||
