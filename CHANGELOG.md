@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10 — expanded Sky Finder and observing instruments
+
+- Expand Sky Finder to 109 Messier targets and keep direct saving to My Night.
+- Refresh four comet tracks and dated brightness estimates through 9 January 2027.
+- Add optional local World Atlas skyglow estimates, offline plate solving and INDI position, Go To and stop controls.
+
+[Release notes](docs/RELEASE-0.1.10.md) · [Screenshots](docs/SCREENSHOTS-0.1.10.md)
+
 ## 0.1.9 — Observatory redesign
 
 - Follow Tonight’s selected pass directly into Orbit and save chart selections to My Night.

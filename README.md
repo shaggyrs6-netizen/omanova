@@ -2,13 +2,13 @@
 
 ![OMANOVA 0.1.9 Observatory redesign. An illustrated space station above Earth at night.](docs/screenshots/0.1.9/omanova-0.1.9.png)
 
-*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.9.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.10.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.9** redesigns all 29 Observatory pages, connects Tonight to the selected Orbit pass, and lets you save targets from the Star Chart to My Night. Read the [release notes](docs/RELEASE-0.1.9.md), [changelog](CHANGELOG.md) and [screenshots](docs/SCREENSHOTS-0.1.9.md).
+> **Version 0.1.10** refreshes four comet tracks, expands Sky Finder to 109 Messier targets, and adds optional skyglow estimates, offline plate solving and local telescope controls. [Release notes](docs/RELEASE-0.1.10.md) · [Changelog](CHANGELOG.md) · [Screenshots](docs/SCREENSHOTS-0.1.10.md)
 
 > The Omarchy marketplace listing is managed separately from GitHub releases. See the [upgrade instructions](#upgrading-an-existing-installation) if you installed the marketplace version.
 
@@ -194,7 +194,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.9 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.10 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```

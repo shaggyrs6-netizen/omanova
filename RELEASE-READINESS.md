@@ -1,6 +1,13 @@
 # OMANOVA — release validation and maintenance
 
-## Local candidate: 0.1.9 — Observatory redesign
+## 0.1.10 — expanded Sky Finder and observing instruments
+
+Validate the packaged archive with the stock Omarchy validator and test clean
+installation, upgrade from 0.1.9 and rollback with compatible saved targets.
+Use test files and the INDI simulator for instrument checks.
+[Release notes and rollback compatibility](docs/RELEASE-0.1.10.md)
+
+## 0.1.9 — Observatory redesign
 
 Validate the versioned archive with the stock Omarchy validator, a clean install, an upgrade from public 0.1.8 and rollback. Exercise the supported 0.1.1 in-place installer path separately. Check saved data, login choices, bar clicks and all Observatory routes in isolated fixtures. [Release notes](docs/RELEASE-0.1.9.md).
 
