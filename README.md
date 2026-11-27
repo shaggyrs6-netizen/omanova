@@ -339,7 +339,7 @@ changes. Paused feeds may show cached data. External links open on demand. See
 
 ### Maintenance
 
-The dated comet catalogue expires on 9 January 2027 at 00:00 UTC. Dark-sky
+The dated comet catalogue expires on 11 January 2027 at 00:00 UTC. Dark-sky
 access and travel estimates need occasional review. Launch schedules may use
 cached data if a refresh fails. Weather and astronomy are estimates and
 local terrain or obstructions can change what you see.
@@ -590,14 +590,47 @@ horizon checks and direct saving to My Night. [OpenNGC data credits](observatory
   mount limits and emergency stop. Verify movement and stop requests on
   the mount. [INDI setup](https://docs.indilib.org/getting-started/)
 
+## Tonight summary and local image export
+
+The top of Tonight shows a currently eligible observing pick and its forecast
+confidence, or a dark, low-cloud hour when no target matches. Missing or stale
+data keep the summary uncertain. The main actions work from the keyboard.
+**Share as image** previews and saves a local PNG. The card includes the
+observing window and any relevant target guidance, and leaves out the saved
+location name and coordinates.
+
+Dew risk uses forecast air temperature minus dew point at two metres, through
+the existing Open-Meteo weather opt-in. A gap of 2°C or less is flagged as high,
+and a gap up to 4°C as possible. Optics can cool faster than the air. Missing
+fields in older forecasts remain unknown. Conditions and Tonight display the
+estimate independently of the viewing forecast.
+
+In **Settings → Observing preferences**, enable **Only alert for clear, dark
+viewing windows** and save the preferences to restrict opted-in observing
+alerts. This mode requires fresh favourable weather and the Sun at least 18°
+below the horizon at the window start and suggested look time. The existing
+event type, lead time, altitude, quiet hours and deduplication rules also apply.
+
+**Open in Stellarium** sends the selected Messier identifier to `127.0.0.1:8090`
+when Stellarium is running with its Remote Control plugin enabled. The handoff
+sends the object identifier and centring command. Your location and clock
+settings are never included. [Stellarium Remote Control](https://stellarium.org/doc/head/remoteControlApi.html)
+
+**Sky → Planets → Jupiter’s moons** lists approximate Galilean moon and shadow
+transits over three days using the pinned PyMeeus library and the existing
+local JPL ephemeris. The local filter uses twilight or darker (Sun below −12°),
+Jupiter at least 20° up and your saved horizon. Shadow times are approximate
+disk-centre projection crossings and do not give precision contact times.
+[PyMeeus reference](https://pymeeus.readthedocs.io/en/latest/bodies/JupiterMoons.html)
+
 ## Comet preview
 
 Run `./preview-comets --live` for the saved observing point or
 `./preview-comets --fixture` for the frozen Nashville example. This
 standalone preview contains four selected targets. Its
 [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) geocentric position snapshot
-covers 25 November 2026 at 00:00 UTC through 9 January 2027 at 00:00 UTC.
-Positions and qualified dated brightness reports were refreshed on 25 November 2026.
+covers 27 November 2026 at 00:00 UTC through 11 January 2027 at 00:00 UTC.
+Positions and qualified dated brightness reports were refreshed on 27 November 2026.
 Fixture mode retains its separately frozen November catalogue.
 It uses two-hour observer tables (quantities 1 and 2) and interpolates
 coordinates locally. Observing windows require astronomical darkness and
@@ -606,7 +639,7 @@ at least 20° elevation. Finder coordinates are J2000.
 Equipment tiers use dated visual or CCD reports from the
 [Comet Observation Database](https://cobs.si/recent/) as rough dark-sky
 guidance. Clouds, skyglow and the diffuse coma affect actual visibility.
-The bundled data expire visibly. The preview sends no observing coordinates
+The Comets page and Settings → Updates & runtime warn beginning 14 days before the bundled catalogue expires. The preview sends no observing coordinates
 and does not refresh automatically.
 
 ## Eclipse preview

@@ -117,6 +117,7 @@ ColumnLayout {
         background: Rectangle { color: App.Palette.background }
         ViewTab { text: qsTr("Next 24 hours") }
         ViewTab { text: qsTr("Pairings · 30 days") }
+        ViewTab { text: qsTr("Jupiter’s moons") }
     }
 
     ScrollView {
@@ -131,12 +132,20 @@ ColumnLayout {
             width: scroll.availableWidth
             spacing: 12
             Copy {
+                visible: page.section !== 2
                 Layout.margins: 22
                 color: App.Palette.muted
                 text: page.loadError || (!page.dataSet ? qsTr("Loading viewing windows…") :
                     page.section === 0
                     ? qsTr("The five naked-eye planets. Windows require the planet to be at least 10° up and the Sun at least 6° below the horizon. Clouds and obstructions can affect the view.")
                     : qsTr("Close approaches within 5° for two planets or 8° for a Moon–planet pair. The closest approach is measured from Earth’s centre. Local windows use your observing point and the same darkness and height limits."))
+            }
+
+            Loader {
+                Layout.fillWidth: true
+                active: page.section === 2
+                visible: active
+                sourceComponent: JupiterMoons { runtime: page.tool }
             }
 
             App.ToolBrowser {

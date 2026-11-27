@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from astronomy import iso, utc
-from conditions import weather_hours
+from conditions import dew_risk, weather_hours
 from worker import read, write, forecast_key, DEMO_NOW
 from observatory.trips.trips import night_bounds, system_zone
 
@@ -58,10 +58,11 @@ def build(state, snapshot, now=None):
         rows = []
         for stamp, alt, lunar in zip(stamps, sun, moon):
             hour = stamp.replace(minute=0, second=0, microsecond=0)
-            cloud = forecast.get(hour, {}).get('cloud_cover')
+            weather = forecast.get(hour, {})
             rows.append({'time':iso(stamp), 'label':stamp.astimezone(ZoneInfo(zone)).strftime('%H:%M'),
                          'light':'daylight' if alt >= 0 else 'twilight' if alt > -18 else 'dark',
-                         'moonUp': bool(lunar > 0), 'cloud': cloud})
+                         'moonUp': bool(lunar > 0), 'cloud': weather.get('cloud_cover'),
+                         'dewRisk': dew_risk(weather)})
         t, up = almanac.find_discrete(ts.from_datetime(start), ts.from_datetime(end),
                                      almanac.sunrise_sunset(eph, wgs84.latlon(place['lat'], place['lon'], elevation_m=place['elevation'])))
         rises = [iso(v.utc_datetime()) for v, state in zip(t, up) if state]

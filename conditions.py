@@ -7,6 +7,27 @@ FIELDS = ("cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high
           "visibility", "precipitation", "weather_code", "wind_speed_10m")
 
 
+OPTIONAL_FIELDS = ("temperature_2m", "dew_point_2m", "relative_humidity_2m")
+FORECAST_FIELDS = FIELDS + OPTIONAL_FIELDS
+
+
+def dew_risk(row):
+    temperature, dew_point = (row.get(key) for key in OPTIONAL_FIELDS[:2])
+    if temperature is None or dew_point is None:
+        return None
+    gap = temperature - dew_point
+    return "High" if gap <= 2 else "Possible" if gap <= 4 else "Low"
+
+
+def window_dew_risk(rows):
+    labels = [dew_risk(row) for row in rows]
+    if "High" in labels:
+        return "High"
+    if "Possible" in labels:
+        return "Possible"
+    return "Low" if labels and None not in labels else None
+
+
 def weather_hours(payload):
     raw = payload["hourly"]
     times = raw["time"]
@@ -26,6 +47,12 @@ def weather_hours(payload):
             ceiling = 100 if key.startswith("cloud_cover") or key == "weather_code" else 300000
             if type(value) not in (int, float) or not isfinite(value) or not 0 <= value <= ceiling:
                 raise ValueError("Unexpected weather value")
+        # Keep old caches and forecasts with missing optional variables usable.
+        for key in OPTIONAL_FIELDS:
+            values = raw.get(key)
+            value = values[index] if isinstance(values, list) and len(values) == len(times) else None
+            minimum, maximum = (0, 100) if key == "relative_humidity_2m" else (-100, 70)
+            row[key] = value if type(value) in (int, float) and minimum <= value <= maximum else None
         result[stamp] = row
     return result
 
@@ -44,7 +71,8 @@ def classify(window, hours, fetched, now, enabled):
     while end > expected[-1]:
         expected.append(expected[-1] + timedelta(hours=1))
     rows = [{"time": time.isoformat(), **hours[time]} for time in expected if time in hours]
-    result = {"fetched": fetched, "hours": rows}
+    result = {"fetched": fetched, "hours": rows,
+              "dewRisk": window_dew_risk(rows) if len(rows) == len(expected) else None}
     required = ("cloud_cover", "visibility", "precipitation")
     if len(rows) < len(expected) or any(row[k] is None for row in rows for k in required):
         return dict(result, label="Uncertain", reason="Forecast incomplete for the viewing window")

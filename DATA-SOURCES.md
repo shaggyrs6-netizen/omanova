@@ -27,9 +27,9 @@ watchlist or Starlink views, close the Observatory, back up the affected
 cache file under `.preview/satellites/cache` or `.preview/trains/cache`,
 and move it out of the cache directory before reopening the view.
 
-The 18 November comet refresh used Horizons geocentric observer
-tables (quantities 1 and 2), through 9 January 2027 at 00:00 UTC, and qualified COBS
-API observations. `observatory/comets/refresh_catalog.py` is an explicit
+The 27 November comet refresh used Horizons geocentric observer
+tables (quantities 1 and 2), through 11 January 2027 at 00:00 UTC, and qualified COBS
+API observations. Brightness estimates are adapted from the [COBS Comet Observation Database](https://www.cobs.si/help/data_policy/) and retain its [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) terms. `observatory/comets/refresh_catalog.py` is an explicit
 maintainer staging command, not an automatic user download. It validates
 timestamps, coverage, response bounds and coordinates before writing a new
 file. Existing frozen comet fixtures are preserved separately for regression
@@ -68,3 +68,5 @@ and the interface links to the provider's licence page.
 - Solar optical safety: https://science.nasa.gov/eclipses/safety/ .
 
 Sky Finder's expanded Messier data are derived from [OpenNGC](https://github.com/mattiaverga/OpenNGC) under CC BY-SA 4.0. See [subset attribution](observatory/field/OPENNGC.md). Skyglow estimation reads a user-supplied [World Atlas 2015 GeoTIFF](https://doi.org/10.5880/GFZ.1.4.2016.001) locally. The atlas is a separate download subject to the provider's terms.
+
+Jupiter moon geometry uses PyMeeus 0.5.12 (LGPL-3.0) and Jean Meeus E5 calculations. Local altitude and darkness use the existing JPL ephemeris. PyMeeus is a pinned, separately installed dependency. [Library source and licence](https://github.com/architest/pymeeus).

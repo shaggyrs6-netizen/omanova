@@ -7,7 +7,7 @@ KINDS = ('station', 'satellite', 'moon', 'meteor', 'planet', 'conjunction',
          'comet', 'eclipse', 'launch', 'plume', 'train', 'aurora')
 DEFAULTS = {
     'interests': list(KINDS), 'alert_types': ['station'], 'alert_lead_minutes': 15,
-    'quiet_enabled': False, 'quiet_start': '22:00', 'quiet_end': '07:00',
+    'clear_sky_only': False, 'quiet_enabled': False, 'quiet_start': '22:00', 'quiet_end': '07:00',
     'alert_conditions': 'Favourable', 'minimum_elevation': 10,
     'watchlist': [{'number': n, 'name': name} for n, name in (
         (25544,'ISS'),(48274,'Tiangong'),(20580,'Hubble'),(27386,'Envisat'),
@@ -29,8 +29,8 @@ def validate(values):
         elif key=='minimum_elevation':
             if type(value) not in (int,float) or not isfinite(value) or not 0<=value<=90:
                 raise ValueError('Minimum elevation must be 0–90 degrees')
-        elif key=='quiet_enabled':
-            if type(value)!=bool: raise ValueError('Quiet hours require true or false')
+        elif key in ('quiet_enabled', 'clear_sky_only'):
+            if type(value)!=bool: raise ValueError('Choose true or false for this alert preference')
         elif key in ('quiet_start','quiet_end'):
             if not isinstance(value,str) or not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d',value):
                 raise ValueError('Use HH:MM for quiet hours')

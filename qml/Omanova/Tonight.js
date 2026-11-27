@@ -24,3 +24,28 @@ function sameBuild(a,b) {
     return a.version===b.version && a.build===b.build &&
         (!a.revision || !b.revision || a.revision===b.revision);
 }
+
+function brief(picks, strip, now, stale, weatherCurrent) {
+    if (stale) return {status: "Stale data · check the worker before planning", summary: "", window: "", dew: ""};
+    if (picks.length) {
+        const best = picks[0];
+        const label = best.conditions?.label;
+        const weather = weatherCurrent && ["Favourable", "Mixed"].includes(label)
+            ? label + " forecast" : "Forecast uncertain";
+        return {
+            status: weather === "Favourable forecast" ? "Worth a look" : "Potential viewing",
+            summary: best.name + " · " + weather,
+            window: new Date(best.start).getTime() <= now ? "Ongoing until" : "Suggested window",
+            start: best.start, end: best.end, safety: best.safety || "",
+            direction: best.look?.direction || "", elevation: best.look?.el,
+            dew: weatherCurrent ? best.conditions?.dewRisk || "" : ""
+        };
+    }
+    const hours = strip?.hours || [];
+    const clear = hours.find(hour => Date.parse(hour.time) >= now && hour.light === "dark"
+        && hour.moonUp === false && weatherCurrent && Number.isFinite(hour.cloud) && hour.cloud <= 30);
+    if (clear) return {status: "A dark, low-cloud hour", summary: "Moon below the horizon · no matching target suggested",
+        window: "From", start: clear.time, dew: clear.dewRisk || ""};
+    return {status: "No current observing pick", summary: weatherCurrent ? "Explore all events and check their conditions."
+        : "Forecast unavailable · explore all events for geometry and timing.", window: "", dew: ""};
+}

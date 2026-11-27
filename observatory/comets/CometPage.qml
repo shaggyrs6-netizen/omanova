@@ -86,6 +86,7 @@ ColumnLayout {
                 : qsTr("Saved observing location · times on your desktop clock")
             color: App.Palette.muted
         }
+        App.CometExpiry { runtime: page.tool; clockOverride: page.catalog?.fixture ? Date.parse(page.catalog.computed) : page.clock }
         Copy {
             visible: page.available
             text: qsTr("Selected targets through %1. Windows require astronomical darkness and at least 20° elevation. Equipment estimates assume dark skies and use dated reports. A comet’s diffuse glow can be hard to see even with a telescope.")

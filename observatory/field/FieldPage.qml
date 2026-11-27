@@ -30,6 +30,21 @@ Item {
   })
  }
  property var instrumentTarget:null
+ property string handoffRequest:""
+ property string handoffResult:""
+ property string handoffTarget:""
+ function openStellarium(key) {
+  if (handoff.running) return
+  handoffTarget=key
+  if (Quickshell.env("OMASKY_FIXTURE")==="1") {
+   handoffResult="Sample only · would centre Stellarium on "+key+"."
+   return
+  }
+  handoffRequest=JSON.stringify({action:"stellarium",target:key})+"\n"
+  handoffResult="Contacting local Stellarium…"
+  handoff.stdinEnabled=true
+  handoff.running=true
+ }
  readonly property int pageSize:12
  function finderMatches(row,query) {
   const term=query.trim().toLowerCase().replace(/’/g,"'").replace(/\s+/g," ")
@@ -54,6 +69,16 @@ Item {
   onStarted:{write(root.pending);root.pending="";stdinEnabled=false}
   stderr:StdioCollector {id:errors}
   onExited:function(code){if(code===0){file.reload();root.result="Updated locally. No coordinates sent or data downloaded."}else root.result=errors.text.trim()||"Field results unavailable."}
+ }
+ Process {
+  id:handoff
+  command:[root.runtime+"/.venv/bin/python",root.runtime+"/observatory/field/instruments.py"]
+  onStarted:{write(root.handoffRequest);root.handoffRequest="";stdinEnabled=false}
+  stdout:StdioCollector {id:handoffOutput}
+  onExited:function(code) {
+   try {root.handoffResult=code===0 ? JSON.parse(handoffOutput.text).message : "Stellarium handoff failed."}
+   catch (error) {root.handoffResult="Stellarium handoff failed."}
+  }
  }
  component Copy:Text {Layout.fillWidth:true;wrapMode:Text.Wrap;textFormat:Text.PlainText;color:App.Palette.ink;font.pixelSize:14}
  component Action:Button {id:b;implicitHeight:40;leftPadding:12;rightPadding:12;enabled:!job.running
@@ -139,6 +164,17 @@ Item {
        visible:root.section==="finder"&&root.instrumentsOpen&&root.source==="active"&&card.modelData.kind==="deep-sky"&&Quickshell.env("OMASKY_FIXTURE")!=="1"
        text:root.instrumentTarget?.id===card.modelData.id?"Selected for Go To":"Select for Go To"
        onClicked:{root.instrumentTarget=card.modelData;root.showInstruments()}
+      }
+      Action {
+       visible:root.section==="finder"&&/^M[0-9]+$/.test(card.modelData.id)
+       text:"Open in Stellarium"
+       Accessible.name:"Open "+card.modelData.id+" in Stellarium"
+       enabled:!handoff.running
+       onClicked:root.openStellarium(card.modelData.id)
+      }
+      Copy {
+       visible:root.handoffTarget===card.modelData.id&&!!root.handoffResult
+       text:root.handoffResult;color:App.Palette.accent
       }
       Loader {
        id:overlay

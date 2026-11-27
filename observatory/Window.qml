@@ -700,6 +700,12 @@ ShellRoot {
                             Fact { Layout.fillWidth: true; caption: "Precipitation · highest"; value: ui.metric(ui.aggregate("precipitation", false), " mm") }
                             Rule {}
                             Fact { Layout.fillWidth: true; caption: "Wind · highest"; value: ui.metric(ui.aggregate("wind_speed_10m", false), " km/h") }
+                            Rule {}
+                            Fact { Layout.fillWidth: true; caption: "Dew risk"; value: {
+                                const age = sky.now - Date.parse(ui.forecast?.fetched)
+                                return ui.snapshotStale || !(age >= 0 && age < 21600000) ? "Unknown" : ui.forecast?.dewRisk || "Unknown"
+                            } }
+                            Copy { Layout.fillWidth: true; color: ui.muted; text: "Estimated from forecast air temperature and dew point at 2 m. Optics may cool faster than the air." }
                         }
                     }
                     App.InstrumentCard {
@@ -774,7 +780,7 @@ ShellRoot {
                 ui.changeScreen(7)
                 const page = planetLoader.item
                 if (!page) return ""
-                if (section === 0 || section === 1) page.section = section
+                if (section >= 0 && section <= 2) page.section = section
                 return JSON.stringify({ planets: page.dataSet?.highlights.length ?? 0,
                     pairings: page.dataSet?.pairings.length ?? 0, fixture: page.dataSet?.fixture,
                     section: page.section, width: page.width, height: page.height })

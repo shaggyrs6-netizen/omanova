@@ -18,3 +18,17 @@ test('Runtime status distinguishes absent, stale and future-clock data; identity
  assert.match(night.runtimeStatus(null,now,false),/Waiting/);assert.equal(night.runtimeStatus(data(60000),now,false),'Snapshot current');assert.match(night.runtimeStatus(data(181000),now,false),/stale/);assert.match(night.runtimeStatus(data(-1000),now,false),/clock/);assert.match(night.runtimeStatus({generated:'invalid'},now,false),/invalid/);
  assert.equal(night.sameBuild(null,{}),null);assert.equal(night.sameBuild({version:'1',build:'a'},{version:'1',build:'b'}),false);assert.equal(night.sameBuild({version:'1',build:'a',revision:'a'},{version:'1',build:'a',revision:'b'}),false);
 });
+test('Tonight summary respects stale weather and offers only aligned dark low-cloud context',()=>{
+ const now=Date.parse('2026-11-27T20:00Z');
+ const start=new Date(now+3600000).toISOString(),end=new Date(now+7200000).toISOString();
+ const pick={name:'Sample ISS',start,end,conditions:{label:'Favourable',dewRisk:'High'},look:{direction:'NW',el:43}};
+ const result=night.brief([pick],null,now,false,true);
+ assert.equal(result.status,'Worth a look');
+ assert.equal(result.dew,'High');
+ assert.equal(night.brief([pick],null,now,false,false).summary,'Sample ISS · Forecast uncertain');
+ assert.equal(night.brief([pick],null,now,true,true).start,undefined);
+ const hour={time:start,light:'dark',moonUp:false,cloud:15,dewRisk:'Low'};
+ assert.equal(night.brief([],{hours:[hour]},now,false,true).status,'A dark, low-cloud hour');
+ assert.equal(night.brief([],{hours:[{...hour,moonUp:true}]},now,false,true).start,undefined);
+ assert.equal(night.brief([],{hours:[{...hour,cloud:null}]},now,false,true).start,undefined);
+});

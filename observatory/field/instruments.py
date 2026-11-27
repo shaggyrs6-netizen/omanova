@@ -13,6 +13,7 @@ from tempfile import TemporaryDirectory
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from observatory.field.field import CAT, ROOT, point
 from observatory.trips.terrain import combined_altitude
+from observatory.field.stellarium import focus
 
 
 def tool(name, arguments, timeout=8, input_text=None):
@@ -144,6 +145,8 @@ def main():
         action = request['action']
         if action == 'skyglow':
             result = estimate(request)
+        elif action == 'stellarium':
+            result = {'message': focus(request['target'])}
         elif action == 'solve':
             result = solve(request)
         elif action in ('position', 'goto', 'stop'):

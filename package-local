@@ -40,7 +40,9 @@ with tarfile.open(fileobj=io.BytesIO(raw)) as archive:
               'observatory/final_sky/CameraChart.qml','observatory/final_sky/CameraProjection.js',
               'observatory/comets/catalog.json','observatory/field/messier-openngc.json',
               'observatory/field/OPENNGC.md','observatory/field/InstrumentTools.qml',
-              'observatory/field/instruments.py','install-mission-control','MissionControlState.qml',
+              'observatory/field/instruments.py','observatory/field/stellarium.py',
+              'observatory/TonightShare.qml','observatory/planets/JupiterMoons.qml',
+              'observatory/planets/jupiter_moons.py','qml/Omanova/CometExpiry.qml','install-mission-control','MissionControlState.qml',
               'mission-control/bin/wallpaper','mission-control/mission-control.pro',
               'Observatory.qml','ObservatoryPreview.qml']
     if any(f'omanova-{version}/{f}' not in names for f in required):raise SystemExit('Missing required candidate file')

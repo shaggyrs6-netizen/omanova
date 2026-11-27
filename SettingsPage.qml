@@ -167,6 +167,7 @@ ColumnLayout {
         ColumnLayout {
             Layout.fillWidth:true;Layout.preferredWidth:660;Layout.minimumWidth:0;Layout.alignment:Qt.AlignTop
             spacing:12
+            App.CometExpiry { runtime: page.sky.runtime; visible: !page.compact && page.shows(5) && Number.isFinite(expiry) && expiry - now <= 14 * 86400000 }
             UpdateCard {sky:page.sky;draftBlocked:page.updateDraftBlocked;visible:!page.compact && page.shows(5);Layout.fillWidth:true;}
 
             App.RuntimeStatus {

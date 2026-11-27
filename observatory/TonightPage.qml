@@ -24,10 +24,52 @@ ColumnLayout {
     readonly property var picks: Tonight.select(sky.plannedEvents, sky.now, sky.plannerStale,
         sky.data?.settings?.observing?.interests || [],
         row => !sky.applyEquipmentProfile || sky.equipmentMatches(row), end)
+    readonly property var brief: Tonight.brief(picks, strip, sky.now,
+        sky.snapshotStale || sky.plannerStale, weatherCurrent)
+    readonly property string briefTime: brief.start ? brief.window + " " + clock(brief.start)
+        + (brief.end ? "–" + clock(brief.end) : "")
+        + " · " + Qt.formatDateTime(new Date(brief.start), "ddd d MMM") + " local time" : ""
+    readonly property string briefDirection: brief.direction && Number.isFinite(brief.elevation)
+        ? qsTr("Look %1 · %2° up").arg(brief.direction).arg(Math.round(brief.elevation)) : ""
     function clock(t) {return t ? Qt.formatDateTime(new Date(t),"HH:mm") : "Unavailable"}
     component Copy: Text {
         Layout.fillWidth:true;wrapMode:Text.Wrap;textFormat:Text.PlainText
         color:App.Palette.ink;font.pixelSize:14
+    }
+    App.InstrumentCard {
+        Layout.leftMargin: 16
+        Layout.rightMargin: 16
+        Layout.topMargin: 8
+        spacing: 8
+        App.PageHeader { eyebrow: qsTr("TONIGHT"); title: qsTr("Worth going out tonight?") }
+        Copy { text: page.brief.status; font.pixelSize: 22; font.bold: true; color: App.Palette.accent }
+        Copy { text: page.brief.summary; visible: !!text }
+        Copy { text: page.briefTime; visible: !!text }
+        Copy { text: page.briefDirection; visible: !!text }
+        Copy { text: page.brief.safety || ""; visible: !!text; color: App.Palette.warning }
+        Copy { text: page.brief.dew ? qsTr("Dew risk · %1").arg(page.brief.dew.toLowerCase()) : ""; visible: !!text; color: App.Palette.muted }
+        Flow {
+            Layout.fillWidth: true
+            spacing: 10
+            App.ActionButton {
+                text: qsTr("View selected event"); implicitHeight: 46
+                visible: page.picks.length > 0; onClicked: page.inspect(page.picks[0])
+            }
+            App.ActionButton { text: qsTr("All events"); implicitHeight: 46; onClicked: page.openEvents() }
+            App.ActionButton {
+                text: qsTr("Share as image"); implicitHeight: 46
+                enabled: !!page.brief.start; onClicked: share.open()
+            }
+        }
+    }
+    TonightShare {
+        id: share
+        parent: Overlay.overlay
+        sample: page.sky.fixture
+        titleText: page.brief.status
+        detailText: page.brief.summary
+        timingText: [page.briefTime, page.briefDirection, page.brief.safety].filter(Boolean).join("\n")
+        dewText: page.brief.dew ? qsTr("Dew risk · %1").arg(page.brief.dew.toLowerCase()) : ""
     }
     TonightInstruments {
         Layout.fillWidth: true

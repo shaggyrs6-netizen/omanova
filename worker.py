@@ -18,12 +18,12 @@ from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_ope
 from uuid import uuid4
 
 import certifi
-from skyfield.api import load, load_file
+from skyfield.api import load, load_file, wgs84
 
 from astronomy import iso, predict, station_rows, utc
 from observing_preferences import preferences, validate as validate_preferences
 from runtime_identity import identity as runtime_identity
-from conditions import FIELDS, classify, opportunities, weather_hours
+from conditions import FORECAST_FIELDS, classify, opportunities, weather_hours
 from observatory.notifications.alerts import decision, deliver, sent_record
 
 ROOT = Path(__file__).resolve().parent
@@ -201,7 +201,7 @@ def build_snapshot(state, fixture=False):
             weather = {"key": key}
         if settings["online"] and not fixture:
             lat, lon = key.split(",")
-            query = urlencode({"latitude": lat, "longitude": lon, "hourly": ",".join(FIELDS),
+            query = urlencode({"latitude": lat, "longitude": lon, "hourly": ",".join(FORECAST_FIELDS),
                                "timezone": "GMT", "forecast_days": 5})
             before = weather.copy()
             update_source(weather, now, timedelta(hours=3), lambda: get_json(f"{FORECAST_URL}?{query}"),
@@ -257,6 +257,17 @@ planner_process = None
 planner_started = 0
 
 
+def dark_at(place, start, look):
+    try:
+        with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
+            observer = eph["earth"] + wgs84.latlon(place["lat"], place["lon"], elevation_m=place["elevation"])
+            times = load.timescale(builtin=True).from_datetimes([start, look])
+            altitude = observer.at(times).observe(eph["sun"]).apparent().altaz()[0].degrees
+            return bool((altitude <= -18).all())
+    except (OSError, KeyError, ValueError, TypeError):
+        return False
+
+
 def check_observing_alerts(state, snapshot, now):
     if snapshot["demo"] or snapshot["settings"].get("alerts") is not True:
         return
@@ -280,10 +291,12 @@ def check_observing_alerts(state, snapshot, now):
                 history.append({"kind":"station", "object_id":str(sent["station"]),
                     "location":sent["location"], "start":sent["rise"], "end":sent["set"]})
     location_id = snapshot["place"]["id"]
+    clear_sky = preferences(snapshot["settings"])["clear_sky_only"]
     for row in rows:
-        if eligible(row, snapshot["settings"], now, history, location_id):
+        if eligible(row, snapshot["settings"], now, history, location_id,
+                    dark=lambda start, look: dark_at(snapshot["place"], start, look)):
             minutes = ceil((utc(row["start"]) - now).total_seconds() / 60)
-            if deliver_planned(row, minutes):
+            if deliver_planned(row, minutes, clear_sky=clear_sky):
                 history.append(record(row, location_id))
                 history = [r for r in history if isinstance(r, dict) and r.get("end") and utc(r["end"]) > now - timedelta(days=7)][-1000:]
                 write(ledger, history)

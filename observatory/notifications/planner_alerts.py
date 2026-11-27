@@ -6,7 +6,7 @@ from astronomy import utc
 from observing_preferences import preferences, in_quiet_hours
 
 
-def eligible(row, settings, now, history, location_id):
+def eligible(row, settings, now, history, location_id, *, dark=None):
     prefs=preferences(settings)
     if settings.get('alerts') is not True or row['kind'] not in prefs['alert_types']: return False
     if in_quiet_hours(now, settings) or row['visibility']!='possible':return False
@@ -18,12 +18,20 @@ def eligible(row, settings, now, history, location_id):
     label=row['conditions']['label']
     allowed={'Favourable':('Favourable',),'Mixed':('Favourable','Mixed'),
              'Any':('Favourable','Mixed','Poor','Uncertain')}[prefs['alert_conditions']]
-    if label not in allowed:return False
+    if prefs['clear_sky_only']:
+        if (settings.get('weather') is not True or label != 'Favourable'
+                or not row.get('recommended') or dark is None):
+            return False
+    elif label not in allowed:
+        return False
     for sent in history:
         try:
             if (sent['location']==location_id and sent['kind']==row['kind'] and sent['object_id']==row['object_id']
                     and utc(sent['start'])<end and start<utc(sent['end'])):return False
         except (KeyError,ValueError,TypeError):continue
+    if prefs['clear_sky_only']:
+        look = utc(row['look'].get('time') or row['start'])
+        return start <= look <= end and dark(start, look)
     return True
 
 
@@ -31,7 +39,7 @@ def record(row, location_id):
     return {key:row[key] for key in ('kind','object_id','start','end')} | {'location':location_id}
 
 
-def deliver(row, minutes, *, preview=False, send=subprocess.run):
+def deliver(row, minutes, *, clear_sky=False, preview=False, send=subprocess.run):
     title=('[Preview] ' if preview else '')+row['name']+' in '+str(minutes)+' minutes'
     p=row['look'];label=row['conditions']['label']
     look_time=utc(p.get('time') or row['start']).astimezone().strftime('%a %H:%M')
@@ -39,6 +47,7 @@ def deliver(row, minutes, *, preview=False, send=subprocess.run):
     if p.get('az') is not None:body+=' ('+str(round(p['az']))+'° true)'
     if p.get('el') is not None:body+=', '+str(round(p['el']))+'° up'
     body+='. '+('Poor visibility.' if label=='Poor' else 'Weather uncertain.' if label=='Uncertain' else 'Forecast '+label.lower()+'.')
+    if clear_sky: body+=' Clear, astronomically dark window forecast.'
     if row.get('safety'):body+=' '+row['safety']
     if row['kind'] in ('train','plume','aurora'):body+=' Experimental guidance; visibility is not confirmed.'
     try:

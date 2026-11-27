@@ -9,3 +9,4 @@ ViewPanel 1.0 ViewPanel.qml
 StateSwitch 1.0 StateSwitch.qml
 InstrumentCard 1.0 InstrumentCard.qml
 ToolBrowser 1.0 ToolBrowser.qml
+CometExpiry 1.0 CometExpiry.qml

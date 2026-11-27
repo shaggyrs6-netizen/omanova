@@ -57,6 +57,23 @@ ColumnLayout {
         }
     }
     Copy { text: qsTr("Alerts never claim a confirmed sighting. Unconfirmed local visibility is excluded; poor or missing weather is included only if you explicitly choose Any weather."); color: App.Palette.muted }
+    CheckBox {
+        Layout.fillWidth: true
+        implicitHeight: Math.max(44, contentItem.implicitHeight + 12)
+        text: qsTr("Only alert for clear, dark viewing windows")
+        checked: page.draft.clear_sky_only === true
+        onClicked: page.set("clear_sky_only", checked)
+        contentItem: Copy {
+            text: parent.text
+            leftPadding: parent.indicator.width + parent.spacing
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
+    Copy {
+        visible: page.draft.clear_sky_only === true
+        text: qsTr("Requires a fresh favourable forecast and astronomical darkness at the start and suggested look time. The alert weather threshold below is ignored in this mode.")
+        color: App.Palette.muted
+    }
     GridLayout {
         Layout.fillWidth: true; columns: width < 500 ? 1 : 3
         Label { text: qsTr("Lead minutes"); color: App.Palette.ink }
@@ -80,6 +97,7 @@ ColumnLayout {
             model: ["Favourable", "Mixed", "Any"]
             currentIndex: Math.max(0, model.indexOf(page.draft.alert_conditions || "Favourable"))
             onActivated: page.set("alert_conditions", currentText)
+            enabled: page.draft.clear_sky_only !== true
             Accessible.name: qsTr("Minimum alert weather quality")
         }
     }
