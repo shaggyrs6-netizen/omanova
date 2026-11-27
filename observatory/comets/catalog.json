@@ -2,7 +2,7 @@
   "from": "2026-11-27T00:00:00Z",
   "until": "2027-01-11T00:00:00Z",
   "stepSeconds": 7200,
-  "refreshed": "2026-11-27T15:08:44.123174Z",
+  "refreshed": "2026-11-27T15:50:23.591985Z",
   "positionSource": "https://ssd.jpl.nasa.gov/horizons/",
   "magnitudeSource": "https://cobs.si/",
   "targets": [

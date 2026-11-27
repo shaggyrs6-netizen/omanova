@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.11 — Tonight planning and Jupiter's moons
+
+- Add a keyboard-accessible Tonight summary with a suggested time and direction, forecast status and local PNG export.
+- Show estimated dew risk from temperature and dew point through the existing weather opt-in.
+- Add optional clear-and-dark filtering for observing alerts, with quiet hours and duplicate suppression.
+- Open supported Sky Finder targets in a running local Stellarium via its Remote Control plugin.
+- Show approximate Galilean moon and shadow transits with local altitude, direction and horizon checks.
+- Refresh four comet tracks and add a two-week expiry warning in Comets and Settings.
+
+[Release notes](docs/RELEASE-0.1.11.md) · [Screenshots](docs/SCREENSHOTS-0.1.11.md)
+
 ## 0.1.10 — expanded Sky Finder and observing instruments
 
 - Expand Sky Finder to 109 Messier targets and keep direct saving to My Night.
