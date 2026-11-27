@@ -1,4 +1,5 @@
 import "../qml/Omanova" as App
+import QtCore
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
@@ -28,6 +29,9 @@ Popup {
         saving = true
         if (!card.grabToImage(result => {
             pendingImage = result
+            const folder = StandardPaths.writableLocation(StandardPaths.PicturesLocation)
+            save.currentFolder = folder
+            save.selectedFile = folder.toString().replace(/\/$/, "") + "/omanova-tonight.png"
             save.open()
         }, Qt.size(Math.round(card.width * 2), Math.round(card.height * 2)))) {
             feedback = qsTr("Could not render the observing card.")
