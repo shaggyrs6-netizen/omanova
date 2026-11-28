@@ -1,14 +1,14 @@
 # OMANOVA
 
-![OMANOVA 0.1.11 release cover featuring Jupiter and the new observing tools](docs/screenshots/0.1.11/omanova-0.1.11.webp)
+![OMANOVA 0.1.12 cover featuring the live horizon, observing conditions, solar wind and an expanded Sky Finder](docs/screenshots/0.1.12/omanova-0.1.12.webp)
 
-*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.11.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
+*Promotional illustration. [Actual app screenshots](docs/SCREENSHOTS-0.1.12.md) · [Star-chart reference data attribution](observatory/final_sky/HYG-LICENSE.md).*
 
 OMANOVA is a local astronomy Observatory and bar widget for Omarchy Quattro.
 Left-click the widget to open the resizable Observatory. Middle-click for the
 compact fallback. Set your observing location manually under **Settings**.
 
-> **Version 0.1.11** adds a Tonight summary with local PNG export, dew risk, optional clear-sky alerts, a local Stellarium handoff, approximate Jupiter moon and shadow transits, and refreshed comet tracks with an expiry warning. [Release notes](docs/RELEASE-0.1.11.md) · [Changelog](CHANGELOG.md) · [Screenshots](docs/SCREENSHOTS-0.1.11.md)
+> **Version 0.1.12** adds a live sky overlay in My Horizon, hourly seeing and transparency indicators, NOAA solar-wind context, and 149 NGC and IC targets in Sky Finder. [Release notes](docs/RELEASE-0.1.12.md) · [Changelog](CHANGELOG.md) · [Screenshots](docs/SCREENSHOTS-0.1.12.md)
 
 > The Omarchy marketplace listing is managed separately from GitHub releases. See the [upgrade instructions](#upgrading-an-existing-installation) if you installed the marketplace version.
 
@@ -194,7 +194,7 @@ the NASA/JPL DE440s ephemeris over HTTPS with a SHA-256 check.
 From a terminal, choose a permanent directory for the checkout:
 
 ```sh
-git clone --branch v0.1.11 https://github.com/shaggyrs6-netizen/omanova.git
+git clone --branch v0.1.12 https://github.com/shaggyrs6-netizen/omanova.git
 cd omanova
 ./install
 ```

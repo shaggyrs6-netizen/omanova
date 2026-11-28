@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.12 — Live horizons and observing context
+
+- Overlay the current sky on My Horizon, inspect what your skyline blocks and estimate when objects clear it. Look ahead with the time slider.
+- Add hourly weather-based seeing and transparency indicators to Conditions.
+- Show recent NOAA solar-wind speed, proton density, Bz and total field strength in Aurora under its existing download opt-in.
+- Add 149 selected NGC and IC targets to Sky Finder with searchable designations, local observing windows, framing and My Night support.
+
+[Release notes](docs/RELEASE-0.1.12.md) · [Screenshots](docs/SCREENSHOTS-0.1.12.md)
+
 ## 0.1.11 — Tonight planning and Jupiter's moons
 
 - Add a keyboard-accessible Tonight summary with a suggested time and direction, forecast status and local PNG export.
