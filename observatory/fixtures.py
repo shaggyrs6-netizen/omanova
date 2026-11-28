@@ -32,6 +32,9 @@ def prepare(state):
                 "precipitation": [0, 0, 0, 0],
                 "weather_code": [1, 1, 1, 1],
                 "wind_speed_10m": [6, 8, 8, 10],
+                "wind_speed_850hPa": [20, 30, 42, 72],
+                "wind_speed_200hPa": [60, 74, 92, 140],
+                "relative_humidity_2m": [69, 72, 81, 85],
             }},
         })
         result = build_snapshot(state, fixture=True)

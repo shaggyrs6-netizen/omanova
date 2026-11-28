@@ -15,7 +15,8 @@ from observing_context import trip_state,equipment_profile,match
 DATA=Path(os.environ.get('XDG_DATA_HOME') or Path.home()/'.local/share')
 LIVE_STATE=DATA/'omanova-field'
 CAT=json.loads((Path(__file__).parent/'catalog.json').read_text())
-CAT['targets'] += json.loads(Path(__file__).with_name('messier-openngc.json').read_text())
+for subset in ('messier-openngc.json', 'extended-openngc.json'):
+    CAT['targets'] += json.loads(Path(__file__).with_name(subset).read_text())
 SITES=json.loads((Path(__file__).parent/'sites.json').read_text())
 
 LANDMARK_IDS = {item['id'] for item in CAT['landmarks']}

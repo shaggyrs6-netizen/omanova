@@ -708,6 +708,18 @@ ShellRoot {
                             Copy { Layout.fillWidth: true; color: ui.muted; text: "Estimated from forecast air temperature and dew point at 2 m. Optics may cool faster than the air." }
                         }
                     }
+                    OpticalConditions {
+                        Layout.fillWidth: true
+                        Layout.leftMargin: ui.gutter
+                        Layout.rightMargin: ui.gutter
+                        hours: nightModel.current && sky.data?.settings?.weather === true &&
+                            sky.now >= Date.parse(nightModel.dataSet?.weatherFetched) &&
+                            sky.now - Date.parse(nightModel.dataSet?.weatherFetched) < 21600000 ?
+                            nightModel.dataSet.opticalHours || [] : []
+                        weatherEnabled: sky.data?.settings?.weather === true
+                        fixture: sky.fixture
+                        distanceLabel: metres => sky.formatDistance(metres / 1000, 1)
+                    }
                     App.InstrumentCard {
                         Layout.leftMargin:ui.gutter;Layout.rightMargin:ui.gutter
                         visible:ui.hours.length>0

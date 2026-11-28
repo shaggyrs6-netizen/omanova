@@ -118,7 +118,7 @@ remain on hold; GitHub releases are separate.
 | Eclipses | Solar and lunar eclipses through 2029, local windows and solar-viewing safety links. |
 | Launch Plumes | Twilight geometry when a sourced timed trajectory exists. Otherwise visibility is unconfirmed. |
 | Watchlist and Starlink Trains | Potential sunlit passes for bright satellites and recently tracked Starlink groups. Missing train data leaves visibility unconfirmed. |
-| Aurora | NOAA-based model sightlines and a separate global Kp outlook. Missing or stale data is uncertain. |
+| Aurora | NOAA-based model sightlines, a separate global Kp outlook and recent upstream solar-wind context. Missing or stale data is uncertain. |
 | Dark-Sky Sites | Regional sample catalogue for Middle Tennessee and nearby states, with driving estimates, access and darkness evidence. |
 | Trip Planner & My Horizon | Destination/date comparison with Home, both time zones, manual obstruction profiles and observing height. Opt-in terrain estimates combine with manual obstructions; an isolated preview remains available. |
 | Observing Log | Explicit-save I saw it drafts, local entries with object/place/time/notes and private CSV export. |
@@ -128,7 +128,7 @@ remain on hold; GitHub releases are separate.
 | Calendar Export | Local .ics snapshots from active or Trip locations, named-zone context and per-session optional reminders; manual import. |
 | Offline Cards | Private, immutable night guides with times, directions and equipment; self-contained HTML, print styling and stale-data warnings. |
 | Destination Sites | 12 curated examples across four countries, straight-line km/miles distances from active or Trip locations and dated official access evidence. |
-| Sky Finder | Five constellation landmarks and 109 searchable Messier targets, local windows, compass, Sun/Moon context, equipment and saved-horizon guidance. |
+| Sky Finder | Five constellation landmarks, 109 Messier targets and 149 selected NGC/IC targets, local windows, compass, Sun/Moon context, equipment and saved-horizon guidance. |
 | Settings and alerts | Saved and temporary locations, explicit city/postcode search, feed controls, custom watchlists and opt-in observing alerts with configurable lead times and quiet hours. |
 
 ## Screenshots
@@ -562,6 +562,10 @@ window and suggested time. Pairing limits are 5° between planets and 8°
 for Moon–planet pairs. Local windows require the Sun to be at least 6° below
 the horizon and each target at least 10° up. The model uses sky geometry.
 Clouds, obstructions and sky brightness can change what you see.
+
+## Seeing and transparency
+
+**Tonight → Conditions → Seeing & transparency** shows the next 24 forecast hours when weather downloads are enabled and the forecast is current. The seeing indicator uses surface and upper-air winds as a rough proxy for turbulence. The transparency indicator uses cloud, humidity, surface visibility and precipitation. Neither changes the station-pass verdict.
 
 ## Sky Finder observing instruments
 

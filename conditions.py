@@ -7,7 +7,9 @@ FIELDS = ("cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high
           "visibility", "precipitation", "weather_code", "wind_speed_10m")
 
 
-OPTIONAL_FIELDS = ("temperature_2m", "dew_point_2m", "relative_humidity_2m")
+ATMOSPHERE_WINDS = ("wind_speed_850hPa", "wind_speed_200hPa")
+OPTIONAL_FIELDS = ("temperature_2m", "dew_point_2m", "relative_humidity_2m") + ATMOSPHERE_WINDS
+OPTIONAL_RANGES = {"relative_humidity_2m": (0, 100), **dict.fromkeys(ATMOSPHERE_WINDS, (0, 450))}
 FORECAST_FIELDS = FIELDS + OPTIONAL_FIELDS
 
 
@@ -51,11 +53,36 @@ def weather_hours(payload):
         for key in OPTIONAL_FIELDS:
             values = raw.get(key)
             value = values[index] if isinstance(values, list) and len(values) == len(times) else None
-            minimum, maximum = (0, 100) if key == "relative_humidity_2m" else (-100, 70)
+            minimum, maximum = OPTIONAL_RANGES.get(key, (-100, 70))
             row[key] = value if type(value) in (int, float) and minimum <= value <= maximum else None
         result[stamp] = row
     return result
 
+
+def optical_context(row):
+    """Coarse weather indicators, independent of the pass verdict."""
+    surface, lower, upper = (row.get(key) for key in ("wind_speed_10m", *ATMOSPHERE_WINDS))
+    cloud, humidity, visibility, rain = (row.get(key) for key in
+        ("cloud_cover", "relative_humidity_2m", "visibility", "precipitation"))
+    seeing = None
+    if None not in (surface, lower, upper):
+        if surface >= 28 or lower >= 65 or upper >= 130:
+            seeing = "Higher turbulence risk"
+        elif surface <= 12 and lower <= 30 and upper <= 75:
+            seeing = "Lower turbulence risk"
+        else:
+            seeing = "Moderate turbulence risk"
+    transparency = None
+    if None not in (cloud, humidity, visibility, rain):
+        if cloud >= 80 or rain >= 0.5 or visibility < 5000:
+            transparency = "Obscured"
+        elif cloud <= 20 and rain == 0 and humidity <= 75 and visibility >= 15000:
+            transparency = "Clear-air potential"
+        else:
+            transparency = "Reduced clarity"
+    return {"seeing": seeing, "transparency": transparency, "surfaceWind": surface,
+            "lowerWind": lower, "upperWind": upper, "cloud": cloud,
+            "humidity": humidity, "visibility": visibility}
 
 def classify(window, hours, fetched, now, enabled):
     if not enabled:

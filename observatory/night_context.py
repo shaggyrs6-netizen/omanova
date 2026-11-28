@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from astronomy import iso, utc
-from conditions import dew_risk, weather_hours
+from conditions import dew_risk, optical_context, weather_hours
 from worker import read, write, forecast_key, DEMO_NOW
 from observatory.trips.trips import night_bounds, system_zone
 
@@ -67,10 +67,14 @@ def build(state, snapshot, now=None):
                                      almanac.sunrise_sunset(eph, wgs84.latlon(place['lat'], place['lon'], elevation_m=place['elevation'])))
         rises = [iso(v.utc_datetime()) for v, state in zip(t, up) if state]
         sets = [iso(v.utc_datetime()) for v, state in zip(t, up) if not state]
+    hour = now.replace(minute=0, second=0, microsecond=0)
+    quality = [{'time': iso(stamp), 'label': stamp.astimezone(ZoneInfo(zone)).strftime('%a %H:%M %Z'),
+                **optical_context(forecast.get(stamp, {}))}
+               for stamp in (hour + timedelta(hours=i) for i in range(24))] if fetched else []
     return {'location_id':place['id'], 'generated':iso(now), 'night':str(day), 'zone':zone,
             'start':iso(start), 'end':iso(end), 'sunset':sets[0] if sets else None,
             'sunrise':rises[0] if rises else None, 'hours':rows,
-            'weatherFetched':fetched, 'weatherNote':note,
+            'weatherFetched':fetched, 'weatherNote':note, 'opticalHours':quality,
             'moonFraction':moon_fraction, 'moonWaxing':moon_waxing,
             'basis':'Hourly Sun/Moon geometry and cached weather, not a visibility score. Active-location horizons are not applied to this strip.'}
 

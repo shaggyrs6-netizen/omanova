@@ -49,8 +49,11 @@ Item {
  function finderMatches(row,query) {
   const term=query.trim().toLowerCase().replace(/’/g,"'").replace(/\s+/g," ")
   if(!term)return true
-  const messier=term.match(/^(?:m|messier)\s*0*(\d+)$/)
-  if(messier)return row.id===("M"+messier[1])
+  const designation=term.match(/^(m|messier|ngc|ic)\s*0*(\d+)$/)
+  if(designation) {
+   const prefix=designation[1]==="messier"?"M":designation[1].toUpperCase()
+   return row.id===prefix+designation[2] || row.name.toUpperCase().includes(prefix+" "+designation[2]+" ·")
+  }
   return [row.id,row.name,row.type,row.constellation||""].some(value=>value.toLowerCase().replace(/’/g,"'").includes(term))
  }
  readonly property var shownRows:(dataSet?.rows||[]).filter(row=>section==="sites" ? !nearby||row.distanceKm<=500 : finderMatches(row,search.text))
@@ -102,7 +105,7 @@ Item {
     Flow {visible:root.section==="finder";Layout.fillWidth:true;spacing:10
      TextField {
       id:search;onTextChanged:root.pageNumber=0;width:Math.min(330,scroll.availableWidth-62);implicitHeight:40;maximumLength:80
-      placeholderText:"Search name, Messier number or constellation"
+      placeholderText:"Search name, M / NGC / IC number, or constellation"
       Accessible.name:"Search Sky Finder targets"
       color:App.Palette.ink;placeholderTextColor:App.Palette.muted;selectByMouse:true
       background:Rectangle {radius:6;color:App.Palette.field;border.color:search.activeFocus?App.Palette.accent:App.Palette.border}
@@ -113,7 +116,7 @@ Item {
      text:!root.dataSet ? "" : search.text.trim()?root.shownRows.length+" of "+root.dataSet.rows.length+" matches":
           root.dataSet.rows.filter(r=>r.kind==="deep-sky").length+" deep-sky targets · "+root.dataSet.rows.filter(r=>r.kind==="landmark").length+" landmarks"
      color:App.Palette.accent}
-    Copy {visible:root.section==="finder"&&!!root.dataSet&&!root.shownRows.length;text:"No matches. Try a name such as Beehive or a number such as M44.";color:App.Palette.muted}
+    Copy {visible:root.section==="finder"&&!!root.dataSet&&!root.shownRows.length;text:"No matches. Try Beehive, M44, NGC 7000 or IC 5070.";color:App.Palette.muted}
     Copy {visible:root.section==="finder"&&!!root.dataSet;text:(root.dataSet?.zone||"")+" · "+(root.dataSet?.night||"")+" · "+(root.dataSet?.darkness?.darkHours||0)+" h astronomical darkness · "+(root.dataSet?.darkness?.moonFreeHours||0)+" h Moon-free darkness";color:App.Palette.accent}
     Action {visible:!!root.dataSet;text:root.detailsOpen?"Hide estimate details":"How this is estimated";onClicked:root.detailsOpen=!root.detailsOpen}
     Copy {visible:root.detailsOpen&&root.section==="finder";text:root.dataSet?.darkness?.basis||"Darkness estimates use Sun/Moon geometry; background sky quality remains unknown.";color:App.Palette.muted}

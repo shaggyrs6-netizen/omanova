@@ -67,6 +67,12 @@ and the interface links to the provider's licence page.
   Diagram is upright sky, not an optical reticle.
 - Solar optical safety: https://science.nasa.gov/eclipses/safety/ .
 
-Sky Finder's expanded Messier data are derived from [OpenNGC](https://github.com/mattiaverga/OpenNGC) under CC BY-SA 4.0. See [subset attribution](observatory/field/OPENNGC.md). Skyglow estimation reads a user-supplied [World Atlas 2015 GeoTIFF](https://doi.org/10.5880/GFZ.1.4.2016.001) locally. The atlas is a separate download subject to the provider's terms.
+Sky Finder’s expanded Messier and selected NGC/IC data are derived from [OpenNGC](https://github.com/mattiaverga/OpenNGC) under CC BY-SA 4.0. See [subset attribution](observatory/field/OPENNGC.md). Skyglow estimation reads a user-supplied [World Atlas 2015 GeoTIFF](https://doi.org/10.5880/GFZ.1.4.2016.001) locally. The atlas is a separate download subject to the provider's terms.
 
 Jupiter moon geometry uses PyMeeus 0.5.12 (LGPL-3.0) and Jean Meeus E5 calculations. Local altitude and darkness use the existing JPL ephemeris. PyMeeus is a pinned, separately installed dependency. [Library source and licence](https://github.com/architest/pymeeus).
+
+## Optical and solar-wind context
+
+Conditions uses the existing [Open-Meteo weather opt-in](https://open-meteo.com/en/docs). Seeing is a coarse wind proxy using 10 m, 850 hPa and 200 hPa speeds. Transparency is a weather proxy using cloud, relative humidity, horizontal visibility and precipitation. Neither is a calibrated prediction of seeing in arcseconds, atmospheric extinction or background sky brightness. Missing values and forecasts six hours old or older do not produce an estimate.
+
+Aurora displays the active-source [NOAA SWPC solar wind](https://www.spaceweather.gov/products/solar-wind) plasma and magnetic readings using the existing Aurora download opt-in. The request carries no observing coordinates. The page caches validated readings for its five-minute refresh interval and hides samples 15 minutes old or older based on the observation timestamp. Wind and magnetic measurements can come from different primary sources. These figures do not change the local aurora verdict.

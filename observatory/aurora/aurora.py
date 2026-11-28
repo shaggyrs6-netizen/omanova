@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from astronomy import DIRECTIONS, iso, utc
+from observatory.aurora.solar_wind import context as solar_wind_context
 from observatory.moon.moon import intervals
 from worker import DEFAULT_STATE, get_json, location, lock, read, settings_at, update_source, write
 
@@ -117,7 +118,7 @@ def cache_read(state, key, url, validator, now, period, max_bytes, *, enabled):
     return cache
 
 
-def prepare(output, state, fixture, observer_state=None):
+def prepare(output, state, fixture, observer_state=None, *, include_solar_wind=False):
     if output.resolve().parent == DEFAULT_STATE.resolve() or state.resolve() == DEFAULT_STATE.resolve():
         raise ValueError("Aurora preview needs separate state")
     enabled = False
@@ -147,12 +148,14 @@ def prepare(output, state, fixture, observer_state=None):
         issues = [name for name, cache in (("OVATION", oval_cache), ("Kp", kp_cache)) if cache.get("error")]
     with closing(load_file(str(ROOT / "assets/de440s.bsp"))) as eph:
         result = calculate(eph, load.timescale(builtin=True), place, now, oval, forecast)
+    if include_solar_wind:
+        result["solarWind"] = solar_wind_context(state, now, enabled, fixture)
     write(output, {**result, "fixture": fixture, "enabled": enabled, "computed": iso(now), "issues": issues})
 
 
 if __name__ == "__main__":
     try:
         output, state = map(Path, sys.argv[1:3])
-        prepare(output, state, sys.argv[3] == "fixture")
+        prepare(output, state, sys.argv[3] == "fixture", include_solar_wind=True)
     except (OSError, ValueError, TypeError, KeyError) as exc:
         raise SystemExit(f"Aurora preview: {exc}") from exc

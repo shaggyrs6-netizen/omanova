@@ -168,6 +168,16 @@ ColumnLayout {
         }
     }
 
+    SolarWindCard {
+        Layout.fillWidth: true
+        Layout.leftMargin: 22
+        Layout.rightMargin: 22
+        context: page.catalog?.solarWind ?? null
+        clock: page.clock
+        fixture: page.catalog?.fixture === true
+        enabledDownloads: page.catalog?.enabled === true
+    }
+
     ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 22
