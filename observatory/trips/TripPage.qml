@@ -11,6 +11,7 @@ Item {
     property var result:null
     property int tab:0
     property string editing:"destination"
+    property bool openedHorizon: false
     property var searchRows:[]
     property string searchTarget:"destination"
     property string message:""
@@ -122,7 +123,7 @@ Item {
         stderr:StdioCollector {id:terrainError}
         onExited:function(code) {
             downloadTerrain.checked=false
-            if(root.terrainRequestKey!==root.terrainKey())return
+            if(root.terrainRequestKey!==root.terrainKey()){root.readTerrain("terrain-status");return}
             if(code===0) {
                 try {
                     root.terrainProfile=JSON.parse(terrainOutput.text)
@@ -160,7 +161,14 @@ Item {
                                     Layout.fillWidth:true
                                     text:(root.tab===index?"● ":"")+modelData
                                     enabled:index!==2||!!root.result
-                                    onClicked:{root.tab=index;scroll.contentItem.contentY=0}
+                                    onClicked: {
+                                        if (index === 1 && !root.openedHorizon && root.draft) {
+                                            root.openedHorizon = true
+                                            root.switchPlace("home")
+                                        }
+                                        root.tab = index
+                                        scroll.contentItem.contentY = 0
+                                    }
                                 }
                             }
                             TripButton {Layout.fillWidth:true;text:calculate.running?qsTr("Calculating…"):qsTr("Save & compare nights");enabled:!!root.draft&&!calculate.running&&!terrainJob.running;onClicked:root.compare()}
@@ -247,6 +255,14 @@ Item {
                                 visible:root.tab===1;Layout.fillWidth:true;Layout.margins:20;spacing:12
                                 Heading {text:qsTr("My horizon · %1").arg(root.current.name)}
                                 Flow {Layout.fillWidth:true;spacing:8;TripButton {text:qsTr("Home horizon");onClicked:root.switchPlace("home")} TripButton {text:qsTr("Destination horizon");onClicked:root.switchPlace("destination")}}
+                                HorizonSky {
+                                    Layout.fillWidth: true
+                                    runtime: root.runtime
+                                    statePath: root.statePath
+                                    place: root.draft ? root.current : null
+                                    terrain: root.terrainProfile?.samples || []
+                                    active: root.tab === 1
+                                }
                                 Copy {text:qsTr("True north = 0°/360°, east = 90°. A range such as 330° → 30° crosses north. Heights are your estimates above the horizon, not a terrain survey.");color:App.Palette.muted}
                                 Heading {text:qsTr("Estimated terrain")}
                                 Copy {text:qsTr("Keep manual trees/buildings below. The terrain layer estimates hills and ridges; the higher layer blocks the view.");color:App.Palette.muted}
@@ -272,7 +288,6 @@ Item {
                                     TripButton {text:qsTr("Terrain data credits");onClicked:Qt.openUrlExternally("https://github.com/tilezen/joerd/blob/master/docs/attribution.md")}
                                 }
                                 Copy {text:qsTr("Solid line/shading: manual trees/buildings · dashed line: terrain estimate. The terrain toggle controls whether that layer affects comparisons.");color:App.Palette.muted}
-                                HorizonChart { terrain:root.terrainProfile?.samples||[];Layout.fillWidth:true;Layout.preferredHeight:200;sectors:root.current.horizon}
                                 Copy {text:qsTr("The shaded area is blocked. Overlaps use the higher edge. A hidden Moon can still brighten the sky, so the mask does not change astronomical darkness. These masks apply to trip comparisons; active-location alerts are unchanged.");color:App.Palette.muted}
                                 Repeater {
                                     model:root.current.horizon

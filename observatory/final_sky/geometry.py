@@ -62,18 +62,32 @@ def root(fn, lo, hi):
     return (lo+hi)/2
 
 
+SKY_BODIES = {
+    'Sun': 'sun', 'Moon': 'moon', 'Mercury': 'mercury', 'Venus': 'venus',
+    'Mars': 'mars barycenter', 'Jupiter': 'jupiter barycenter', 'Saturn': 'saturn barycenter',
+}
+
+
+def chart_observer(eph, place):
+    site = wgs84.latlon(place['lat'], place['lon'],
+                       elevation_m=place['elevation'] + place.get('observingHeight', 1.7))
+    return eph['earth'] + site
+
+
+def star_model(stars):
+    return Star(ra_hours=np.array([s['ra'] for s in stars]), dec_degrees=np.array([s['dec'] for s in stars]),
+                ra_mas_per_year=np.array([s['pmra'] for s in stars]), dec_mas_per_year=np.array([s['pmdec'] for s in stars]))
+
+
 def sky_chart(eph,ts,p,terrain,when):
     cat=json.loads(CAT_PATH.read_text());t=ts.from_datetime(when)
-    site=wgs84.latlon(p['lat'],p['lon'],elevation_m=p['elevation']+p.get('observingHeight',1.7))
-    observer=(eph['earth']+site).at(t)
+    observer=chart_observer(eph, p).at(t)
     stars=cat['stars']
-    model=Star(ra_hours=np.array([s['ra'] for s in stars]),dec_degrees=np.array([s['dec'] for s in stars]),
-               ra_mas_per_year=np.array([s['pmra'] for s in stars]),dec_mas_per_year=np.array([s['pmdec'] for s in stars]))
-    alt,az,_=observer.observe(model).apparent().altaz()
+    alt,az,_=observer.observe(star_model(stars)).apparent().altaz()
     mask=combined_altitude(az.degrees,p.get('horizon',[]),terrain)
     rows=[{**s,'myNightKey':chart_star_key(s),'el':float(el),'az':float(a),'clear':bool(el>h)} for s,el,a,h in zip(stars,alt.degrees,az.degrees,mask) if el>=0]
     objects=[]
-    for key,label in [('sun','Sun'),('moon','Moon'),('mercury','Mercury'),('venus','Venus'),('mars barycenter','Mars'),('jupiter barycenter','Jupiter'),('saturn barycenter','Saturn')]:
+    for label,key in SKY_BODIES.items():
         el,a,_=observer.observe(eph[key]).apparent().altaz()
         if el.degrees>=0:objects.append({'name':label,'el':float(el.degrees),'az':float(a.degrees),'clear':bool(el.degrees>combined_altitude(a.degrees,p.get('horizon',[]),terrain))})
     targets = FINDER_CATALOGUE['targets']
